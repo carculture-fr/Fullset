@@ -6,22 +6,23 @@ import path from "node:path"
 import { checkCredentials, deleteOtherSessions, getAccount, setPassword, updateProfile, validatePassword, validateProfile } from "./account.js"
 import { createAuth, routePath } from "./auth.js"
 import { barcodeRows, deleteBarcode, exportBarcodesCsv, learnFromCopy, linkBarcode, listBarcodes, lookupBarcode, normalizeEan } from "./barcodes.js"
-import { ScandexError, identifyBarcode, scandexFromEnv, type ScandexClient } from "./scandex.js"
-import { SteamError, importSteam, steamCandidates, steamFromEnv, steamStatus, syncSteam, type SteamClient } from "./steam.js"
+import { ScandexError, identifyBarcode, type ScandexClient } from "./scandex.js"
+import { createServices, saveService, servicesStatus, testService } from "./services.js"
+import { SteamError, importSteam, steamCandidates, steamStatus, syncSteam, type SteamClient } from "./steam.js"
 import { ConflictError, addValue, deleteValue, isListKey, listValues, renameValue } from "./lists.js"
 import { allowedOriginsFromEnv, originCheck, securityHeaders } from "./security.js"
 import { NotFoundError, PHOTOS_DIR, ValidationError, createCopy, deleteCopy, updateCopy, validateCopy } from "./copies.js"
 import { COVERS_DIR } from "./covers.js"
 import { schemaVersion, type Db } from "./db.js"
 import { createGame, findGame, relinkGame, updateGame } from "./games.js"
-import { IgdbError, igdbFromEnv, type IgdbClient } from "./igdb.js"
+import { IgdbError, type IgdbClient } from "./igdb.js"
 import { getGame, listLibrary } from "./library.js"
 import { MAX_IMAGE_BYTES, addPhoto, deletePhoto, setCover, setCoverFromUrl } from "./media.js"
 import { downloadMissingCovers } from "./covers.js"
 import { CollectionNotEmptyError, importCollection } from "./import-collection.js"
 import { stats, summary } from "./stats.js"
 import { ImportFormatError, exportCsv, exportJson, importExport } from "./transfer.js"
-import { rommFromEnv, type RommClient } from "./romm.js"
+import type { RommClient } from "./romm.js"
 import { analyzeLegacy, commitLegacy, type LegacyDecision } from "./legacy.js"
 import {
   addHardwarePhoto,
@@ -60,13 +61,10 @@ export type AppDeps = {
 const IGDB_IMAGES = "https://images.igdb.com/"
 
 export function createApp(db: Db, dataDir: string, deps: AppDeps = {}) {
-  const igdb = deps.igdb === undefined ? igdbFromEnv() : deps.igdb
-  const romm = deps.romm === undefined ? rommFromEnv() : deps.romm
   const fetchImpl = deps.fetchImpl ?? fetch
   const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_IMAGE_BYTES, files: 1 } })
-
-  const scandex = deps.scandex === undefined ? scandexFromEnv() : deps.scandex
-  const steam = deps.steam === undefined ? steamFromEnv() : deps.steam
+  // Clients IGDB, Steam, ScanDex et RomM : relus à chaque usage, la configuration change dans l'appli.
+  const services = createServices(db, { igdb: deps.igdb, romm: deps.romm, scandex: deps.scandex, steam: deps.steam }, fetchImpl)
 
   const app = express()
   app.disable("x-powered-by")
@@ -115,14 +113,15 @@ export function createApp(db: Db, dataDir: string, deps: AppDeps = {}) {
   })
 
   // --- Steam : lecture au bouton, jeux absents ajoutés sur choix ---
-  app.get("/api/steam", (_req, res) => res.json(steamStatus(db, steam !== null)))
+  app.get("/api/steam", (_req, res) => res.json(steamStatus(db, services.steam() !== null)))
   app.post("/api/steam/sync", async (_req, res) => {
-    if (!steam) throw new SteamError("Steam n'est pas configuré (STEAM_API_KEY et STEAM_ID).")
-    res.json(await syncSteam(db, steam, igdb))
+    const steam = services.steam()
+    if (!steam) throw new SteamError("Steam n'est pas configuré : Réglages → Services.")
+    res.json(await syncSteam(db, steam, services.igdb()))
   })
   app.get("/api/steam/candidates", (_req, res) => res.json({ items: steamCandidates(db) }))
   app.post("/api/steam/import", async (req, res) => {
-    res.status(201).json(await importSteam(db, dataDir, igdb, req.body?.appids, fetchImpl))
+    res.status(201).json(await importSteam(db, dataDir, services.igdb(), req.body?.appids, fetchImpl))
   })
 
   // --- Codes-barres ---
@@ -138,7 +137,7 @@ export function createApp(db: Db, dataDir: string, deps: AppDeps = {}) {
     const ean = normalizeEan(req.params.ean)
     let suggestion = null
     try {
-      suggestion = await identifyBarcode(db, scandex, ean)
+      suggestion = await identifyBarcode(db, services.scandex(), ean)
     } catch (err) {
       if (!(err instanceof ScandexError)) throw err
       console.warn(err.message)
@@ -146,7 +145,7 @@ export function createApp(db: Db, dataDir: string, deps: AppDeps = {}) {
     const owned = suggestion
       ? (db.prepare("SELECT id, platform FROM games WHERE igdb_id = ? ORDER BY platform = ? DESC, id").all(suggestion.igdb_id, suggestion.platform) as Array<{ id: number; platform: string }>)
       : []
-    res.json({ ean, configured: scandex !== null, suggestion, owned })
+    res.json({ ean, configured: services.scandex() !== null, suggestion, owned })
   })
   app.post("/api/barcodes", (req, res) => {
     res.json(linkBarcode(db, req.body?.ean, req.body?.game_id, req.body?.edition))
@@ -174,6 +173,14 @@ export function createApp(db: Db, dataDir: string, deps: AppDeps = {}) {
   app.get("/api/preferences", (_req, res) => res.json(getPreferences(db)))
   app.put("/api/preferences", (req, res) => res.json(setPreferences(db, req.body)))
 
+  // --- Services externes : état (secrets masqués), enregistrement, essai réel ---
+  app.get("/api/services", (_req, res) => res.json(servicesStatus(db)))
+  app.put("/api/services/:name", (req, res) => {
+    saveService(db, String(req.params.name), req.body ?? {})
+    res.json(servicesStatus(db))
+  })
+  app.post("/api/services/:name/test", async (req, res) => res.json(await testService(services, String(req.params.name))))
+
   // La sonde lit la base : un process vivant sur une base illisible doit tomber en 503,
   // pas rester vert dans la supervision. Le détail de l'erreur reste dans les journaux.
   app.get("/api/health", (_req, res) => {
@@ -183,8 +190,8 @@ export function createApp(db: Db, dataDir: string, deps: AppDeps = {}) {
         ok: true,
         version: APP_VERSION,
         schema: schemaVersion(db),
-        igdb: igdb !== null,
-        romm: romm !== null,
+        igdb: services.igdb() !== null,
+        romm: services.romm() !== null,
         time: new Date().toLocaleString("fr-FR", { timeZone: process.env.TZ || undefined }),
       })
     } catch (err) {
@@ -199,7 +206,8 @@ export function createApp(db: Db, dataDir: string, deps: AppDeps = {}) {
     return n
   }
   const needIgdb = () => {
-    if (!igdb) throw new IgdbError("IGDB n'est pas configuré (IGDB_CLIENT_ID / IGDB_CLIENT_SECRET).")
+    const igdb = services.igdb()
+    if (!igdb) throw new IgdbError("IGDB n'est pas configuré : Réglages → Services.")
     return igdb
   }
 
@@ -253,6 +261,7 @@ export function createApp(db: Db, dataDir: string, deps: AppDeps = {}) {
   app.get("/api/games/:id", async (req, res) => {
     const game = getGame(db, id(req))
     if (!game) throw new NotFoundError("Jeu introuvable.")
+    const romm = services.romm()
     if (romm && game.igdb_id !== null) {
       try {
         game.romm = await romm.romFor(game.igdb_id)
@@ -341,12 +350,13 @@ export function createApp(db: Db, dataDir: string, deps: AppDeps = {}) {
   // --- Import de l'ancienne application : analyse (rien n'est écrit), puis import des lignes retenues ---
   app.post("/api/import/legacy/analyze", upload.single("file"), async (req, res) => {
     if (!req.file) throw new ValidationError("Aucun fichier reçu.")
+    const igdb = services.igdb()
     res.json({ igdb: igdb !== null, rows: await analyzeLegacy(db, igdb, req.file.buffer.toString("utf8")) })
   })
   app.post("/api/import/legacy/commit", async (req, res) => {
     const rows = req.body?.rows
     if (!Array.isArray(rows) || rows.length === 0) throw new ValidationError("Aucune ligne à importer.")
-    res.status(201).json(await commitLegacy(db, dataDir, igdb, rows as LegacyDecision[], fetchImpl))
+    res.status(201).json(await commitLegacy(db, dataDir, services.igdb(), rows as LegacyDecision[], fetchImpl))
   })
 
   // --- Matériel : consoles, manettes, accessoires ---

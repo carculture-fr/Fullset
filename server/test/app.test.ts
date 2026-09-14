@@ -31,9 +31,9 @@ afterAll(() => {
 
 describe("base", () => {
   it("applique les migrations et reste idempotente à la réouverture", () => {
-    expect(schemaVersion(db)).toBe(11)
+    expect(schemaVersion(db)).toBe(12)
     const again = openDb(dir)
-    expect(schemaVersion(again)).toBe(11)
+    expect(schemaVersion(again)).toBe(12)
     again.close()
   })
 })
@@ -42,7 +42,7 @@ describe("/api/health", () => {
   it("répond 200 en lisant la base, sans authentification", async () => {
     const res = await fetch(`${base}/api/health`)
     expect(res.status).toBe(200)
-    expect(await res.json()).toMatchObject({ ok: true, schema: 11 })
+    expect(await res.json()).toMatchObject({ ok: true, schema: 12 })
   })
 })
 

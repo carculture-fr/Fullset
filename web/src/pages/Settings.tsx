@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent, type ReactNode } from "react"
 import { Link } from "react-router-dom"
 
 import { ErrorNote, Field, KeyedChips, inputClass } from "@/components/fields"
+import { ServicesForm } from "@/components/services-form"
 import { api, errorMessage, send, type Account, type SteamStatus, type SteamSyncReport } from "@/lib/api"
 import { plural } from "@/lib/format"
 import { SORTS } from "@/lib/library"
@@ -24,6 +25,9 @@ export default function Settings() {
       <h1 className="text-xl font-semibold">Réglages</h1>
       <Profile />
       <DisplaySection />
+      <Section title="Services" note="Clés des services externes, toutes facultatives. Une clé enregistrée n'est jamais réaffichée : seuls ses 4 derniers caractères le sont.">
+        <ServicesForm />
+      </Section>
       <Security />
       <ListsManager />
       <SteamSection />
@@ -215,7 +219,7 @@ function SteamSection() {
   return (
     <Section title="Steam" note="Relie tes jeux PC à ta bibliothèque Steam et reprend leur temps de jeu, quand tu appuies sur le bouton.">
       {status && !status.configured && (
-        <p className="text-sm text-muted-foreground">Steam n'est pas encore configuré : il faut ta clé API Steam et ton SteamID sur le serveur.</p>
+        <p className="text-sm text-muted-foreground">Steam n'est pas encore configuré : renseigne ta clé API et ton SteamID dans Services, plus haut.</p>
       )}
       {status?.configured && (
         <div className="space-y-3">

@@ -32,7 +32,7 @@ export class Steam implements SteamClient {
       // Pas d'adresse dans le message : elle porte la clé.
       throw new SteamError(`Steam injoignable (${(err as Error).name}).`)
     }
-    if (res.status === 401 || res.status === 403) throw new SteamError("Steam refuse la clé API (STEAM_API_KEY).")
+    if (res.status === 401 || res.status === 403) throw new SteamError("Steam refuse la clé API.")
     if (!res.ok) throw new SteamError(`Steam a répondu HTTP ${res.status}.`)
     const body = (await res.json()) as { response?: { games?: Array<{ appid: number; name?: string; playtime_forever?: number; rtime_last_played?: number }> } }
     // Profil privé ou SteamID faux : Steam répond 200 avec une réponse vide.

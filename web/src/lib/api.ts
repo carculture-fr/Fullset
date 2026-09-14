@@ -45,7 +45,10 @@ export const errorMessage = (err: unknown) => (err instanceof Error ? err.messag
 export type Health = { ok: boolean; version: string; schema: number; igdb: boolean; time: string }
 export type Me = { setupRequired: boolean; authenticated: boolean }
 export type Account = { username: string; display_name: string | null; email: string | null }
-export type KnownBarcode = { ean: string; game_id: number; edition: string | null }
+export type ServiceName = "igdb" | "steam" | "scandex" | "romm"
+export type ServiceField = { set: boolean; source: "env" | "app" | null; secret: boolean; preview: string | null }
+export type ServicesStatus = Record<ServiceName, { configured: boolean; fields: Record<string, ServiceField> }>
+export type KnownBarcode ={ ean: string; game_id: number; edition: string | null }
 export type SteamCandidate = { appid: number; name: string; playtime_minutes: number; last_played: number | null; igdb_id: number | null }
 export type SteamStatus = { configured: boolean; synced_at: string | null; owned: number; linked: number; candidates: number }
 export type SteamSyncReport = { owned: number; recognised: number; linked: number; playtime: number; candidates: number }

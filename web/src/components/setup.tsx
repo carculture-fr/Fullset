@@ -1,12 +1,14 @@
 import { useState, type FormEvent } from "react"
 
 import { AuthFrame, authButton, authField } from "@/components/login"
+import { ServicesForm } from "@/components/services-form"
 import { ApiError, send } from "@/lib/api"
 
 const PASSWORD_MIN = 10
 
-/** Premier lancement : tant qu'aucun compte n'existe, toute l'appli mène ici. */
+/** Premier lancement : tant qu'aucun compte n'existe, toute l'appli mène ici. Puis les services, facultatifs. */
 export function Setup({ onDone }: { onDone: () => void }) {
+  const [step, setStep] = useState<"account" | "services">("account")
   const [form, setForm] = useState({ username: "", display_name: "", password: "", confirm: "" })
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -25,11 +27,24 @@ export function Setup({ onDone }: { onDone: () => void }) {
     setError(null)
     try {
       await send("POST", "/api/setup", { username: form.username, display_name: form.display_name, password: form.password })
-      onDone()
+      setStep("services")
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Serveur injoignable.")
+    } finally {
       setBusy(false)
     }
+  }
+
+  if (step === "services") {
+    return (
+      <AuthFrame title="Les services">
+        <p className="text-sm text-muted-foreground">Tous facultatifs, et modifiables plus tard dans Réglages → Services. IGDB est le plus utile : il remplit les fiches des jeux.</p>
+        <ServicesForm />
+        <button onClick={onDone} className={authButton}>
+          Terminer
+        </button>
+      </AuthFrame>
+    )
   }
 
   return (

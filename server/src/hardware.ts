@@ -7,6 +7,7 @@ import path from "node:path"
 import { canonicalPlatform, rememberPlatform } from "./catalog.js"
 import { NotFoundError, PHOTOS_DIR, ValidationError, removeFile } from "./copies.js"
 import { COVERS_DIR } from "./covers.js"
+import { csvCell } from "./csv.js"
 import type { Db } from "./db.js"
 import { CONDITIONS, HW_CONTENTS, HW_KINDS, HW_WORKING, MANUAL_CONDITIONS, REGIONS, isoDate, text, toCents } from "./domain.js"
 import { extensionOf } from "./media.js"
@@ -233,10 +234,7 @@ const CSV_HEADERS: Array<[string, string]> = [
 ]
 
 const euros = (cents: number | null) => (cents === null ? "" : (cents / 100).toFixed(2).replace(".", ","))
-const cell = (v: unknown) => {
-  const s = v === null || v === undefined ? "" : String(v)
-  return /[;"\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
-}
+const cell = csvCell
 
 /** Export CSV du matériel, au même format que celui des jeux (Excel français). */
 export function exportHardwareCsv(db: Db) {

@@ -339,6 +339,14 @@ const MIGRATIONS: string[] = [
    );
    DROP TABLE IF EXISTS login_tokens;
    DROP TABLE IF EXISTS password_resets;`,
+
+  // Services externes (IGDB, Steam, ScanDex, RomM) réglés dans l'appli : une ligne par champ,
+  // « service.champ ». Les variables d'environnement passent devant (services.ts).
+  `CREATE TABLE settings (
+     key TEXT PRIMARY KEY,
+     value TEXT NOT NULL,
+     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+   );`,
 ]
 
 function sql(v: string | null) {

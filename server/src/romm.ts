@@ -42,6 +42,15 @@ export class Romm implements RommClient {
     this.cache.set(igdbId, { at: Date.now(), rom })
     return rom
   }
+
+  /** Vérifie l'adresse et le jeton (bouton « Tester » des réglages). */
+  async check() {
+    const res = await this.fetchImpl(`${this.baseUrl}/api/platforms`, { headers: { Authorization: `Bearer ${this.token}` }, signal: AbortSignal.timeout(8000), redirect: "error" })
+    if (res.status === 401 || res.status === 403) throw new Error("RomM refuse le jeton.")
+    if (!res.ok) throw new Error(`RomM a répondu HTTP ${res.status}.`)
+    const platforms = (await res.json()) as unknown[]
+    return Array.isArray(platforms) ? platforms.length : 0
+  }
 }
 
 export function rommFromEnv(): Romm | null {

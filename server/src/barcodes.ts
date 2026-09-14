@@ -1,4 +1,5 @@
 import { NotFoundError, ValidationError } from "./copies.js"
+import { csvCell } from "./csv.js"
 import type { Db } from "./db.js"
 import { text } from "./domain.js"
 import { listLibrary, type LibraryGame } from "./library.js"
@@ -100,8 +101,7 @@ export function deleteBarcode(db: Db, raw: unknown) {
 }
 
 export function exportBarcodesCsv(db: Db) {
-  const cell = (v: string | null) => (v === null ? "" : /[;"\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v)
-  const lines = barcodeRows(db).map((r) => [r.ean, r.title, r.platform, r.edition, r.created_at?.slice(0, 10) ?? null].map(cell).join(";"))
+  const lines = barcodeRows(db).map((r) => [r.ean, r.title, r.platform, r.edition, r.created_at?.slice(0, 10) ?? null].map(csvCell).join(";"))
   // Même forme que l'export de la collection : Excel français (point-virgule, BOM UTF-8).
   return "\uFEFF" + ["code;jeu;console;edition;appris_le", ...lines].join("\r\n") + "\r\n"
 }

@@ -29,7 +29,7 @@ All data (SQLite database, covers, photos) lives in the `fullset-data` volume, m
 
 ### Optional services
 
-Copy `.env.example` to `.env` and fill in what you want, then `docker compose up -d` again:
+The first-run setup asks for them, and they can be changed any time in *Réglages → Services*, with a *Test* button. Keys are stored in the database and never sent back to the browser (only their last 4 characters are shown). Environment variables, if set (see `.env.example`), take precedence and are read-only in the app.
 
 | Service | What for | Variables |
 |---|---|---|
@@ -71,5 +71,7 @@ Please report vulnerabilities privately: see [SECURITY.md](SECURITY.md).
 Inventaire auto-hébergé de ta collection de jeux vidéo : exemplaires physiques et dématérialisés, état du jeu, de la boîte et de la notice, prix payé, valeur estimée, consoles et accessoires. Pensé pour les collectionneurs, d'abord sur téléphone.
 
 **Installation :** `docker compose up -d`, puis ouvre `http://<ton-serveur>:3110` et crée ton compte (un seul par installation). Les services facultatifs (IGDB, Steam, ScanDex, RomM) se règlent dans `.env` (voir `.env.example`). Mot de passe oublié : `docker exec fullset node server/dist/cli/reset-password.js`.
+
+Les services (IGDB, Steam, ScanDex, RomM) se règlent à l'installation puis dans Réglages → Services, avec un bouton « Tester ».
 
 Toutes les données sont dans le volume `fullset-data` (`/data`) : pense à le sauvegarder.

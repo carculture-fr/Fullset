@@ -4,6 +4,7 @@
 // répertoire de données, couvert par la sauvegarde de la nuit.
 
 import { CollectionNotEmptyError } from "./import-collection.js"
+import { csvCell, uncsvCell } from "./csv.js"
 import type { Db } from "./db.js"
 import { isoDate, text, toCents } from "./domain.js"
 import { todayIso } from "./valuations.js"
@@ -139,10 +140,6 @@ export function exportJson(db: Db) {
 
 const euros = (cents: number | null | undefined) => (cents === null || cents === undefined ? "" : (cents / 100).toFixed(2).replace(".", ","))
 
-function csvCell(v: unknown) {
-  const s = v === null || v === undefined ? "" : String(v)
-  return /[;"\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
-}
 
 export function exportCsv(db: Db): string {
   const lines = [CSV_HEADERS.map(([h]) => h).join(";")]
@@ -183,18 +180,18 @@ export function parseCsv(input: string): string[][] {
       else cell += ch
     } else if (ch === '"') quoted = true
     else if (ch === sep) {
-      row.push(cell)
+      row.push(uncsvCell(cell))
       cell = ""
     } else if (ch === "\n" || ch === "\r") {
       if (ch === "\r" && src[i + 1] === "\n") i++
-      row.push(cell)
+      row.push(uncsvCell(cell))
       rows.push(row)
       row = []
       cell = ""
     } else cell += ch
   }
   if (cell !== "" || row.length) {
-    row.push(cell)
+    row.push(uncsvCell(cell))
     rows.push(row)
   }
   return rows.filter((r) => r.some((c) => c !== ""))

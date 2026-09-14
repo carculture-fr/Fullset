@@ -59,6 +59,19 @@ describe("export CSV", () => {
     expect(listLibrary(db)[0].title).toBe("Jeu, avec virgule")
   })
 
+  // Audit du 14/09/2026 : un titre venu de l'extérieur ne doit pas s'exécuter dans Excel.
+  it("neutralise les formules à l'export, et les relit à l'identique", () => {
+    const source = imported()
+    source.prepare(`UPDATE games SET title = '=HYPERLINK("http://x")' WHERE id = (SELECT min(id) FROM games)`).run()
+    source.prepare("UPDATE copies SET comment = '-2 rayures' WHERE id = (SELECT min(id) FROM copies)").run()
+    const csv = exportCsv(source)
+    expect(csv).toContain(`"'=HYPERLINK(""http://x"")"`)
+    expect(csv).toContain(";'-2 rayures")
+    const { db: target } = freshDb()
+    importExport(target, csv)
+    expect(exportCsv(target)).toBe(csv)
+  })
+
   it("refuse un CSV étranger et un import dans une collection non vide", () => {
     const { db } = freshDb()
     expect(() => importExport(db, "Name;Platform\nHalo;Xbox\n")).toThrow(/pas un export Fullset/)
