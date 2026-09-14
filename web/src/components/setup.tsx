@@ -1,13 +1,16 @@
 import { useState, type FormEvent } from "react"
+import { useTranslation } from "react-i18next"
 
 import { AuthFrame, authButton, authField } from "@/components/login"
 import { ServicesForm } from "@/components/services-form"
 import { ApiError, send } from "@/lib/api"
+import { storedLanguage } from "@/lib/i18n"
 
 const PASSWORD_MIN = 10
 
 /** Premier lancement : tant qu'aucun compte n'existe, toute l'appli mène ici. Puis les services, facultatifs. */
 export function Setup({ onDone }: { onDone: () => void }) {
+  const { t } = useTranslation()
   const [step, setStep] = useState<"account" | "services">("account")
   const [form, setForm] = useState({ username: "", display_name: "", password: "", confirm: "" })
   const [error, setError] = useState<string | null>(null)
@@ -16,9 +19,9 @@ export function Setup({ onDone }: { onDone: () => void }) {
 
   const problem =
     form.password && form.password.length < PASSWORD_MIN
-      ? `Mot de passe : ${PASSWORD_MIN} caractères au moins.`
+      ? t("setup.passwordMin", { min: PASSWORD_MIN })
       : form.confirm && form.confirm !== form.password
-        ? "Les deux mots de passe ne sont pas identiques."
+        ? t("setup.mismatch")
         : null
 
   const submit = async (e: FormEvent) => {
@@ -27,9 +30,12 @@ export function Setup({ onDone }: { onDone: () => void }) {
     setError(null)
     try {
       await send("POST", "/api/setup", { username: form.username, display_name: form.display_name, password: form.password })
+      // Langue choisie à l'écran d'accueil : elle devient celle du compte (sinon « auto »).
+      const chosen = storedLanguage()
+      if (chosen) await send("PUT", "/api/preferences", { language: chosen }).catch(() => {})
       setStep("services")
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Serveur injoignable.")
+      setError(err instanceof ApiError ? err.message : t("common.serverUnreachable"))
     } finally {
       setBusy(false)
     }
@@ -37,27 +43,27 @@ export function Setup({ onDone }: { onDone: () => void }) {
 
   if (step === "services") {
     return (
-      <AuthFrame title="Les services">
-        <p className="text-sm text-muted-foreground">Tous facultatifs, et modifiables plus tard dans Réglages → Services. IGDB est le plus utile : il remplit les fiches des jeux.</p>
+      <AuthFrame title={t("setup.servicesTitle")}>
+        <p className="text-sm text-muted-foreground">{t("setup.servicesIntro")}</p>
         <ServicesForm />
         <button onClick={onDone} className={authButton}>
-          Terminer
+          {t("setup.finish")}
         </button>
       </AuthFrame>
     )
   }
 
   return (
-    <AuthFrame title="Bienvenue dans Fullset">
-      <p className="text-sm text-muted-foreground">Crée le compte de cette installation. Il n'y en a qu'un : une fois créé, l'inscription se ferme.</p>
+    <AuthFrame title={t("setup.welcome")}>
+      <p className="text-sm text-muted-foreground">{t("setup.intro")}</p>
       <form onSubmit={submit} className="space-y-3">
-        <input className={authField} placeholder="Identifiant" autoComplete="username" autoCapitalize="none" value={form.username} onChange={set("username")} />
-        <input className={authField} placeholder="Nom affiché (facultatif)" autoComplete="nickname" value={form.display_name} onChange={set("display_name")} />
-        <input className={authField} type="password" placeholder={`Mot de passe (${PASSWORD_MIN} caractères au moins)`} autoComplete="new-password" value={form.password} onChange={set("password")} />
-        <input className={authField} type="password" placeholder="Confirme le mot de passe" autoComplete="new-password" value={form.confirm} onChange={set("confirm")} />
+        <input className={authField} placeholder={t("auth.username")} autoComplete="username" autoCapitalize="none" value={form.username} onChange={set("username")} />
+        <input className={authField} placeholder={t("setup.displayName")} autoComplete="nickname" value={form.display_name} onChange={set("display_name")} />
+        <input className={authField} type="password" placeholder={t("setup.password", { min: PASSWORD_MIN })} autoComplete="new-password" value={form.password} onChange={set("password")} />
+        <input className={authField} type="password" placeholder={t("setup.confirm")} autoComplete="new-password" value={form.confirm} onChange={set("confirm")} />
         {(problem || error) && <p className="text-sm text-destructive">{problem ?? error}</p>}
         <button disabled={busy || !form.username || form.password.length < PASSWORD_MIN || form.confirm !== form.password} className={authButton}>
-          {busy ? "Création…" : "Créer mon compte"}
+          {busy ? t("setup.creating") : t("setup.create")}
         </button>
       </form>
     </AuthFrame>

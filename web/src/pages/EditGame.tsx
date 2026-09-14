@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react"
+import { useTranslation } from "react-i18next"
 import { Link, useNavigate, useParams } from "react-router-dom"
 
 import { Cover } from "@/components/cover"
@@ -8,26 +9,20 @@ import { api, errorMessage, send, upload, type CoverOption, type GameDetail, typ
 import { shrinkImage } from "@/lib/images"
 import { useLibrary } from "@/lib/library-data"
 
-const TEXT_FIELDS = [
-  ["developer", "Développeur"],
-  ["publisher", "Éditeur"],
-  ["series", "Série"],
-  ["genres", "Genres"],
-  ["game_modes", "Modes"],
-  ["perspective", "Vue"],
-  ["pegi", "PEGI"],
-] as const
+// Libellés : `editGame.fields.<clé>`.
+const TEXT_FIELDS = ["developer", "publisher", "series", "genres", "game_modes", "perspective", "pegi"] as const
 
-type FormState = Record<"title" | "summary" | "release_date" | (typeof TEXT_FIELDS)[number][0], string>
+type FormState = Record<"title" | "summary" | "release_date" | (typeof TEXT_FIELDS)[number], string>
 
 const toForm = (g: GameDetail): FormState => ({
   title: g.title,
   summary: g.summary ?? "",
   release_date: g.release_date ?? "",
-  ...(Object.fromEntries(TEXT_FIELDS.map(([k]) => [k, g[k] ?? ""])) as Record<(typeof TEXT_FIELDS)[number][0], string>),
+  ...(Object.fromEntries(TEXT_FIELDS.map((k) => [k, g[k] ?? ""])) as Record<(typeof TEXT_FIELDS)[number], string>),
 })
 
 export default function EditGame() {
+  const { t } = useTranslation()
   const { id } = useParams()
   const navigate = useNavigate()
   const { reload } = useLibrary()
@@ -47,7 +42,7 @@ export default function EditGame() {
     api<GameDetail>(`/api/games/${id}`).then(apply, (err) => setError(errorMessage(err)))
   }, [id])
 
-  if (!game || !form) return <p className="py-16 text-center text-muted-foreground">{error ?? "Chargement…"}</p>
+  if (!game || !form) return <p className="py-16 text-center text-muted-foreground">{error ?? t("editGame.loading")}</p>
 
   const run = async (action: () => Promise<void>) => {
     setBusy(true)
@@ -76,7 +71,7 @@ export default function EditGame() {
   }
 
   const relink = (c: IgdbCandidate) => {
-    if (!window.confirm(`Rattacher à « ${c.name} » ? Titre, résumé et métadonnées seront remplacés par ceux d'IGDB.`)) return
+    if (!window.confirm(t("editGame.confirmRelink", { name: c.name }))) return
     run(async () => {
       apply(await send<GameDetail>("POST", `/api/games/${game.id}/igdb`, { igdb_id: c.igdb_id }))
       setRelinking(false)
@@ -91,14 +86,14 @@ export default function EditGame() {
         <Link to={`/jeux/${game.id}`} replace className="text-sm text-muted-foreground hover:text-foreground">
           ← {game.title}
         </Link>
-        <h1 className="mt-2 text-xl font-semibold">Modifier le jeu</h1>
+        <h1 className="mt-2 text-xl font-semibold">{t("editGame.title")}</h1>
         <p className="text-sm text-muted-foreground">{game.platform}</p>
       </div>
 
       <ErrorNote message={error} />
 
       <section className="space-y-3">
-        <h2 className="font-semibold">Jaquette</h2>
+        <h2 className="font-semibold">{t("editGame.cover")}</h2>
         <div className="flex items-start gap-4">
           <Cover src={game.cover} title={game.title} className="aspect-[3/4] w-28 shrink-0 rounded-lg" />
           <div className="flex flex-col items-start gap-2 text-sm">
@@ -108,11 +103,11 @@ export default function EditGame() {
                 onClick={() => run(async () => setCovers((await api<{ covers: CoverOption[] }>(`/api/games/${game.id}/cover-options`)).covers))}
                 className="rounded-lg border border-border bg-card px-3 py-2"
               >
-                Jaquettes proposées par IGDB
+                {t("editGame.igdbCovers")}
               </button>
             )}
             <label className="cursor-pointer rounded-lg border border-border bg-card px-3 py-2">
-              Utiliser une photo
+              {t("editGame.usePhoto")}
               <input
                 type="file"
                 accept="image/*"
@@ -127,12 +122,16 @@ export default function EditGame() {
                 }}
               />
             </label>
-            <span className="text-xs text-muted-foreground">Source actuelle : {game.cover_source ?? "aucune"}</span>
+            <span className="text-xs text-muted-foreground">
+              {t("editGame.currentSource", {
+                source: game.cover_source === null ? t("editGame.sourceNone") : ((t("editGame.coverSources", { returnObjects: true }) as Record<string, string>)[game.cover_source] ?? game.cover_source),
+              })}
+            </span>
           </div>
         </div>
         {covers && (
           covers.length === 0 ? (
-            <p className="text-sm text-muted-foreground">IGDB ne propose pas d'autre jaquette.</p>
+            <p className="text-sm text-muted-foreground">{t("editGame.noOtherCover")}</p>
           ) : (
             <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
               {covers.map((c) => (
@@ -156,41 +155,41 @@ export default function EditGame() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="font-semibold">Fiche IGDB</h2>
+        <h2 className="font-semibold">{t("editGame.igdbSection")}</h2>
         {game.igdb_id === null ? (
-          <p className="text-sm text-primary">Ce jeu n'est rattaché à aucune fiche IGDB.</p>
+          <p className="text-sm text-primary">{t("editGame.notLinked")}</p>
         ) : (
-          <p className="text-sm text-muted-foreground">Rattaché à la fiche IGDB n° {game.igdb_id}.</p>
+          <p className="text-sm text-muted-foreground">{t("editGame.linkedTo", { id: game.igdb_id })}</p>
         )}
         {relinking ? (
           <IgdbSearch onPick={relink} initialQuery={game.title} />
         ) : (
           <button onClick={() => setRelinking(true)} className="rounded-lg border border-border bg-card px-3 py-2 text-sm">
-            {game.igdb_id === null ? "Rattacher à IGDB" : "Changer de fiche IGDB"}
+            {game.igdb_id === null ? t("editGame.link") : t("editGame.change")}
           </button>
         )}
       </section>
 
       <form onSubmit={save} className="space-y-4">
-        <h2 className="font-semibold">Informations</h2>
-        <Field label="Titre">
+        <h2 className="font-semibold">{t("editGame.info")}</h2>
+        <Field label={t("editGame.fields.title")}>
           <input className={inputClass} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
         </Field>
-        <Field label="Résumé" hint="Les résumés venant d'IGDB sont en anglais.">
+        <Field label={t("editGame.fields.summary")} hint={t("editGame.fields.summaryHint")}>
           <textarea className={inputClass} rows={6} value={form.summary} onChange={(e) => setForm({ ...form, summary: e.target.value })} />
         </Field>
-        <Field label="Sortie">
+        <Field label={t("editGame.fields.release")}>
           <input className={inputClass} type="date" value={form.release_date} onChange={(e) => setForm({ ...form, release_date: e.target.value })} />
         </Field>
         <div className="grid gap-4 sm:grid-cols-2">
-          {TEXT_FIELDS.map(([key, label]) => (
-            <Field key={key} label={label}>
+          {TEXT_FIELDS.map((key) => (
+            <Field key={key} label={t(`editGame.fields.${key}`)}>
               <input className={inputClass} value={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} />
             </Field>
           ))}
         </div>
         <button disabled={busy} className="w-full rounded-lg bg-primary py-3 font-medium text-primary-foreground disabled:opacity-50">
-          Enregistrer
+          {t("common.save")}
         </button>
       </form>
     </div>

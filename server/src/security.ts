@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from "express"
+import { msg } from "./i18n.js"
 
 const CSP = [
   "default-src 'self'",
@@ -50,7 +51,7 @@ export function originCheck(allowed: string[], { disabled = false }: { disabled?
     const source = parse(req.headers.origin ?? req.headers.referer ?? "")
     const ok = source && (allowed.length ? allowed.includes(source.origin) : sameSite(req, source.host.toLowerCase()))
     if (ok) return next()
-    res.status(403).json({ error: "Origine refusée." })
+    res.status(403).json({ error: msg("security.originRefused") })
   }
 }
 

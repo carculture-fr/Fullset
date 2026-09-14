@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react"
+import { useTranslation } from "react-i18next"
 
 import { PhotoField } from "@/components/photo-field"
 import { Scanner } from "@/components/scanner"
@@ -7,6 +8,7 @@ import { CONDITIONS, CONTENTS, DIGITAL, GOALS, MANUAL_CONDITIONS, PLAY_STATUSES,
 import { Chips, ErrorNote, Field, ListChips, inputClass } from "@/components/fields"
 import type { CopyDetail, Photo } from "@/lib/api"
 import { todayIso } from "@/lib/format"
+import { currentLanguage } from "@/lib/i18n"
 import { useLists, type ListKey } from "@/lib/lists"
 
 export type CopyFormValues = {
@@ -74,7 +76,8 @@ export function copyToValues(c: CopyDetail): CopyFormValues {
     goal: c.goal,
     region: c.region,
     edition: str(c.edition),
-    price: c.price_cents === null ? "" : (c.price_cents / 100).toFixed(2).replace(".", ","),
+    // Virgule en français, point en anglais : le serveur accepte les deux.
+    price: c.price_cents === null ? "" : (c.price_cents / 100).toFixed(2).replace(".", currentLanguage() === "fr" ? "," : "."),
     purchase_date: str(c.purchase_date),
     purchase_place: str(c.purchase_place),
     quantity: str(c.quantity),
@@ -104,6 +107,7 @@ const splitTags = (s: string) =>
     .filter(Boolean)
 
 export function CopyForm({ initial, submitLabel, onSubmit, existingPhotos = [], onDeletePhoto }: Props) {
+  const { t } = useTranslation()
   const [v, setV] = useState(initial)
   const [photos, setPhotos] = useState<File[]>([])
   const [busy, setBusy] = useState(false)
@@ -125,7 +129,7 @@ export function CopyForm({ initial, submitLabel, onSubmit, existingPhotos = [], 
     try {
       await onSubmit(v, photos)
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur inconnue.")
+      setError(err instanceof Error ? err.message : t("common.unknownError"))
       setBusy(false)
     }
   }
@@ -141,8 +145,9 @@ export function CopyForm({ initial, submitLabel, onSubmit, existingPhotos = [], 
           }}
         />
       )}
-      <Field label="Support">
+      <Field label={t("copyForm.support")}>
         <Chips
+          valueGroup="support"
           options={SUPPORTS}
           value={v.support}
           allowNone={false}
@@ -152,31 +157,31 @@ export function CopyForm({ initial, submitLabel, onSubmit, existingPhotos = [], 
 
       {!digital && (
         <>
-          <Field label="Contenu">
-            <Chips options={CONTENTS.filter((c) => c !== DIGITAL)} value={v.content} onChange={(x) => set("content", x)} />
+          <Field label={t("copyForm.content")}>
+            <Chips valueGroup="content" options={CONTENTS.filter((c) => c !== DIGITAL)} value={v.content} onChange={(x) => set("content", x)} />
           </Field>
-          <Field label="État du jeu">
-            <Chips options={CONDITIONS} value={v.condition_game} onChange={(x) => set("condition_game", x)} />
+          <Field label={t("copyForm.conditionGame")}>
+            <Chips valueGroup="condition" options={CONDITIONS} value={v.condition_game} onChange={(x) => set("condition_game", x)} />
           </Field>
-          <Field label="État de la boîte">
-            <Chips options={CONDITIONS} value={v.condition_box} onChange={(x) => set("condition_box", x)} />
+          <Field label={t("copyForm.conditionBox")}>
+            <Chips valueGroup="condition" options={CONDITIONS} value={v.condition_box} onChange={(x) => set("condition_box", x)} />
           </Field>
-          <Field label="État de la notice">
-            <Chips options={MANUAL_CONDITIONS} value={v.condition_manual} onChange={(x) => set("condition_manual", x)} />
+          <Field label={t("copyForm.conditionManual")}>
+            <Chips valueGroup="condition" options={MANUAL_CONDITIONS} value={v.condition_manual} onChange={(x) => set("condition_manual", x)} />
           </Field>
         </>
       )}
 
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Prix payé (€)">
-          <input className={inputClass} inputMode="decimal" placeholder="0,00" value={v.price} onChange={(e) => set("price", e.target.value)} />
+        <Field label={t("copyForm.price")}>
+          <input className={inputClass} inputMode="decimal" placeholder={t("copyForm.pricePlaceholder")} value={v.price} onChange={(e) => set("price", e.target.value)} />
         </Field>
-        <Field label="Date d'achat">
+        <Field label={t("copyForm.purchaseDate")}>
           <input className={inputClass} type="date" value={v.purchase_date} onChange={(e) => set("purchase_date", e.target.value)} />
         </Field>
       </div>
 
-      <Field label="Lieu d'achat">
+      <Field label={t("copyForm.place")}>
         <ListChips
           options={values("place")}
           selected={v.purchase_place ? [v.purchase_place] : []}
@@ -185,17 +190,17 @@ export function CopyForm({ initial, submitLabel, onSubmit, existingPhotos = [], 
         />
       </Field>
 
-      <Field label="Statut">
-        <Chips options={PLAY_STATUSES} value={v.play_status} onChange={(x) => set("play_status", x)} />
+      <Field label={t("copyForm.status")}>
+        <Chips valueGroup="playStatus" options={PLAY_STATUSES} value={v.play_status} onChange={(x) => set("play_status", x)} />
       </Field>
-      <Field label="Objectif">
-        <Chips options={GOALS} value={v.goal} onChange={(x) => set("goal", x)} />
+      <Field label={t("copyForm.goal")}>
+        <Chips valueGroup="goal" options={GOALS} value={v.goal} onChange={(x) => set("goal", x)} />
       </Field>
 
-      <Field label="Région">
-        <Chips options={REGIONS} value={v.region} onChange={(x) => set("region", x)} />
+      <Field label={t("copyForm.region")}>
+        <Chips valueGroup="region" options={REGIONS} value={v.region} onChange={(x) => set("region", x)} />
       </Field>
-      <Field label="Édition">
+      <Field label={t("copyForm.edition")}>
         <ListChips
           options={values("edition")}
           selected={v.edition ? [v.edition] : []}
@@ -203,36 +208,36 @@ export function CopyForm({ initial, submitLabel, onSubmit, existingPhotos = [], 
           onAdd={async (x) => set("edition", await add("edition", x))}
         />
       </Field>
-      <Field label="Tags" hint="Plusieurs possibles.">
-        <ListChips multiple options={values("tag")} selected={tags} onToggle={toggleTag} onAdd={async (x) => toggleTag(await add("tag", x))} placeholder="Aucun tag" />
+      <Field label={t("copyForm.tags")} hint={t("copyForm.tagsHint")}>
+        <ListChips multiple options={values("tag")} selected={tags} onToggle={toggleTag} onAdd={async (x) => toggleTag(await add("tag", x))} placeholder={t("copyForm.noTag")} />
       </Field>
 
-      <Field label="Commentaire">
+      <Field label={t("copyForm.comment")}>
         <textarea className={inputClass} rows={2} value={v.comment} onChange={(e) => set("comment", e.target.value)} />
       </Field>
 
-      <Field label="Photos de l'exemplaire">
+      <Field label={t("copyForm.photos")}>
         <PhotoField existing={existingPhotos} onDeleteExisting={onDeletePhoto} files={photos} onFiles={setPhotos} />
       </Field>
 
       <details className="rounded-lg bg-card px-4 py-3">
-        <summary className="cursor-pointer text-sm text-muted-foreground">Plus de champs</summary>
+        <summary className="cursor-pointer text-sm text-muted-foreground">{t("copyForm.more")}</summary>
         <div className="mt-4 space-y-4">
-          <Field label="Titre tel que saisi" hint="Laisser vide pour reprendre le titre du jeu.">
+          <Field label={t("copyForm.titleEntered")} hint={t("copyForm.titleEnteredHint")}>
             <input className={inputClass} value={v.title_as_entered} onChange={(e) => set("title_as_entered", e.target.value)} />
           </Field>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Quantité">
+            <Field label={t("copyForm.quantity")}>
               <input className={inputClass} inputMode="numeric" value={v.quantity} onChange={(e) => set("quantity", e.target.value)} />
             </Field>
-            <Field label="Code-barres">
+            <Field label={t("copyForm.barcode")}>
               <div className="flex gap-1.5">
                 <input className={`${inputClass} min-w-0 flex-1`} inputMode="numeric" value={v.barcode} onChange={(e) => set("barcode", e.target.value)} />
                 <button
                   type="button"
                   onClick={() => setScanning(true)}
-                  aria-label="Scanner le code-barres"
-                  title="Scanner le code-barres"
+                  aria-label={t("copyForm.scan")}
+                  title={t("copyForm.scan")}
                   className="flex w-11 shrink-0 items-center justify-center rounded-lg border border-border text-muted-foreground hover:text-foreground"
                 >
                   <BarcodeIcon />
@@ -241,16 +246,16 @@ export function CopyForm({ initial, submitLabel, onSubmit, existingPhotos = [], 
             </Field>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Terminé le">
+            <Field label={t("copyForm.completed")}>
               <input className={inputClass} type="date" value={v.completion_date} onChange={(e) => set("completion_date", e.target.value)} />
             </Field>
-            <Field label="Durée (heures)">
+            <Field label={t("copyForm.duration")}>
               <input className={inputClass} inputMode="decimal" value={v.play_time_hours} onChange={(e) => set("play_time_hours", e.target.value)} />
             </Field>
-            <Field label="Achevé (%)">
+            <Field label={t("copyForm.completion")}>
               <input className={inputClass} inputMode="numeric" value={v.completion_pct} onChange={(e) => set("completion_pct", e.target.value)} />
             </Field>
-            <Field label="Note (/100)">
+            <Field label={t("copyForm.rating")}>
               <input className={inputClass} inputMode="numeric" value={v.rating} onChange={(e) => set("rating", e.target.value)} />
             </Field>
           </div>
@@ -262,7 +267,7 @@ export function CopyForm({ initial, submitLabel, onSubmit, existingPhotos = [], 
       <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur">
         <div className="mx-auto max-w-2xl">
           <button disabled={busy} className="w-full rounded-lg bg-primary py-3 font-medium text-primary-foreground disabled:opacity-50">
-            {busy ? "Enregistrement…" : submitLabel}
+            {busy ? t("copyForm.saving") : submitLabel}
           </button>
         </div>
       </div>

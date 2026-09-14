@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 
-import { euros, plural } from "@/lib/format"
+import { euros } from "@/lib/format"
+import { locale, valueLabel, type ValueGroup } from "@/lib/i18n"
 
 const NONE = "Non renseigné"
 
@@ -13,14 +15,19 @@ export function BarList<T extends { label: string }>({
   value,
   format,
   detail,
+  group,
 }: {
   rows: T[]
   value: (r: T) => number
   format: (r: T) => string
   detail?: (r: T) => string
+  /** Liste de valeurs enregistrées (contenu, statut, état) : libellés traduits ; sinon affichés tels quels. */
+  group?: ValueGroup
 }) {
+  const { t } = useTranslation()
   const max = Math.max(1, ...rows.map(value))
-  if (!rows.length) return <p className="text-sm text-muted-foreground">Aucune donnée.</p>
+  const show = (label: string) => (label === NONE ? valueLabel("misc", label) : group ? valueLabel(group, label) : label)
+  if (!rows.length) return <p className="text-sm text-muted-foreground">{t("charts.noData")}</p>
   return (
     <ul className="space-y-2.5">
       {rows.map((r) => {
@@ -28,7 +35,7 @@ export function BarList<T extends { label: string }>({
         return (
           <li key={r.label} title={detail?.(r)} className="rounded-md">
             <div className="flex items-baseline justify-between gap-3 text-sm">
-              <span className={`min-w-0 truncate ${r.label === NONE ? "text-muted-foreground" : ""}`}>{r.label}</span>
+              <span className={`min-w-0 truncate ${r.label === NONE ? "text-muted-foreground" : ""}`}>{show(r.label)}</span>
               <span className="shrink-0 text-muted-foreground tabular-nums">{format(r)}</span>
             </div>
             <div className="mt-1 h-2">
@@ -44,8 +51,6 @@ export function BarList<T extends { label: string }>({
   )
 }
 
-const monthShort = new Intl.DateTimeFormat("fr-FR", { month: "short", timeZone: "UTC" })
-const monthLong = new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric", timeZone: "UTC" })
 const asDate = (month: string) => new Date(`${month}-01T00:00:00Z`)
 const monthKey = (d: Date) => `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`
 
@@ -64,6 +69,9 @@ type Column = { key: string; short: string; long: string; count: number; spentCe
 
 /** Les douze derniers mois jusqu'au mois en cours, mois vides compris. */
 function lastTwelveMonths(data: Month[]): Column[] {
+  // Construits à l'appel : la langue peut changer.
+  const monthShort = new Intl.DateTimeFormat(locale(), { month: "short", timeZone: "UTC" })
+  const monthLong = new Intl.DateTimeFormat(locale(), { month: "long", year: "numeric", timeZone: "UTC" })
   const byMonth = new Map(data.map((d) => [d.month, d]))
   const now = monthKey(new Date())
   const end = data.length && data[data.length - 1].month > now ? data[data.length - 1].month : now
@@ -100,11 +108,13 @@ function byYear(data: Month[]): Column[] {
  * Toucher ou survoler une colonne affiche son détail dans le bandeau ; par défaut, la plus haute.
  */
 export function SpendingColumns({ data }: { data: Month[] }) {
+  const { t, i18n } = useTranslation()
   const [view, setView] = useState<"mois" | "annees">("mois")
   const [active, setActive] = useState<number | null>(null)
   const [table, setTable] = useState(false)
-  const columns = useMemo(() => (view === "mois" ? lastTwelveMonths(data) : byYear(data)), [data, view])
-  if (!data.length) return <p className="text-sm text-muted-foreground">Aucun achat daté.</p>
+  // La langue fait partie des dépendances : noms des mois dans la langue affichée.
+  const columns = useMemo(() => (view === "mois" ? lastTwelveMonths(data) : byYear(data)), [data, view, i18n.language])
+  if (!data.length) return <p className="text-sm text-muted-foreground">{t("charts.noDatedPurchase")}</p>
 
   const ticks = ticksFor(Math.max(...columns.map((c) => c.spentCents)))
   const top = ticks[ticks.length - 1]
@@ -117,16 +127,16 @@ export function SpendingColumns({ data }: { data: Month[] }) {
   return (
     <div>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <div className="flex gap-1" role="group" aria-label="Période">
+        <div className="flex gap-1" role="group" aria-label={t("charts.period")}>
           <button className={tab(view === "mois")} aria-pressed={view === "mois"} onClick={() => { setView("mois"); setActive(null) }}>
-            12 derniers mois
+            {t("charts.lastTwelveMonths")}
           </button>
           <button className={tab(view === "annees")} aria-pressed={view === "annees"} onClick={() => { setView("annees"); setActive(null) }}>
-            Par année
+            {t("charts.byYear")}
           </button>
         </div>
-        <button onClick={() => setTable((t) => !t)} className="text-xs text-muted-foreground underline">
-          {table ? "Voir le graphique" : "Voir le tableau"}
+        <button onClick={() => setTable((v) => !v)} className="text-xs text-muted-foreground underline">
+          {table ? t("charts.showChart") : t("charts.showTable")}
         </button>
       </div>
 
@@ -135,9 +145,9 @@ export function SpendingColumns({ data }: { data: Month[] }) {
         <span className="font-medium">{shown.long}</span>
         <span className="text-muted-foreground">
           {" "}
-          · {plural(shown.count, "exemplaire")} · {euros(shown.spentCents)}
+          · {t("charts.copies", { count: shown.count })} · {euros(shown.spentCents)}
         </span>
-        {view === "mois" && <span className="block text-xs text-muted-foreground">Sur ces douze mois : {euros(total)}</span>}
+        {view === "mois" && <span className="block text-xs text-muted-foreground">{t("charts.twelveMonthsTotal", { amount: euros(total) })}</span>}
       </div>
 
       {table ? (
@@ -145,9 +155,9 @@ export function SpendingColumns({ data }: { data: Month[] }) {
           <table className="w-full text-sm">
             <thead className="text-left text-muted-foreground">
               <tr>
-                <th className="py-1.5 font-medium">{view === "mois" ? "Mois" : "Année"}</th>
-                <th className="py-1.5 text-right font-medium">Exemplaires</th>
-                <th className="py-1.5 text-right font-medium">Dépensé</th>
+                <th className="py-1.5 font-medium">{view === "mois" ? t("charts.month") : t("charts.year")}</th>
+                <th className="py-1.5 text-right font-medium">{t("charts.copiesHeader")}</th>
+                <th className="py-1.5 text-right font-medium">{t("charts.spentHeader")}</th>
               </tr>
             </thead>
             <tbody>
@@ -164,10 +174,10 @@ export function SpendingColumns({ data }: { data: Month[] }) {
       ) : (
         <div onPointerLeave={() => setActive(null)} className="pt-3">
           <div className="relative h-44">
-            {ticks.map((t) => (
+            {ticks.map((tick) => (
               // Ligne de hauteur nulle : la graduation tombe pile sur la valeur, étiquette centrée dessus.
-              <div key={t} className="absolute inset-x-0 flex h-0 items-center" style={{ bottom: `${(t / top) * 100}%` }}>
-                <span className="w-12 shrink-0 pr-2 text-right text-[11px] text-muted-foreground tabular-nums">{Math.round(t / 100)} €</span>
+              <div key={tick} className="absolute inset-x-0 flex h-0 items-center" style={{ bottom: `${(tick / top) * 100}%` }}>
+                <span className="w-12 shrink-0 pr-2 text-right text-[11px] text-muted-foreground tabular-nums">{t("charts.tick", { value: Math.round(tick / 100) })}</span>
                 <div className="h-px flex-1" style={{ background: "var(--viz-grid)" }} />
               </div>
             ))}
@@ -176,7 +186,7 @@ export function SpendingColumns({ data }: { data: Month[] }) {
                 <button
                   key={c.key}
                   type="button"
-                  aria-label={`${c.long} : ${euros(c.spentCents)}, ${plural(c.count, "exemplaire")}`}
+                  aria-label={t("charts.column", { period: c.long, amount: euros(c.spentCents), copies: t("charts.copies", { count: c.count }) })}
                   onPointerEnter={() => setActive(i)}
                   onFocus={() => setActive(i)}
                   onClick={() => setActive(i)}

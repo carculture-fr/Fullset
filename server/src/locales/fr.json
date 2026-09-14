@@ -1,0 +1,184 @@
+{
+  "common": {
+    "internalError": "Erreur interne.",
+    "unknownRoute": "Route inconnue.",
+    "imageTooLarge": "Image trop lourde (15 Mo au plus).",
+    "invalidId": "Identifiant invalide.",
+    "invalidIgdbId": "Identifiant IGDB invalide.",
+    "noFile": "Aucun fichier reçu.",
+    "noImage": "Aucune image reçue.",
+    "unreadableJson": "JSON illisible.",
+    "platformRequired": "La plateforme est obligatoire.",
+    "titleRequired": "Le titre est obligatoire.",
+    "gameNotFound": "Jeu introuvable.",
+    "copyNotFound": "Exemplaire introuvable.",
+    "photoNotFound": "Photo introuvable.",
+    "valuationNotFound": "Estimation introuvable.",
+    "igdbCoversOnly": "Seules les jaquettes IGDB sont acceptées.",
+    "notAnAmount": "{{field}} : « {{value}} » n'est pas un montant.",
+    "notADate": "{{field}} : « {{value}} » n'est pas une date.",
+    "notProposed": "{{field}} : « {{value}} » n'est pas une valeur proposée.",
+    "notValid": "{{field}} : « {{value}} » n'est pas valide."
+  },
+  "fields": {
+    "support": "Support",
+    "region": "Région",
+    "content": "Contenu",
+    "conditionGame": "État du jeu",
+    "conditionBox": "État de la boîte",
+    "conditionManual": "État de la notice",
+    "playStatus": "Statut",
+    "goal": "Objectif",
+    "quantity": "Quantité",
+    "price": "Prix",
+    "purchaseDate": "Date d'achat",
+    "completionDate": "Date d'achèvement",
+    "playTime": "Durée",
+    "completionPct": "Pourcentage",
+    "rating": "Note",
+    "kind": "Type",
+    "condition": "État",
+    "working": "Fonctionnement",
+    "releaseDate": "Date de sortie",
+    "targetPrice": "Prix cible",
+    "amount": "Montant",
+    "date": "Date"
+  },
+  "app": {
+    "noAccount": "Aucun compte.",
+    "wrongCurrentPassword": "Mot de passe actuel incorrect.",
+    "unknownList": "Liste inconnue.",
+    "igdbNotConfigured": "IGDB n'est pas configuré : Réglages → Services.",
+    "steamNotConfigured": "Steam n'est pas configuré : Réglages → Services.",
+    "noRowsToImport": "Aucune ligne à importer."
+  },
+  "auth": {
+    "alreadyInstalled": "Fullset est déjà installé : connecte-toi.",
+    "tooManyAttempts": "Trop d'essais : réessaie dans un quart d'heure.",
+    "badCredentials": "Identifiant ou mot de passe incorrect.",
+    "required": "Authentification requise."
+  },
+  "security": {
+    "originRefused": "Origine refusée."
+  },
+  "account": {
+    "passwordMin": "Mot de passe : {{min}} caractères au moins.",
+    "passwordMax": "Mot de passe : {{max}} caractères au plus.",
+    "username": "Identifiant : 1 à 40 caractères, sans espace.",
+    "email": "E-mail invalide.",
+    "displayName": "Nom affiché : 60 caractères au plus."
+  },
+  "copies": {
+    "supportRequired": "Le support est obligatoire."
+  },
+  "hardware": {
+    "kindRequired": "Le type est obligatoire.",
+    "platformRequired": "La console (plateforme) est obligatoire.",
+    "notFound": "Élément introuvable."
+  },
+  "games": {
+    "alreadyInCollection": "Ce jeu est déjà dans la collection sur cette plateforme."
+  },
+  "barcodes": {
+    "notEan": "« {{value}} » n'est pas un code-barres EAN.",
+    "badCheckDigit": "Le code {{code}} a une clé de contrôle fausse : scan à refaire.",
+    "unknown": "Code inconnu."
+  },
+  "lists": {
+    "empty": "La valeur est vide.",
+    "tooLong": "80 caractères au plus.",
+    "noComma": "Pas de virgule : elle sépare les tags.",
+    "notFound": "Valeur introuvable.",
+    "inUse": "« {{value}} » est utilisé {{count}} fois : renomme-le ou fusionne-le plutôt."
+  },
+  "services": {
+    "tooLong": "Valeur trop longue.",
+    "steamId": "SteamID64 : 17 chiffres.",
+    "rommUrlInvalid": "Adresse de RomM invalide (ex. http://192.168.1.10:8080).",
+    "rommUrlProtocol": "Adresse de RomM : http ou https.",
+    "unknown": "Service inconnu.",
+    "unknownField": "Champ inconnu : {{key}}.",
+    "envLocked": "{{env}} est défini par une variable d'environnement : il se change là.",
+    "invalidValue": "Valeur invalide.",
+    "test": {
+      "notConfigured": "Pas encore configuré : il manque un champ.",
+      "igdb_one": "IGDB répond : {{count}} résultat pour « zelda ».",
+      "igdb_other": "IGDB répond : {{count}} résultats pour « zelda ».",
+      "steam_one": "Steam répond : {{count}} jeu sur le compte.",
+      "steam_other": "Steam répond : {{count}} jeux sur le compte.",
+      "scandex": "ScanDex répond, le jeton est accepté.",
+      "romm_one": "RomM répond : {{count}} plateforme.",
+      "romm_other": "RomM répond : {{count}} plateformes."
+    }
+  },
+  "steam": {
+    "unreachable": "Steam injoignable ({{error}}).",
+    "keyRefused": "Steam refuse la clé API.",
+    "http": "Steam a répondu HTTP {{status}}.",
+    "unreadable": "Bibliothèque Steam illisible : vérifie le SteamID et que les « Détails des jeux » du profil sont publics.",
+    "unnamed": "Jeu Steam {{appid}}"
+  },
+  "igdb": {
+    "authRefused": "Authentification Twitch refusée (HTTP {{status}}).",
+    "http": "IGDB a répondu HTTP {{status}}.",
+    "notFound": "Jeu IGDB {{id}} introuvable.",
+    "covers": {
+      "europe": "Europe",
+      "main": "Principale",
+      "japan": "Japon",
+      "korea": "Corée",
+      "otherRegion": "Autre région"
+    }
+  },
+  "scandex": {
+    "unreachable": "ScanDex injoignable : {{error}}",
+    "http": "ScanDex a répondu HTTP {{status}}"
+  },
+  "commons": {
+    "unreachable": "Wikimedia Commons injoignable : {{error}}",
+    "http": "Wikimedia Commons a répondu HTTP {{status}}",
+    "invalidName": "Nom de fichier Commons invalide.",
+    "notFound": "Image introuvable sur Wikimedia Commons.",
+    "unexpectedUrl": "Adresse d'image inattendue.",
+    "unreadable": "Image Commons illisible (HTTP {{status}}).",
+    "tooLarge": "Image Commons trop lourde."
+  },
+  "romm": {
+    "http": "RomM a répondu HTTP {{status}}.",
+    "tokenRefused": "RomM refuse le jeton."
+  },
+  "media": {
+    "badFormat": "Format d'image non pris en charge (JPEG, PNG ou WebP)."
+  },
+  "wishlist": {
+    "notFound": "Souhait introuvable."
+  },
+  "transfer": {
+    "emptyCsv": "Fichier CSV vide.",
+    "notFullsetCsv": "Ce CSV n'est pas un export Fullset (colonnes « plateforme » et « titre » attendues).",
+    "notFullsetJson": "Ce JSON n'est pas un export Fullset.",
+    "collectionNotEmpty_one": "La collection contient déjà {{count}} exemplaire : import refusé.",
+    "collectionNotEmpty_other": "La collection contient déjà {{count}} exemplaires : import refusé.",
+    "hardwareNotEmpty_one": "Le matériel contient déjà {{count}} élément : import refusé.",
+    "hardwareNotEmpty_other": "Le matériel contient déjà {{count}} éléments : import refusé."
+  },
+  "legacy": {
+    "notLegacyCsv": "Ce CSV ne ressemble pas à l'export de l'ancienne application (colonnes « Name » / « Nom » et « Platform » / « Plateforme » attendues).",
+    "originalValue": "{{field}} d'origine : {{value}}",
+    "untitled": "(sans titre)",
+    "line": "Ligne {{line}} ({{title}}) : {{error}}",
+    "igdbNotConfigured": "IGDB n'est pas configuré.",
+    "estimatedNote": "Prix estimé repris de l'ancienne application"
+  },
+  "preferences": {
+    "expected": "Préférences attendues.",
+    "unknown": "Préférence inconnue : « {{key}} ».",
+    "invalidChoice": "« {{value}} » n'est pas un choix possible pour {{key}}."
+  },
+  "cli": {
+    "resetPassword": {
+      "noAccount": "Aucun compte : ouvre Fullset dans le navigateur pour le créer.",
+      "done": "Identifiant : {{username}}\nNouveau mot de passe : {{password}}\nChange-le dans Réglages → Sécurité après t'être connecté."
+    }
+  }
+}

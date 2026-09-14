@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react"
+import { useTranslation } from "react-i18next"
 
 import { ErrorNote, inputClass } from "@/components/fields"
 import { api, errorMessage, type IgdbCandidate } from "@/lib/api"
 
 /** Recherche IGDB au fil de la frappe (pause de 350 ms), résultats en liste touchable. */
 export function IgdbSearch({ onPick, initialQuery = "" }: { onPick: (c: IgdbCandidate) => void; initialQuery?: string }) {
+  const { t } = useTranslation()
   const [q, setQ] = useState(initialQuery)
   const [results, setResults] = useState<IgdbCandidate[] | null>(null)
   const [loading, setLoading] = useState(false)
@@ -41,14 +43,14 @@ export function IgdbSearch({ onPick, initialQuery = "" }: { onPick: (c: IgdbCand
         type="search"
         autoFocus
         className={inputClass}
-        placeholder="Titre du jeu (titre PAL accepté)"
+        placeholder={t("igdbSearch.placeholder")}
         value={q}
         onChange={(e) => setQ(e.target.value)}
-        aria-label="Rechercher sur IGDB"
+        aria-label={t("igdbSearch.label")}
       />
       <ErrorNote message={error} />
-      {loading && <p className="text-sm text-muted-foreground">Recherche…</p>}
-      {results && !loading && results.length === 0 && <p className="text-sm text-muted-foreground">Aucun résultat sur IGDB.</p>}
+      {loading && <p className="text-sm text-muted-foreground">{t("igdbSearch.searching")}</p>}
+      {results && !loading && results.length === 0 && <p className="text-sm text-muted-foreground">{t("igdbSearch.none")}</p>}
       {results && results.length > 0 && (
         <ul className="divide-y divide-border overflow-hidden rounded-lg bg-card">
           {results.map((r) => (

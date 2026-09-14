@@ -1,6 +1,7 @@
 import { ValidationError } from "./copies.js"
 import type { Db } from "./db.js"
 import { DEFAULT_PREFERENCES, PREFERENCE_CHOICES, type Preferences } from "./domain.js"
+import { msg } from "./i18n.js"
 
 // Affichage par défaut gardé en base pour valoir sur tous ses appareils.
 const KEY = "preferences"
@@ -24,11 +25,11 @@ export function getPreferences(db: Db): Preferences {
 
 /** Enregistre les choix envoyés ; ceux qu'on n'envoie pas restent tels quels. */
 export function setPreferences(db: Db, input: unknown): Preferences {
-  if (!input || typeof input !== "object" || Array.isArray(input)) throw new ValidationError("Préférences attendues.")
+  if (!input || typeof input !== "object" || Array.isArray(input)) throw new ValidationError(msg("preferences.expected"))
   const next: Record<string, string> = { ...getPreferences(db) }
   for (const [key, v] of Object.entries(input)) {
-    if (!choices[key]) throw new ValidationError(`Préférence inconnue : « ${key} ».`)
-    if (typeof v !== "string" || !choices[key].includes(v)) throw new ValidationError(`« ${String(v)} » n'est pas un choix possible pour ${key}.`)
+    if (!choices[key]) throw new ValidationError(msg("preferences.unknown", { key }))
+    if (typeof v !== "string" || !choices[key].includes(v)) throw new ValidationError(msg("preferences.invalidChoice", { value: String(v), key }))
     next[key] = v
   }
   db.prepare("INSERT INTO meta (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").run(KEY, JSON.stringify(next))

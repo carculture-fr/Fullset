@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from "react"
+import { useTranslation } from "react-i18next"
 
 import type { Photo } from "@/lib/api"
 
@@ -14,6 +15,7 @@ export function PhotoField({
   files: File[]
   onFiles: (files: File[]) => void
 }) {
+  const { t } = useTranslation()
   const previews = useMemo(() => files.map((f) => URL.createObjectURL(f)), [files])
   useEffect(() => () => previews.forEach((u) => URL.revokeObjectURL(u)), [previews])
 
@@ -23,7 +25,7 @@ export function PhotoField({
         <div key={p.id} className="relative">
           <img src={p.url} alt="" className="aspect-square w-full rounded-md object-cover" />
           {onDeleteExisting && (
-            <button type="button" onClick={() => onDeleteExisting(p)} aria-label="Supprimer la photo" className="absolute top-1 right-1 rounded bg-background/85 px-1.5 text-sm">
+            <button type="button" onClick={() => onDeleteExisting(p)} aria-label={t("photoField.delete")} className="absolute top-1 right-1 rounded bg-background/85 px-1.5 text-sm">
               ×
             </button>
           )}
@@ -32,7 +34,7 @@ export function PhotoField({
       {previews.map((u, i) => (
         <div key={u} className="relative">
           <img src={u} alt="" className="aspect-square w-full rounded-md object-cover opacity-80" />
-          <button type="button" onClick={() => onFiles(files.filter((_, j) => j !== i))} aria-label="Retirer la photo" className="absolute top-1 right-1 rounded bg-background/85 px-1.5 text-sm">
+          <button type="button" onClick={() => onFiles(files.filter((_, j) => j !== i))} aria-label={t("photoField.remove")} className="absolute top-1 right-1 rounded bg-background/85 px-1.5 text-sm">
             ×
           </button>
         </div>

@@ -2,6 +2,7 @@ import type { NextFunction, Request, Response } from "express"
 
 import { SESSION_IDLE_MS, checkCredentials, createAccount, createSession, deleteSession, findSession, getAccount } from "./account.js"
 import type { Db } from "./db.js"
+import { msg } from "./i18n.js"
 
 /**
  * Connexion par identifiant et mot de passe (un seul compte par installation). Tant qu'aucun
@@ -57,7 +58,7 @@ export function createAuth(db: Db, { openAccess = false }: { openAccess?: boolea
 
   /** Premier lancement : crée le compte, puis l'inscription est close pour de bon. */
   async function setup(req: Request, res: Response) {
-    const done = () => res.status(409).json({ error: "Fullset est déjà installé : connecte-toi." })
+    const done = () => res.status(409).json({ error: msg("auth.alreadyInstalled") })
     if (getAccount(db)) return done()
     if (!(await createAccount(db, req.body ?? {}))) return done()
     openSession(req, res)
@@ -69,11 +70,11 @@ export function createAuth(db: Db, { openAccess = false }: { openAccess?: boolea
     const ip = req.ip ?? "?"
     const now = Date.now()
     const recent = (failures.get(ip) ?? []).filter((t) => now - t < FAILURE_WINDOW_MS)
-    if (recent.length >= MAX_FAILURES) return res.status(429).json({ error: "Trop d'essais : réessaie dans un quart d'heure." })
+    if (recent.length >= MAX_FAILURES) return res.status(429).json({ error: msg("auth.tooManyAttempts") })
     // L'essai compte avant la vérification : une rafale simultanée ne passe pas sous la limite.
     failures.set(ip, [...recent, now])
     if (!(await checkCredentials(db, req.body?.username, req.body?.password))) {
-      return res.status(401).json({ error: "Identifiant ou mot de passe incorrect." })
+      return res.status(401).json({ error: msg("auth.badCredentials") })
     }
     failures.delete(ip)
     openSession(req, res)
@@ -94,7 +95,7 @@ export function createAuth(db: Db, { openAccess = false }: { openAccess?: boolea
     const p = routePath(req).replace(/\/+$/, "")
     if (!p.startsWith("/api") && !p.startsWith("/photos")) return next()
     if (PUBLIC_API.has(p) || openAccess) return next()
-    if (!getAccount(db) || !current(req)) return res.status(401).json({ error: "Authentification requise." })
+    if (!getAccount(db) || !current(req)) return res.status(401).json({ error: msg("auth.required") })
     next()
   }
 

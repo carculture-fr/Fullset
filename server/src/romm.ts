@@ -1,4 +1,5 @@
 import type { RommRom } from "./library.js"
+import { msg } from "./i18n.js"
 
 export interface RommClient {
   romFor(igdbId: number): Promise<RommRom | null>
@@ -37,7 +38,7 @@ export class Romm implements RommClient {
         rom = { id: raw.id, name: raw.name, platform: raw.platform_display_name ?? raw.platform_slug ?? "", url: `${this.baseUrl}/rom/${raw.id}` }
       }
     } else if (res.status !== 404) {
-      throw new Error(`RomM a répondu HTTP ${res.status}.`)
+      throw new Error(msg("romm.http", { status: res.status }))
     }
     this.cache.set(igdbId, { at: Date.now(), rom })
     return rom
@@ -46,8 +47,8 @@ export class Romm implements RommClient {
   /** Vérifie l'adresse et le jeton (bouton « Tester » des réglages). */
   async check() {
     const res = await this.fetchImpl(`${this.baseUrl}/api/platforms`, { headers: { Authorization: `Bearer ${this.token}` }, signal: AbortSignal.timeout(8000), redirect: "error" })
-    if (res.status === 401 || res.status === 403) throw new Error("RomM refuse le jeton.")
-    if (!res.ok) throw new Error(`RomM a répondu HTTP ${res.status}.`)
+    if (res.status === 401 || res.status === 403) throw new Error(msg("romm.tokenRefused"))
+    if (!res.ok) throw new Error(msg("romm.http", { status: res.status }))
     const platforms = (await res.json()) as unknown[]
     return Array.isArray(platforms) ? platforms.length : 0
   }

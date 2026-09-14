@@ -1,12 +1,14 @@
 import { useMemo, useState, type ReactNode } from "react"
+import { Trans, useTranslation } from "react-i18next"
 import { Link, useSearchParams } from "react-router-dom"
 
 import { BarcodeIcon } from "@/components/copy-form"
 import { Cover } from "@/components/cover"
 import { KeyedChips } from "@/components/fields"
-import { FilterPanel } from "@/components/filter-panel"
+import { FilterPanel, facetValueLabel } from "@/components/filter-panel"
 import { LibraryTabs } from "@/components/library-tabs"
-import { euros, frDate, plural } from "@/lib/format"
+import { euros, formatDate } from "@/lib/format"
+import { valueLabel } from "@/lib/i18n"
 import {
   FACETS,
   SORTS,
@@ -59,6 +61,7 @@ const readOpen = (): string[] | null => {
 }
 
 export default function Library() {
+  const { t } = useTranslation()
   const { games, error, reload } = useLibrary()
   const { prefs } = usePreferences()
   const [params, setParams] = useSearchParams()
@@ -76,7 +79,7 @@ export default function Library() {
   const counts = useMemo(() => (games && panelOpen ? facetCounts(games, filters, q) : {}), [games, filters, q, panelOpen])
   const groups = useMemo(() => (sort === "plateforme" ? groupByPlatform(results) : null), [results, sort])
   const sum = totals(results)
-  const active = FACETS.flatMap((f) => (filters[f.key] ?? []).map((value) => ({ key: f.key, label: f.label, value })))
+  const active = FACETS.flatMap((f) => (filters[f.key] ?? []).map((value) => ({ key: f.key, value, shown: facetValueLabel(f, value) })))
   // Une recherche ou un filtre ouvre toutes les consoles : un résultat caché dans un groupe replié serait perdu.
   const forceOpen = q.trim() !== "" || active.length > 0
   // Sans choix pendant la visite, les consoles s'ouvrent comme dans les réglages.
@@ -96,13 +99,13 @@ export default function Library() {
       <div className="py-16 text-center">
         <p className="text-destructive">{error}</p>
         <button onClick={reload} className="mt-3 text-sm underline">
-          Réessayer
+          {t("common.retry")}
         </button>
       </div>
     )
   }
-  if (!games) return <p className="py-16 text-center text-muted-foreground">Chargement…</p>
-  if (!games.length) return <p className="py-16 text-center text-muted-foreground">La collection est vide.</p>
+  if (!games) return <p className="py-16 text-center text-muted-foreground">{t("library.loading")}</p>
+  if (!games.length) return <p className="py-16 text-center text-muted-foreground">{t("library.empty")}</p>
 
   const renderResults = (list: Result[], showPlatform: boolean) =>
     view === "grille" ? (
@@ -132,12 +135,12 @@ export default function Library() {
             type="search"
             value={q}
             onChange={(e) => update({ q: e.target.value })}
-            placeholder="Rechercher un jeu…"
-            aria-label="Rechercher un jeu"
+            placeholder={t("library.searchPlaceholder")}
+            aria-label={t("library.searchLabel")}
             className="min-w-0 flex-1 rounded-lg border border-border bg-muted px-3 py-2.5 outline-none focus:border-primary"
           />
           <button onClick={() => setPanelOpen(true)} className="rounded-lg border border-border bg-card px-3 text-sm">
-            Filtres
+            {t("library.filters")}
             {active.length > 0 && (
               <span className="ml-1.5 rounded-full bg-primary px-1.5 text-xs font-semibold text-primary-foreground">{active.length}</span>
             )}
@@ -146,18 +149,23 @@ export default function Library() {
 
         <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
           <div className="w-52">
-            <KeyedChips label="Trier par" choices={SORTS} value={sort} onChange={(s) => update({ sort: s })} />
+            <KeyedChips
+              label={t("library.sortBy")}
+              choices={SORTS.map((s) => ({ key: s.key, label: t(`sorts.games.${s.key}`) }))}
+              value={sort}
+              onChange={(s) => update({ sort: s })}
+            />
           </div>
-          <div className="flex rounded-md border border-border bg-card p-0.5" role="group" aria-label="Affichage">
-            <ViewButton on={view === "grille"} label="Grille" onClick={() => changeView("grille")}>
+          <div className="flex rounded-md border border-border bg-card p-0.5" role="group" aria-label={t("library.display")}>
+            <ViewButton on={view === "grille"} label={t("library.grid")} onClick={() => changeView("grille")}>
               <path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" />
             </ViewButton>
-            <ViewButton on={view === "liste"} label="Liste" onClick={() => changeView("liste")}>
+            <ViewButton on={view === "liste"} label={t("library.list")} onClick={() => changeView("liste")}>
               <path d="M4 6h16M4 12h16M4 18h16" />
             </ViewButton>
           </div>
           <span className="text-muted-foreground">
-            {plural(sum.games, "jeu", "jeux")} · {plural(sum.copies, "exemplaire")} · {euros(sum.spentCents)}
+            {t("library.games", { count: sum.games })} · {t("library.copies", { count: sum.copies })} · {euros(sum.spentCents)}
           </span>
         </div>
 
@@ -165,26 +173,26 @@ export default function Library() {
         {active.length > 0 && (
           <div className="mt-2 flex items-center gap-3 text-xs">
             <button onClick={() => setPanelOpen(true)} className="min-w-0 flex-1 truncate text-left text-muted-foreground">
-              Filtré : <span className="text-foreground">{active.map((a) => a.value).join(", ")}</span>
+              <Trans i18nKey="library.filtered" values={{ values: active.map((a) => a.shown).join(", ") }} components={{ value: <span className="text-foreground" /> }} />
             </button>
             <button onClick={() => update({ filters: {} })} className="shrink-0 text-muted-foreground underline">
-              Tout effacer
+              {t("library.clearAll")}
             </button>
           </div>
         )}
       </div>
 
       {results.length === 0 ? (
-        <p className="py-16 text-center text-muted-foreground">Aucun jeu ne correspond.</p>
+        <p className="py-16 text-center text-muted-foreground">{t("library.noMatch")}</p>
       ) : groups ? (
         <div className="space-y-2">
           {!forceOpen && (
             <div className="flex justify-end gap-3 text-xs text-muted-foreground">
               <button onClick={() => setOpenList(groups.map((g) => g.platform))} className="underline">
-                Tout déplier
+                {t("library.expandAll")}
               </button>
               <button onClick={() => setOpenList([])} className="underline">
-                Tout replier
+                {t("library.collapseAll")}
               </button>
             </div>
           )}
@@ -205,7 +213,7 @@ export default function Library() {
                 </svg>
                 <span className="min-w-0 flex-1 truncate font-medium">{g.platform}</span>
                 <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
-                  {plural(g.results.length, "jeu", "jeux")} · {euros(g.spentCents)}
+                  {t("library.games", { count: g.results.length })} · {euros(g.spentCents)}
                 </span>
               </summary>
               <div className={view === "grille" ? "px-4 pt-1 pb-4" : "px-2 pb-2"}>{renderResults(g.results, false)}</div>
@@ -218,15 +226,15 @@ export default function Library() {
 
       <Link
         to="/brocante"
-        aria-label="Je l'ai déjà ? Scanner une boîte"
-        title="Je l'ai déjà ? Scanner une boîte"
+        aria-label={t("library.scanBox")}
+        title={t("library.scanBox")}
         className="fixed right-5 bottom-[calc(max(1rem,env(safe-area-inset-bottom))+4.25rem)] z-30 flex size-12 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-lg shadow-black/30"
       >
         <BarcodeIcon className="size-6" />
       </Link>
       <Link
         to="/ajouter"
-        aria-label="Ajouter un jeu"
+        aria-label={t("library.addGame")}
         className="fixed right-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-30 flex size-14 items-center justify-center rounded-full bg-primary text-3xl text-primary-foreground shadow-lg shadow-black/40"
       >
         +
@@ -276,15 +284,22 @@ function GameCard({ result: { game }, showPlatform }: { result: Result; showPlat
   )
 }
 
-const SHORT_CONTENT: Record<string, string> = { "Complet (jeu + boîte + notice)": "Complet" }
+const COMPLETE = "Complet (jeu + boîte + notice)"
 
 /** Ligne de la vue liste : vignette, titre, ce qu'on possède, et ce que ça a coûté. */
 function GameRow({ result: { game, copies }, showPlatform }: { result: Result; showPlatform: boolean }) {
+  const { t } = useTranslation()
   const first = copies[0]
-  const what = first ? (first.support === DIGITAL ? "Dématérialisé" : (SHORT_CONTENT[first.content ?? ""] ?? first.content)) : null
+  const what = first
+    ? first.support === DIGITAL
+      ? valueLabel("support", DIGITAL)
+      : first.content === COMPLETE
+        ? t("library.shortComplete")
+        : valueLabel("content", first.content)
+    : null
   const last = copies.reduce<string | null>((max, c) => (c.purchase_date && (!max || c.purchase_date > max) ? c.purchase_date : max), null)
   const spent = copies.reduce((n, c) => n + (c.price_cents ?? 0), 0)
-  const details = [showPlatform ? game.platform : null, copies.length > 1 ? plural(copies.length, "exemplaire") : null, what].filter(Boolean).join(" · ")
+  const details = [showPlatform ? game.platform : null, copies.length > 1 ? t("library.copies", { count: copies.length }) : null, what].filter(Boolean).join(" · ")
 
   return (
     <Link to={`/jeux/${game.id}`} className="flex items-center gap-3 rounded-md px-2 py-2 hover:bg-muted">
@@ -295,7 +310,7 @@ function GameRow({ result: { game, copies }, showPlatform }: { result: Result; s
       </div>
       <div className="shrink-0 text-right">
         <div className="text-sm tabular-nums">{euros(spent)}</div>
-        {last && <div className="text-xs text-muted-foreground tabular-nums">{frDate(last)}</div>}
+        {last && <div className="text-xs text-muted-foreground tabular-nums">{formatDate(last)}</div>}
       </div>
     </Link>
   )

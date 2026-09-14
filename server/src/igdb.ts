@@ -1,13 +1,16 @@
 // Client IGDB (API Twitch) : recherche de jeux et métadonnées, traduites en français.
 // Les résumés IGDB sont en anglais : seul le résumé reste à traduire à la main.
 
+import { msg } from "./i18n.js"
+
 const TOKEN_URL = "https://id.twitch.tv/oauth2/token"
 const API_URL = "https://api.igdb.com/v4"
 
 export const igdbImage = (imageId: string, size = "t_cover_big_2x") => `https://images.igdb.com/igdb/image/upload/${size}/${imageId}.jpg`
 
 // Identifiants IGDB relevés le 12/09/2026 (tables regions, release_date_regions, age_rating_organizations).
-const LOCALIZATION_REGIONS: Record<number, string> = { 4: "Europe", 3: "Japon", 2: "Corée" }
+// Valeur : clé du libellé (igdb.covers.*), traduit à la demande.
+const LOCALIZATION_REGIONS: Record<number, string> = { 4: "europe", 3: "japan", 2: "korea" }
 const EUROPE_LOCALIZATION = 4
 const EUROPE_RELEASE = 1
 const WORLDWIDE_RELEASE = 8
@@ -218,10 +221,10 @@ export function mapGame(raw: RawGame, platform?: string): IgdbGame {
   const pegi = raw.age_ratings?.find((a) => a.organization === PEGI)?.rating_category?.rating
 
   const covers: IgdbGame["covers"] = []
-  if (eu?.cover) covers.push({ label: "Europe", url: igdbImage(eu.cover.image_id) })
-  if (raw.cover) covers.push({ label: "Principale", url: igdbImage(raw.cover.image_id) })
+  if (eu?.cover) covers.push({ label: msg("igdb.covers.europe"), url: igdbImage(eu.cover.image_id) })
+  if (raw.cover) covers.push({ label: msg("igdb.covers.main"), url: igdbImage(raw.cover.image_id) })
   for (const l of raw.game_localizations ?? []) {
-    if (l.cover && l !== eu) covers.push({ label: LOCALIZATION_REGIONS[l.region ?? 0] ?? "Autre région", url: igdbImage(l.cover.image_id) })
+    if (l.cover && l !== eu) covers.push({ label: msg(`igdb.covers.${LOCALIZATION_REGIONS[l.region ?? 0] ?? "otherRegion"}`), url: igdbImage(l.cover.image_id) })
   }
 
   return {
@@ -268,7 +271,7 @@ export class Igdb implements IgdbClient {
   private async requestToken() {
     const params = new URLSearchParams({ client_id: this.clientId, client_secret: this.clientSecret, grant_type: "client_credentials" })
     const res = await this.fetchImpl(`${TOKEN_URL}?${params}`, { method: "POST", signal: AbortSignal.timeout(15_000) })
-    if (!res.ok) throw new IgdbError(`Authentification Twitch refusée (HTTP ${res.status}).`)
+    if (!res.ok) throw new IgdbError(msg("igdb.authRefused", { status: res.status }))
     const body = (await res.json()) as { access_token: string; expires_in: number }
     this.token = { value: body.access_token, expiresAt: Date.now() + (body.expires_in - 60) * 1000 }
     return this.token.value
@@ -285,7 +288,7 @@ export class Igdb implements IgdbClient {
       this.token = null
       return this.query(endpoint, body, false)
     }
-    if (!res.ok) throw new IgdbError(`IGDB a répondu HTTP ${res.status}.`)
+    if (!res.ok) throw new IgdbError(msg("igdb.http", { status: res.status }))
     return (await res.json()) as T[]
   }
 
@@ -348,7 +351,7 @@ export class Igdb implements IgdbClient {
 
   async game(igdbId: number, platform?: string): Promise<IgdbGame> {
     const [raw] = await this.query<RawGame>("games", `fields ${DETAIL_FIELDS}; where id = ${Math.trunc(igdbId)};`)
-    if (!raw) throw new IgdbError(`Jeu IGDB ${igdbId} introuvable.`)
+    if (!raw) throw new IgdbError(msg("igdb.notFound", { id: igdbId }))
     return mapGame(raw, platform)
   }
 }

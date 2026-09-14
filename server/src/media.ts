@@ -5,18 +5,19 @@ import path from "node:path"
 import { NotFoundError, PHOTOS_DIR, ValidationError, removeFile } from "./copies.js"
 import { COVERS_DIR } from "./covers.js"
 import type { Db } from "./db.js"
+import { msg } from "./i18n.js"
 
 const EXTENSIONS: Record<string, string> = { "image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp" }
 export const MAX_IMAGE_BYTES = 15 * 1024 * 1024
 
 export function extensionOf(mime: string) {
   const ext = EXTENSIONS[mime]
-  if (!ext) throw new ValidationError("Format d'image non pris en charge (JPEG, PNG ou WebP).")
+  if (!ext) throw new ValidationError(msg("media.badFormat"))
   return ext
 }
 
 export function addPhoto(db: Db, dataDir: string, copyId: number, bytes: Buffer, mime: string) {
-  if (!db.prepare("SELECT 1 FROM copies WHERE id = ?").get(copyId)) throw new NotFoundError("Exemplaire introuvable.")
+  if (!db.prepare("SELECT 1 FROM copies WHERE id = ?").get(copyId)) throw new NotFoundError(msg("common.copyNotFound"))
   const file = `${copyId}-${randomUUID().slice(0, 8)}${extensionOf(mime)}`
   const dir = path.join(dataDir, PHOTOS_DIR)
   mkdirSync(dir, { recursive: true })
@@ -27,7 +28,7 @@ export function addPhoto(db: Db, dataDir: string, copyId: number, bytes: Buffer,
 
 export function deletePhoto(db: Db, dataDir: string, id: number) {
   const row = db.prepare("SELECT file FROM copy_photos WHERE id = ?").get(id) as { file: string } | undefined
-  if (!row) throw new NotFoundError("Photo introuvable.")
+  if (!row) throw new NotFoundError(msg("common.photoNotFound"))
   db.prepare("DELETE FROM copy_photos WHERE id = ?").run(id)
   removeFile(path.join(dataDir, PHOTOS_DIR, row.file))
 }
@@ -38,7 +39,7 @@ export function deletePhoto(db: Db, dataDir: string, id: number) {
  */
 export function setCover(db: Db, dataDir: string, gameId: number, bytes: Buffer, mime: string, source: string, url: string | null = null) {
   const game = db.prepare("SELECT cover_file FROM games WHERE id = ?").get(gameId) as { cover_file: string | null } | undefined
-  if (!game) throw new NotFoundError("Jeu introuvable.")
+  if (!game) throw new NotFoundError(msg("common.gameNotFound"))
   const file = `${gameId}-${Date.now().toString(36)}${extensionOf(mime)}`
   const dir = path.join(dataDir, COVERS_DIR)
   mkdirSync(dir, { recursive: true })

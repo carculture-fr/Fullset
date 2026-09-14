@@ -15,6 +15,7 @@ import {
   text,
   toCents,
 } from "./domain.js"
+import { msg } from "./i18n.js"
 
 /** Une entrée de collection.json (dépôt Proxmox, data/jeux-physiques/). */
 export type CollectionEntry = Record<string, unknown>
@@ -36,7 +37,7 @@ export class CollectionNotEmptyError extends Error {}
  */
 export function importCollection(db: Db, entries: CollectionEntry[]): ImportReport {
   const existing = (db.prepare("SELECT count(*) AS n FROM copies").get() as { n: number }).n
-  if (existing > 0) throw new CollectionNotEmptyError(`La collection contient déjà ${existing} exemplaires : import refusé.`)
+  if (existing > 0) throw new CollectionNotEmptyError(msg("transfer.collectionNotEmpty", { count: existing }))
 
   const report: ImportReport = { games: 0, copies: 0, totalCents: 0, toMatch: [], warnings: [] }
   const findGame = db.prepare("SELECT id FROM games WHERE igdb_id = ? AND platform = ?")

@@ -2,7 +2,17 @@
 // consoles photographiées sur fond blanc (souvent par Evan-Amos, dans le domaine public).
 // Le serveur seul parle à Commons ; le navigateur n'affiche que les vignettes proposées.
 
-export class CommonsError extends Error {}
+import { msg } from "./i18n.js"
+
+/** `invalid` : la demande elle-même est fautive (400), pas Commons (502). */
+export class CommonsError extends Error {
+  constructor(
+    message: string,
+    readonly invalid = false,
+  ) {
+    super(message)
+  }
+}
 
 export type CommonsImage = {
   title: string
@@ -154,9 +164,9 @@ async function query(params: Record<string, string>, fetchImpl: typeof fetch): P
   try {
     res = await fetchImpl(`${API}?${search}`, { headers: { "User-Agent": COMMONS_UA }, signal: AbortSignal.timeout(10_000) })
   } catch (err) {
-    throw new CommonsError(`Wikimedia Commons injoignable : ${(err as Error).message}`)
+    throw new CommonsError(msg("commons.unreachable", { error: (err as Error).message }))
   }
-  if (!res.ok) throw new CommonsError(`Wikimedia Commons a répondu HTTP ${res.status}`)
+  if (!res.ok) throw new CommonsError(msg("commons.http", { status: res.status }))
   const body = (await res.json()) as { query?: { pages?: Record<string, ApiPage> } }
   return Object.values(body.query?.pages ?? {})
     .sort((a, b) => (a.index ?? 0) - (b.index ?? 0))
@@ -206,9 +216,9 @@ export async function imageOptions(item: Item, fetchImpl: typeof fetch = fetch, 
 
 /** Relit un fichier chez Commons : l'adresse, l'auteur et la licence viennent de Commons, jamais du client. */
 export async function commonsFile(title: string, fetchImpl: typeof fetch = fetch) {
-  if (!/^File:[^|#<>[\]{}]+$/.test(title)) throw new CommonsError("Nom de fichier Commons invalide.")
+  if (!/^File:[^|#<>[\]{}]+$/.test(title)) throw new CommonsError(msg("commons.invalidName"), true)
   const [image] = await query({ titles: title }, fetchImpl)
-  if (!image) throw new CommonsError("Image introuvable sur Wikimedia Commons.")
+  if (!image) throw new CommonsError(msg("commons.notFound"))
   return image
 }
 

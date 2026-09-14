@@ -16,6 +16,7 @@ import {
   text,
   toCents,
 } from "./domain.js"
+import { msg } from "./i18n.js"
 
 export const PHOTOS_DIR = "photos"
 
@@ -58,7 +59,7 @@ export function validateCopy(input: Input, defaultTitle: string): CopyData {
   const errors: string[] = []
   const pick = (key: string, allowed: readonly string[], label: string) => {
     const v = text(input[key])
-    if (v !== null && !allowed.includes(v)) errors.push(`${label} : « ${v} » n'est pas une valeur proposée.`)
+    if (v !== null && !allowed.includes(v)) errors.push(msg("common.notProposed", { field: msg(`fields.${label}`), value: v }))
     return v
   }
   const number = (key: string, label: string, { min, max, integer }: { min?: number; max?: number; integer?: boolean }) => {
@@ -66,7 +67,7 @@ export function validateCopy(input: Input, defaultTitle: string): CopyData {
     if (raw === null) return null
     const n = Number(raw.replace(",", "."))
     if (!Number.isFinite(n) || (integer && !Number.isInteger(n)) || (min !== undefined && n < min) || (max !== undefined && n > max)) {
-      errors.push(`${label} : « ${raw} » n'est pas valide.`)
+      errors.push(msg("common.notValid", { field: msg(`fields.${label}`), value: raw }))
       return null
     }
     return n
@@ -77,39 +78,39 @@ export function validateCopy(input: Input, defaultTitle: string): CopyData {
     // Aller-retour par Date : « 2026-02-31 » deviendrait le 3 mars, on le refuse.
     const real = iso !== null && new Date(`${iso}T00:00:00Z`).toISOString?.().slice(0, 10) === iso
     if (raw !== null && !real) {
-      errors.push(`${label} : « ${raw} » n'est pas une date.`)
+      errors.push(msg("common.notADate", { field: msg(`fields.${label}`), value: raw }))
       return null
     }
     return iso
   }
 
-  const support = pick("support", SUPPORTS, "Support")
-  if (support === null) errors.push("Le support est obligatoire.")
+  const support = pick("support", SUPPORTS, "support")
+  if (support === null) errors.push(msg("copies.supportRequired"))
   const digital = support === DIGITAL
   const price = text(input.price)
   const priceCents = toCents(price)
-  if (price !== null && (priceCents === null || priceCents < 0)) errors.push(`Prix : « ${price} » n'est pas un montant.`)
+  if (price !== null && (priceCents === null || priceCents < 0)) errors.push(msg("common.notAnAmount", { field: msg("fields.price"), value: price }))
 
   const data: CopyData = {
     title_as_entered: text(input.title_as_entered) ?? defaultTitle,
     support,
-    region: pick("region", REGIONS, "Région"),
+    region: pick("region", REGIONS, "region"),
     edition: text(input.edition),
     // Une clé Steam n'a ni boîte ni notice : on n'enregistre pas d'état inventé.
-    content: digital ? DIGITAL : pick("content", CONTENTS, "Contenu"),
-    condition_game: digital ? null : pick("condition_game", CONDITIONS, "État du jeu"),
-    condition_box: digital ? null : pick("condition_box", CONDITIONS, "État de la boîte"),
-    condition_manual: digital ? null : pick("condition_manual", MANUAL_CONDITIONS, "État de la notice"),
-    play_status: pick("play_status", PLAY_STATUSES, "Statut"),
-    goal: pick("goal", GOALS, "Objectif"),
-    quantity: number("quantity", "Quantité", { min: 1, integer: true }) ?? 1,
+    content: digital ? DIGITAL : pick("content", CONTENTS, "content"),
+    condition_game: digital ? null : pick("condition_game", CONDITIONS, "conditionGame"),
+    condition_box: digital ? null : pick("condition_box", CONDITIONS, "conditionBox"),
+    condition_manual: digital ? null : pick("condition_manual", MANUAL_CONDITIONS, "conditionManual"),
+    play_status: pick("play_status", PLAY_STATUSES, "playStatus"),
+    goal: pick("goal", GOALS, "goal"),
+    quantity: number("quantity", "quantity", { min: 1, integer: true }) ?? 1,
     price_cents: priceCents,
-    purchase_date: date("purchase_date", "Date d'achat"),
+    purchase_date: date("purchase_date", "purchaseDate"),
     purchase_place: text(input.purchase_place),
-    completion_date: date("completion_date", "Date d'achèvement"),
-    play_time_hours: number("play_time_hours", "Durée", { min: 0 }),
-    completion_pct: number("completion_pct", "Pourcentage", { min: 0, max: 100, integer: true }),
-    rating: number("rating", "Note", { min: 0, max: 100, integer: true }),
+    completion_date: date("completion_date", "completionDate"),
+    play_time_hours: number("play_time_hours", "playTime", { min: 0 }),
+    completion_pct: number("completion_pct", "completionPct", { min: 0, max: 100, integer: true }),
+    rating: number("rating", "rating", { min: 0, max: 100, integer: true }),
     tags: text(input.tags),
     barcode: text(input.barcode),
     comment: text(input.comment),
@@ -120,7 +121,7 @@ export function validateCopy(input: Input, defaultTitle: string): CopyData {
 
 const gameTitle = (db: Db, gameId: number) => {
   const g = db.prepare("SELECT title FROM games WHERE id = ?").get(gameId) as { title: string } | undefined
-  if (!g) throw new NotFoundError("Jeu introuvable.")
+  if (!g) throw new NotFoundError(msg("common.gameNotFound"))
   return g.title
 }
 
@@ -136,7 +137,7 @@ export function createCopy(db: Db, gameId: number, input: Input): number {
 /** Remplace tous les champs de l'exemplaire : le formulaire renvoie toujours la fiche complète. */
 export function updateCopy(db: Db, id: number, input: Input) {
   const row = db.prepare("SELECT game_id FROM copies WHERE id = ?").get(id) as { game_id: number } | undefined
-  if (!row) throw new NotFoundError("Exemplaire introuvable.")
+  if (!row) throw new NotFoundError(msg("common.copyNotFound"))
   const data = validateCopy(input, gameTitle(db, row.game_id))
   db.prepare(`UPDATE copies SET ${COPY_FIELDS.map((c) => `${c} = @${c}`).join(", ")}, updated_at = datetime('now') WHERE id = @id`).run({
     id,
@@ -159,7 +160,7 @@ const removeFile = (file: string) => {
  */
 export function deleteCopy(db: Db, dataDir: string, id: number) {
   const row = db.prepare("SELECT game_id FROM copies WHERE id = ?").get(id) as { game_id: number } | undefined
-  if (!row) throw new NotFoundError("Exemplaire introuvable.")
+  if (!row) throw new NotFoundError(msg("common.copyNotFound"))
   const photos = db.prepare("SELECT file FROM copy_photos WHERE copy_id = ?").all(id) as Array<{ file: string }>
   let gameDeleted = false
   let coverFile: string | null = null

@@ -1,13 +1,16 @@
 import { useEffect, useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { Link, useSearchParams } from "react-router-dom"
 
 import { KeyedChips } from "@/components/fields"
 import { LibraryTabs } from "@/components/library-tabs"
 import { api, errorMessage, type HardwareItem } from "@/lib/api"
-import { euros, frDate, plural } from "@/lib/format"
+import { euros, formatDate } from "@/lib/format"
+import { valueLabel } from "@/lib/i18n"
 import { HARDWARE_SORTS, usePreferences, type HardwareSort } from "@/lib/preferences"
 
-export const hardwareTitle = (h: Pick<HardwareItem, "platform" | "model" | "kind">) => (h.model ? `${h.platform} ${h.model}` : h.kind === "Console" ? h.platform : `${h.kind} ${h.platform}`)
+export const hardwareTitle = (h: Pick<HardwareItem, "platform" | "model" | "kind">) =>
+  h.model ? `${h.platform} ${h.model}` : h.kind === "Console" ? h.platform : `${valueLabel("hwKind", h.kind)} ${h.platform}`
 
 const collator = new Intl.Collator("fr", { sensitivity: "base", numeric: true })
 
@@ -21,6 +24,7 @@ function sortHardware(items: HardwareItem[], sort: HardwareSort) {
 }
 
 export default function Hardware() {
+  const { t } = useTranslation()
   const { prefs } = usePreferences()
   const [params, setParams] = useSearchParams()
   const [items, setItems] = useState<HardwareItem[] | null>(null)
@@ -41,7 +45,7 @@ export default function Hardware() {
   const flat = useMemo(() => (items && sort !== "plateforme" ? sortHardware(items, sort) : []), [items, sort])
 
   if (error) return <p className="py-16 text-center text-destructive">{error}</p>
-  if (!items) return <p className="py-16 text-center text-muted-foreground">Chargement…</p>
+  if (!items) return <p className="py-16 text-center text-muted-foreground">{t("library.loading")}</p>
   const spent = items.reduce((n, h) => n + (h.price_cents ?? 0), 0)
 
   return (
@@ -50,18 +54,23 @@ export default function Hardware() {
       <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
         {items.length > 1 && (
           <div className="w-52">
-            <KeyedChips label="Trier le matériel" choices={HARDWARE_SORTS} value={sort} onChange={setSort} />
+            <KeyedChips
+              label={t("hardware.sortLabel")}
+              choices={HARDWARE_SORTS.map((s) => ({ key: s.key, label: t(`sorts.hardware.${s.key}`) }))}
+              value={sort}
+              onChange={setSort}
+            />
           </div>
         )}
         <span className="text-muted-foreground">
-          {plural(items.length, "élément")} · {euros(spent)}
+          {t("hardware.items", { count: items.length })} · {euros(spent)}
         </span>
       </div>
       {items.length === 0 ? (
         <div className="py-12 text-center text-muted-foreground">
-          <p>Aucune console ni accessoire pour l'instant.</p>
+          <p>{t("hardware.empty")}</p>
           <Link to="/consoles/ajouter" className="mt-3 inline-block text-primary underline">
-            Ajouter une console
+            {t("hardware.addConsole")}
           </Link>
         </div>
       ) : sort !== "plateforme" ? (
@@ -82,7 +91,7 @@ export default function Hardware() {
                 </svg>
                 <span className="min-w-0 flex-1 truncate font-medium">{platform}</span>
                 <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
-                  {plural(list.length, "élément")} · {euros(list.reduce((n, h) => n + (h.price_cents ?? 0), 0))}
+                  {t("hardware.items", { count: list.length })} · {euros(list.reduce((n, h) => n + (h.price_cents ?? 0), 0))}
                 </span>
               </summary>
               <ul className="divide-y divide-border px-2 pb-2">
@@ -99,7 +108,7 @@ export default function Hardware() {
 
       <Link
         to="/consoles/ajouter"
-        aria-label="Ajouter du matériel"
+        aria-label={t("hardware.addHardware")}
         className="fixed right-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-30 flex size-14 items-center justify-center rounded-full bg-primary text-3xl text-primary-foreground shadow-lg shadow-black/40"
       >
         +
@@ -109,7 +118,8 @@ export default function Hardware() {
 }
 
 function HardwareRow({ item: h }: { item: HardwareItem }) {
-  const details = [h.kind !== "Console" ? h.kind : null, h.edition, h.color, h.condition_item].filter(Boolean).join(" · ")
+  useTranslation()
+  const details = [h.kind !== "Console" ? valueLabel("hwKind", h.kind) : null, h.edition, h.color, valueLabel("condition", h.condition_item)].filter(Boolean).join(" · ")
   return (
     <Link to={`/consoles/${h.id}`} className="flex items-center gap-3 rounded-md px-2 py-2 hover:bg-muted">
       {h.photo ? (
@@ -130,7 +140,7 @@ function HardwareRow({ item: h }: { item: HardwareItem }) {
       </div>
       <div className="shrink-0 text-right">
         <div className="text-sm tabular-nums">{h.price_cents === null ? "—" : euros(h.price_cents)}</div>
-        {h.purchase_date && <div className="text-xs text-muted-foreground tabular-nums">{frDate(h.purchase_date)}</div>}
+        {h.purchase_date && <div className="text-xs text-muted-foreground tabular-nums">{formatDate(h.purchase_date)}</div>}
       </div>
     </Link>
   )

@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next"
 import { NavLink } from "react-router-dom"
 
 const tab = ({ isActive }: { isActive: boolean }) =>
@@ -5,13 +6,14 @@ const tab = ({ isActive }: { isActive: boolean }) =>
 
 /** Bascule entre les jeux et le matériel, en tête de la bibliothèque. */
 export function LibraryTabs() {
+  const { t } = useTranslation()
   return (
     <div className="mb-3 flex gap-1 rounded-lg bg-muted p-1 sm:inline-flex">
       <NavLink to="/" end className={tab}>
-        Jeux
+        {t("libraryTabs.games")}
       </NavLink>
       <NavLink to="/consoles" className={tab}>
-        Consoles et matériel
+        {t("libraryTabs.hardware")}
       </NavLink>
     </div>
   )

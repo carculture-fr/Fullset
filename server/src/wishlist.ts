@@ -2,6 +2,7 @@ import { canonicalPlatform } from "./catalog.js"
 import { NotFoundError, ValidationError } from "./copies.js"
 import type { Db } from "./db.js"
 import { text, toCents } from "./domain.js"
+import { msg } from "./i18n.js"
 
 export type WishItem = {
   id: number
@@ -30,15 +31,15 @@ export function listWishlist(db: Db): WishItem[] {
 
 function validate(input: Record<string, unknown>) {
   const title = text(input.title)
-  if (!title) throw new ValidationError("Le titre est obligatoire.")
+  if (!title) throw new ValidationError(msg("common.titleRequired"))
   const rawPrice = text(input.target_price)
   const price = toCents(rawPrice)
-  if (rawPrice !== null && (price === null || price < 0)) throw new ValidationError(`Prix cible : « ${rawPrice} » n'est pas un montant.`)
+  if (rawPrice !== null && (price === null || price < 0)) throw new ValidationError(msg("common.notAnAmount", { field: msg("fields.targetPrice"), value: rawPrice }))
   const cover = text(input.cover_url)
   // La jaquette est affichée telle quelle par le navigateur : seulement des images IGDB.
-  if (cover !== null && !cover.startsWith(IGDB_IMAGES)) throw new ValidationError("Seules les jaquettes IGDB sont acceptées.")
+  if (cover !== null && !cover.startsWith(IGDB_IMAGES)) throw new ValidationError(msg("common.igdbCoversOnly"))
   const igdb = input.igdb_id === null || input.igdb_id === undefined || input.igdb_id === "" ? null : Number(input.igdb_id)
-  if (igdb !== null && !Number.isInteger(igdb)) throw new ValidationError("Identifiant IGDB invalide.")
+  if (igdb !== null && !Number.isInteger(igdb)) throw new ValidationError(msg("common.invalidIgdbId"))
   const platform = text(input.platform)
   return { igdb_id: igdb, platform: platform && canonicalPlatform(platform), title, cover_url: cover, target_price_cents: price, note: text(input.note) }
 }
@@ -61,9 +62,9 @@ export function updateWish(db: Db, id: number, input: Record<string, unknown>) {
       "UPDATE wishlist SET igdb_id = @igdb_id, platform = @platform, title = @title, cover_url = @cover_url, target_price_cents = @target_price_cents, note = @note WHERE id = @id",
     )
     .run({ ...w, id })
-  if (res.changes === 0) throw new NotFoundError("Souhait introuvable.")
+  if (res.changes === 0) throw new NotFoundError(msg("wishlist.notFound"))
 }
 
 export function deleteWish(db: Db, id: number) {
-  if (db.prepare("DELETE FROM wishlist WHERE id = ?").run(id).changes === 0) throw new NotFoundError("Souhait introuvable.")
+  if (db.prepare("DELETE FROM wishlist WHERE id = ?").run(id).changes === 0) throw new NotFoundError(msg("wishlist.notFound"))
 }

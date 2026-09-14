@@ -1,8 +1,10 @@
 import { useState } from "react"
+import { useTranslation } from "react-i18next"
 
 import { currentTheme, setTheme } from "@/lib/theme"
 
 export function ThemeToggle() {
+  const { t } = useTranslation()
   const [theme, setState] = useState(currentTheme)
   const next = theme === "dark" ? "light" : "dark"
   return (
@@ -12,8 +14,8 @@ export function ThemeToggle() {
         setTheme(next)
         setState(next)
       }}
-      aria-label={next === "light" ? "Passer en mode clair" : "Passer en mode sombre"}
-      title={next === "light" ? "Mode clair" : "Mode sombre"}
+      aria-label={next === "light" ? t("theme.toLight") : t("theme.toDark")}
+      title={next === "light" ? t("theme.light") : t("theme.dark")}
       className="flex size-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
     >
       {theme === "dark" ? (

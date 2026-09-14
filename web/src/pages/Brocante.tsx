@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
+import { Trans, useTranslation } from "react-i18next"
 import { Link, useSearchParams } from "react-router-dom"
 
 import { BarcodeIcon } from "@/components/copy-form"
@@ -6,7 +7,7 @@ import { Cover } from "@/components/cover"
 import { ErrorNote, inputClass } from "@/components/fields"
 import { Scanner } from "@/components/scanner"
 import { api, errorMessage, send, type BarcodeIdentify, type KnownBarcode } from "@/lib/api"
-import { plural } from "@/lib/format"
+import { valueLabel } from "@/lib/i18n"
 import { applyFilters, type LibraryGame } from "@/lib/library"
 import { useLibrary } from "@/lib/library-data"
 
@@ -18,6 +19,7 @@ type Scan = { ean: string; gameId: number | null }
  * à un jeu possédé (il sera reconnu la fois suivante) ou mène à l'ajout.
  */
 export default function Brocante() {
+  const { t } = useTranslation()
   const { games } = useLibrary()
   const [codes, setCodes] = useState<KnownBarcode[] | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -55,7 +57,7 @@ export default function Brocante() {
     const knownGame = known ? gameById(known.game_id) : null
     if (knownGame && chain) {
       // Déjà connu : on le dit dans le lecteur, qui se rouvre aussitôt pour la boîte suivante.
-      setLastMessage(`Déjà connu : ${knownGame.title} (${knownGame.platform})`)
+      setLastMessage(t("brocante.lastKnown", { title: knownGame.title, platform: knownGame.platform }))
       setScanning(true)
       return
     }
@@ -77,7 +79,7 @@ export default function Brocante() {
       setHistory((h) => h.map((x) => (x.ean === current ? { ...x, gameId: game.id } : x)))
       setQ("")
       if (chain) {
-        setLastMessage(`Rattaché : ${game.title} (${game.platform})`)
+        setLastMessage(t("brocante.lastLinked", { title: game.title, platform: game.platform }))
         setScanning(true)
       }
     } catch (err) {
@@ -92,14 +94,14 @@ export default function Brocante() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-4 pb-10">
-      {scanning && <Scanner title={chain ? (lastMessage ?? "Scanne tes boîtes à la suite") : "Je l'ai déjà ?"} onDetected={onScan} onClose={() => setScanning(false)} />}
+      {scanning && <Scanner title={chain ? (lastMessage ?? t("brocante.chainTitle")) : t("brocante.scannerTitle")} onDetected={onScan} onClose={() => setScanning(false)} />}
 
       <div>
-        <h1 className="text-xl font-semibold">Brocante</h1>
+        <h1 className="text-xl font-semibold">{t("brocante.title")}</h1>
         <p className="text-sm text-muted-foreground">
-          Scanne une boîte : Fullset te dit si elle est déjà dans ta collection.{" "}
+          {t("brocante.intro")}{" "}
           <Link to="/codes-barres" className="text-primary underline">
-            Tous mes codes
+            {t("brocante.allCodes")}
           </Link>
         </p>
       </div>
@@ -110,7 +112,7 @@ export default function Brocante() {
         className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-3.5 font-medium text-primary-foreground disabled:opacity-50"
       >
         <BarcodeIcon />
-        {current ? "Scanner une autre boîte" : "Scanner une boîte"}
+        {current ? t("brocante.scanAnother") : t("brocante.scan")}
       </button>
       <ErrorNote message={error} />
 
@@ -122,10 +124,10 @@ export default function Brocante() {
 
       <section className="space-y-2">
         <label className="block text-sm text-muted-foreground" htmlFor="brocante-q">
-          {current && !owned ? "Tu l'as déjà ? Cherche-le pour rattacher ce code" : "Ou cherche par titre dans ta collection"}
+          {current && !owned ? t("brocante.searchToLink") : t("brocante.searchByTitle")}
         </label>
-        <input id="brocante-q" className={inputClass} placeholder="Titre" value={q} onChange={(e) => setQ(e.target.value)} />
-        {q.trim().length >= 2 && matches.length === 0 && <p className="px-1 text-sm text-muted-foreground">Rien de tel dans ta collection.</p>}
+        <input id="brocante-q" className={inputClass} placeholder={t("brocante.titlePlaceholder")} value={q} onChange={(e) => setQ(e.target.value)} />
+        {q.trim().length >= 2 && matches.length === 0 && <p className="px-1 text-sm text-muted-foreground">{t("brocante.nothing")}</p>}
         <ul className="divide-y divide-border rounded-lg bg-card">
           {matches.map((g) => (
             <li key={g.id} className="flex items-center gap-3 p-2.5">
@@ -133,16 +135,16 @@ export default function Brocante() {
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-medium">{g.title}</div>
                 <div className="text-xs text-muted-foreground">
-                  {g.platform} · {plural(g.copies.length, "exemplaire")}
+                  {g.platform} · {t("brocante.copies", { count: g.copies.length })}
                 </div>
               </div>
               {current && !owned ? (
                 <button onClick={() => link(g)} className="shrink-0 rounded-lg border border-border px-3 py-1.5 text-sm">
-                  C'est lui
+                  {t("brocante.itsThisOne")}
                 </button>
               ) : (
                 <Link to={`/jeux/${g.id}`} className="shrink-0 text-sm text-primary">
-                  Fiche
+                  {t("brocante.sheet")}
                 </Link>
               )}
             </li>
@@ -152,15 +154,15 @@ export default function Brocante() {
 
       {history.length > 1 && (
         <section>
-          <h2 className="mb-1.5 text-sm font-medium text-muted-foreground">Scans de la séance</h2>
+          <h2 className="mb-1.5 text-sm font-medium text-muted-foreground">{t("brocante.history")}</h2>
           <ul className="divide-y divide-border rounded-lg bg-card text-sm">
             {history.map((s) => {
               const g = gameById(s.gameId)
               return (
                 <li key={s.ean}>
                   <button onClick={() => setCurrent(s.ean)} className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left">
-                    <span className="min-w-0 truncate">{g ? `${g.title} (${g.platform})` : "Code inconnu"}</span>
-                    <span className={`shrink-0 text-xs ${g ? "text-primary" : "text-muted-foreground"}`}>{g ? "déjà" : s.ean}</span>
+                    <span className="min-w-0 truncate">{g ? `${g.title} (${g.platform})` : t("brocante.unknownCode")}</span>
+                    <span className={`shrink-0 text-xs ${g ? "text-primary" : "text-muted-foreground"}`}>{g ? t("brocante.already") : s.ean}</span>
                   </button>
                 </li>
               )
@@ -173,19 +175,20 @@ export default function Brocante() {
 }
 
 function Owned({ game, ean, edition }: { game: LibraryGame; ean: string; edition: string | null }) {
+  const { t } = useTranslation()
   return (
     <section className="rounded-lg border-2 border-primary bg-primary/10 p-4" aria-live="polite">
-      <p className="text-lg font-semibold">Déjà dans ta collection</p>
+      <p className="text-lg font-semibold">{t("brocante.owned.title")}</p>
       <div className="mt-3 flex gap-3">
         <Cover src={game.cover} title={game.title} className="w-20 shrink-0 rounded" />
         <div className="min-w-0 space-y-1">
           <div className="leading-tight font-medium">{game.title}</div>
           <div className="text-sm text-muted-foreground">{game.platform}</div>
-          {edition && <div className="text-xs text-muted-foreground">Code connu pour l'édition {edition}</div>}
+          {edition && <div className="text-xs text-muted-foreground">{t("brocante.owned.edition", { edition })}</div>}
           <ul className="space-y-0.5 pt-1 text-sm">
             {game.copies.map((c) => (
               <li key={c.id}>
-                {[c.edition ?? "Standard", c.content, c.condition_game].filter(Boolean).join(" · ")}
+                {[c.edition ?? t("brocante.owned.standard"), valueLabel("content", c.content), valueLabel("condition", c.condition_game)].filter(Boolean).join(" · ")}
                 {c.quantity > 1 && ` (×${c.quantity})`}
               </li>
             ))}
@@ -194,10 +197,10 @@ function Owned({ game, ean, edition }: { game: LibraryGame; ean: string; edition
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
         <Link to={`/jeux/${game.id}`} className="rounded-lg border border-border bg-card px-3 py-2 text-sm">
-          Voir la fiche
+          {t("brocante.viewSheet")}
         </Link>
         <Link to={`/jeux/${game.id}/ajouter?ean=${ean}`} className="rounded-lg border border-border bg-card px-3 py-2 text-sm">
-          J'en prends un autre
+          {t("brocante.owned.another")}
         </Link>
       </div>
     </section>
@@ -217,12 +220,13 @@ function Unknown({
   ownedGame: LibraryGame | null
   onLink: (game: LibraryGame) => void
 }) {
+  const { t } = useTranslation()
   const s = identified?.suggestion
   if (identifying) {
     return (
       <section className="rounded-lg bg-card p-4" aria-live="polite" aria-busy="true">
-        <p className="text-lg font-semibold">Code {ean}</p>
-        <p className="mt-1 text-sm text-muted-foreground">Je cherche de quel jeu il s'agit…</p>
+        <p className="text-lg font-semibold">{t("brocante.unknown.code", { ean })}</p>
+        <p className="mt-1 text-sm text-muted-foreground">{t("brocante.unknown.searching")}</p>
       </section>
     )
   }
@@ -230,19 +234,23 @@ function Unknown({
   if (s && ownedGame) {
     return (
       <section className="rounded-lg border-2 border-primary bg-primary/10 p-4" aria-live="polite">
-        <p className="text-lg font-semibold">Sans doute déjà dans ta collection</p>
+        <p className="text-lg font-semibold">{t("brocante.unknown.probablyOwned")}</p>
         <p className="mt-1 text-sm">
-          Ce code serait <strong>{s.name}</strong> ({s.platform}) d'après ScanDex, et tu as ce jeu sur {ownedGame.platform}.
+          <Trans
+            i18nKey="brocante.unknown.suggestionOwned"
+            values={{ name: s.name, platform: s.platform, owned: ownedGame.platform }}
+            components={{ strong: <strong /> }}
+          />
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
           <button onClick={() => onLink(ownedGame)} className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">
-            Oui, c'est mon jeu : retenir le code
+            {t("brocante.unknown.keep")}
           </button>
           <Link to={`/jeux/${ownedGame.id}`} className="rounded-lg border border-border bg-card px-3 py-2 text-sm">
-            Voir la fiche
+            {t("brocante.viewSheet")}
           </Link>
         </div>
-        <p className="mt-2 text-xs text-muted-foreground">Code {ean}. Si ce n'est pas le bon jeu, cherche-le ci-dessous.</p>
+        <p className="mt-2 text-xs text-muted-foreground">{t("brocante.unknown.notThisOne", { ean })}</p>
       </section>
     )
   }
@@ -251,18 +259,18 @@ function Unknown({
     : `/ajouter?ean=${ean}`
   return (
     <section className="rounded-lg bg-card p-4" aria-live="polite">
-      <p className="text-lg font-semibold">Pas dans ta collection</p>
+      <p className="text-lg font-semibold">{t("brocante.unknown.notOwned")}</p>
       {s ? (
         <p className="mt-1 text-sm">
-          D'après ScanDex, c'est <strong>{s.name}</strong> ({s.platform}). À vérifier sur la boîte.
+          <Trans i18nKey="brocante.unknown.suggestion" values={{ name: s.name, platform: s.platform }} components={{ strong: <strong /> }} />
         </p>
       ) : (
         <p className="mt-1 text-sm text-muted-foreground">
-          Code {ean}, jamais vu{identified?.configured ? ", ni par ScanDex" : ""}. Si tu possèdes ce jeu sans que son code soit connu, rattache-le ci-dessous.
+          {t(identified?.configured ? "brocante.unknown.neverSeenScandex" : "brocante.unknown.neverSeen", { ean })}
         </p>
       )}
       <Link to={add} className="mt-3 inline-block rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground">
-        {s ? `Je l'achète : ajouter ${s.name}` : "Je l'achète : l'ajouter"}
+        {s ? t("brocante.unknown.buyNamed", { name: s.name }) : t("brocante.unknown.buy")}
       </Link>
     </section>
   )

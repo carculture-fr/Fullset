@@ -4,6 +4,7 @@ import { Igdb, type IgdbClient } from "./igdb.js"
 import { Romm, type RommClient } from "./romm.js"
 import { Scandex, type ScandexClient } from "./scandex.js"
 import { Steam, type SteamClient } from "./steam.js"
+import { msg } from "./i18n.js"
 
 /**
  * Services externes, réglables dans l'appli (assistant de premier lancement, Réglages) ou par
@@ -58,16 +59,16 @@ export function servicesStatus(db: Db) {
 }
 
 function validate(service: ServiceName, key: string, value: string) {
-  if (value.length > 500) throw new ValidationError("Valeur trop longue.")
-  if (service === "steam" && key === "steam_id" && !/^\d{17}$/.test(value)) throw new ValidationError("SteamID64 : 17 chiffres.")
+  if (value.length > 500) throw new ValidationError(msg("services.tooLong"))
+  if (service === "steam" && key === "steam_id" && !/^\d{17}$/.test(value)) throw new ValidationError(msg("services.steamId"))
   if (service === "romm" && key === "url") {
     let url: URL
     try {
       url = new URL(value)
     } catch {
-      throw new ValidationError("Adresse de RomM invalide (ex. http://192.168.1.10:8080).")
+      throw new ValidationError(msg("services.rommUrlInvalid"))
     }
-    if (!["http:", "https:"].includes(url.protocol)) throw new ValidationError("Adresse de RomM : http ou https.")
+    if (!["http:", "https:"].includes(url.protocol)) throw new ValidationError(msg("services.rommUrlProtocol"))
     return value.replace(/\/+$/, "")
   }
   return value
@@ -75,16 +76,16 @@ function validate(service: ServiceName, key: string, value: string) {
 
 /** Absent : inchangé ; null ou vide : retiré ; texte : enregistré. Un champ tenu par l'environnement ne bouge pas. */
 export function saveService(db: Db, service: string, input: Record<string, unknown>) {
-  if (!isServiceName(service)) throw new ValidationError("Service inconnu.")
+  if (!isServiceName(service)) throw new ValidationError(msg("services.unknown"))
   const fields: readonly Field[] = SERVICES[service]
   const writes: Array<[string, string | null]> = []
   for (const [key, raw] of Object.entries(input ?? {})) {
     const f = fields.find((x) => x.key === key)
-    if (!f) throw new ValidationError(`Champ inconnu : ${key}.`)
+    if (!f) throw new ValidationError(msg("services.unknownField", { key }))
     if (raw === undefined) continue
-    if (process.env[f.env]?.trim()) throw new ValidationError(`${f.env} est défini par une variable d'environnement : il se change là.`)
+    if (process.env[f.env]?.trim()) throw new ValidationError(msg("services.envLocked", { env: f.env }))
     const value = typeof raw === "string" ? raw.trim() : raw === null ? "" : null
-    if (value === null) throw new ValidationError("Valeur invalide.")
+    if (value === null) throw new ValidationError(msg("services.invalidValue"))
     writes.push([`${service}.${key}`, value ? validate(service, key, value) : null])
   }
   db.transaction(() => {
@@ -127,18 +128,18 @@ export type Services = ReturnType<typeof createServices>
 
 /** Bouton « Tester » : un vrai appel au service, avec un message lisible. */
 export async function testService(services: Services, name: string): Promise<{ ok: boolean; message: string }> {
-  if (!isServiceName(name)) throw new ValidationError("Service inconnu.")
+  if (!isServiceName(name)) throw new ValidationError(msg("services.unknown"))
   const client = services[name]()
-  if (!client) return { ok: false, message: "Pas encore configuré : il manque un champ." }
+  if (!client) return { ok: false, message: msg("services.test.notConfigured") }
   try {
-    if (name === "igdb") return { ok: true, message: `IGDB répond : ${(await (client as IgdbClient).search("zelda")).length} résultats pour « zelda ».` }
-    if (name === "steam") return { ok: true, message: `Steam répond : ${(await (client as SteamClient).ownedGames()).length} jeux sur le compte.` }
+    if (name === "igdb") return { ok: true, message: msg("services.test.igdb", { count: (await (client as IgdbClient).search("zelda")).length }) }
+    if (name === "steam") return { ok: true, message: msg("services.test.steam", { count: (await (client as SteamClient).ownedGames()).length }) }
     if (name === "scandex") {
       await (client as ScandexClient).lookup("5026555245920")
-      return { ok: true, message: "ScanDex répond, le jeton est accepté." }
+      return { ok: true, message: msg("services.test.scandex") }
     }
     const romm = client as RommClient & { check?: () => Promise<number> }
-    return { ok: true, message: `RomM répond : ${romm.check ? await romm.check() : 0} plateformes.` }
+    return { ok: true, message: msg("services.test.romm", { count: romm.check ? await romm.check() : 0 }) }
   } catch (err) {
     return { ok: false, message: (err as Error).message }
   }

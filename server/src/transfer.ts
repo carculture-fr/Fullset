@@ -9,6 +9,7 @@ import type { Db } from "./db.js"
 import { isoDate, text, toCents } from "./domain.js"
 import { todayIso } from "./valuations.js"
 import { HW_FIELDS } from "./hardware.js"
+import { msg } from "./i18n.js"
 
 export const EXPORT_FORMAT = "fullset"
 // Exports de GameCenter, le nom du projet avant sa publication : même format.
@@ -253,11 +254,11 @@ function copyFrom(r: Record<string, unknown>, priceCents: number | null): CopyRo
 
 function itemsFromCsv(content: string): Item[] {
   const [header, ...rows] = parseCsv(content)
-  if (!header) throw new ImportFormatError("Fichier CSV vide.")
+  if (!header) throw new ImportFormatError(msg("transfer.emptyCsv"))
   const keyOf = new Map(CSV_HEADERS.map(([h, k]) => [h, k]))
   const keys = header.map((h) => keyOf.get(h.trim()))
   if (!keys.includes("platform") || !keys.includes("title")) {
-    throw new ImportFormatError("Ce CSV n'est pas un export Fullset (colonnes « plateforme » et « titre » attendues).")
+    throw new ImportFormatError(msg("transfer.notFullsetCsv"))
   }
   const items = new Map<string, Item>()
   rows.forEach((cells, i) => {
@@ -285,7 +286,7 @@ type JsonExport = {
 type HwRow = { row: Record<string, string | number | null>; valuations: ValuationRow[] }
 
 function itemsFromJson(data: JsonExport): { items: Item[]; wishlist: WishRow[]; hardware: HwRow[] } {
-  if ((data.format !== EXPORT_FORMAT && data.format !== LEGACY_EXPORT_FORMAT) || !Array.isArray(data.games)) throw new ImportFormatError("Ce JSON n'est pas un export Fullset.")
+  if ((data.format !== EXPORT_FORMAT && data.format !== LEGACY_EXPORT_FORMAT) || !Array.isArray(data.games)) throw new ImportFormatError(msg("transfer.notFullsetJson"))
   const items = data.games.map((g) => ({
     game: gameFrom(g),
     copies: (g.copies ?? []).map((c) => ({
@@ -323,9 +324,9 @@ export type TransferReport = { games: number; copies: number; totalCents: number
 
 function insertAll(db: Db, items: Item[], wishlist: WishRow[] = [], hardware: HwRow[] = []): TransferReport {
   const existing = (db.prepare("SELECT count(*) AS n FROM copies").get() as { n: number }).n
-  if (existing > 0) throw new CollectionNotEmptyError(`La collection contient déjà ${existing} exemplaires : import refusé.`)
+  if (existing > 0) throw new CollectionNotEmptyError(msg("transfer.collectionNotEmpty", { count: existing }))
   const existingHw = (db.prepare("SELECT count(*) AS n FROM hardware").get() as { n: number }).n
-  if (existingHw > 0) throw new CollectionNotEmptyError(`Le matériel contient déjà ${existingHw} éléments : import refusé.`)
+  if (existingHw > 0) throw new CollectionNotEmptyError(msg("transfer.hardwareNotEmpty", { count: existingHw }))
   const insertHw = db.prepare(`INSERT INTO hardware (${HW_FIELDS.join(", ")}) VALUES (${HW_FIELDS.map((f) => `@${f}`).join(", ")})`)
   const insertHwValuation = db.prepare(
     "INSERT INTO hardware_valuations (hardware_id, amount_cents, valued_on, source, note) VALUES (@hardware_id, @amount_cents, @valued_on, @source, @note)",
@@ -367,7 +368,7 @@ export function importExport(db: Db, content: string): TransferReport {
     try {
       data = JSON.parse(trimmed)
     } catch {
-      throw new ImportFormatError("JSON illisible.")
+      throw new ImportFormatError(msg("common.unreadableJson"))
     }
     const { items, wishlist, hardware } = itemsFromJson(data as JsonExport)
     return insertAll(db, items, wishlist, hardware)

@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react"
+import { Trans, useTranslation } from "react-i18next"
 
 import { ErrorNote, inputClass } from "@/components/fields"
 import { api, errorMessage, send, type CommonsImage, type HardwareDetail } from "@/lib/api"
@@ -8,6 +9,7 @@ import { api, errorMessage, send, type CommonsImage, type HardwareDetail } from 
  * qu'aucune photo n'est prise (une photo prise passe toujours devant, dans la liste aussi).
  */
 export function HardwareImage({ item, onChanged }: { item: HardwareDetail; onChanged: () => void }) {
+  const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const [q, setQ] = useState("")
   const [options, setOptions] = useState<CommonsImage[] | null>(null)
@@ -60,27 +62,28 @@ export function HardwareImage({ item, onChanged }: { item: HardwareDetail; onCha
     <section className="mt-4">
       {item.image && item.photos.length === 0 && (
         <figure className="overflow-hidden rounded-lg bg-white">
-          <img src={item.image} alt={`Image de référence : ${item.platform}`} className="mx-auto max-h-64 w-full object-contain p-3" />
+          <img src={item.image} alt={t("hardwareImage.alt", { platform: item.platform })} className="mx-auto max-h-64 w-full object-contain p-3" />
         </figure>
       )}
       <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
         {item.image ? (
           <span className="min-w-0">
-            Image de référence{item.image_credit && ` : ${item.image_credit}`}, via{" "}
-            <a href={item.image_page ?? "https://commons.wikimedia.org"} target="_blank" rel="noreferrer" className="underline">
-              Wikimedia Commons
-            </a>
-            {item.photos.length > 0 && " (tes photos passent devant)"}
+            <Trans
+              i18nKey={item.image_credit ? "hardwareImage.creditWith" : "hardwareImage.creditWithout"}
+              values={{ credit: item.image_credit }}
+              components={{ link: <a href={item.image_page ?? "https://commons.wikimedia.org"} target="_blank" rel="noreferrer" className="underline" /> }}
+            />
+            {item.photos.length > 0 && t("hardwareImage.photosFirst")}
           </span>
         ) : (
-          <span>Pas d'image de référence.</span>
+          <span>{t("hardwareImage.none")}</span>
         )}
         <button onClick={toggle} className="text-primary underline">
-          {item.image ? "Changer" : "Chercher une image"}
+          {item.image ? t("hardwareImage.change") : t("hardwareImage.find")}
         </button>
         {item.image && (
           <button onClick={remove} disabled={busy} className="underline disabled:opacity-50">
-            Retirer
+            {t("hardwareImage.remove")}
           </button>
         )}
       </div>
@@ -88,15 +91,15 @@ export function HardwareImage({ item, onChanged }: { item: HardwareDetail; onCha
       {open && (
         <div className="mt-3 rounded-lg bg-card p-3">
           <form onSubmit={submit} className="flex gap-2">
-            <input className={`${inputClass} min-w-0 flex-1 py-2`} value={q} onChange={(e) => setQ(e.target.value)} aria-label="Recherche sur Wikimedia Commons" placeholder="ex. GameCube silver" />
+            <input className={`${inputClass} min-w-0 flex-1 py-2`} value={q} onChange={(e) => setQ(e.target.value)} aria-label={t("hardwareImage.searchLabel")} placeholder={t("hardwareImage.searchPlaceholder")} />
             <button disabled={busy || !q.trim()} className="rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground disabled:opacity-50">
-              Chercher
+              {t("hardwareImage.searchButton")}
             </button>
           </form>
-          <p className="mt-1.5 text-xs text-muted-foreground">Recherche en anglais sur Wikimedia Commons (photos libres de droits).</p>
+          <p className="mt-1.5 text-xs text-muted-foreground">{t("hardwareImage.searchHint")}</p>
           <ErrorNote message={error} />
-          {busy && !options && <p className="mt-3 text-sm text-muted-foreground">Recherche…</p>}
-          {options && options.length === 0 && <p className="mt-3 text-sm text-muted-foreground">Aucune photo trouvée : essaie d'autres mots.</p>}
+          {busy && !options && <p className="mt-3 text-sm text-muted-foreground">{t("hardwareImage.searching")}</p>}
+          {options && options.length === 0 && <p className="mt-3 text-sm text-muted-foreground">{t("hardwareImage.noResults")}</p>}
           {options && options.length > 0 && (
             <ul className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
               {options.map((o) => (

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { Link, NavLink, Outlet, ScrollRestoration, useLocation } from "react-router-dom"
 
 import { BarcodeIcon } from "@/components/copy-form"
@@ -13,6 +14,7 @@ const iconClass = ({ isActive }: { isActive: boolean }) =>
   `flex size-9 items-center justify-center rounded-md hover:bg-muted hover:text-foreground ${isActive ? "bg-muted text-foreground" : "text-muted-foreground"}`
 
 export function Layout() {
+  const { t } = useTranslation()
   const { pathname } = useLocation()
   // Jeux et matériel sont les deux onglets de la même bibliothèque.
   const inLibrary = pathname === "/" || ["/jeux", "/consoles", "/ajouter", "/importer"].some((p) => pathname.startsWith(p))
@@ -34,22 +36,22 @@ export function Layout() {
         </Link>
         <nav className="flex min-w-0 gap-1 text-sm">
           <Link to="/" className={navClass({ isActive: inLibrary })}>
-            Bibliothèque
+            {t("layout.library")}
           </Link>
           <NavLink to="/stats" className={navClass}>
-            <span className="sm:hidden">Stats</span>
-            <span className="hidden sm:inline">Statistiques</span>
+            <span className="sm:hidden">{t("layout.statsShort")}</span>
+            <span className="hidden sm:inline">{t("layout.stats")}</span>
           </NavLink>
           <NavLink to="/souhaits" className={navClass}>
-            Souhaits
+            {t("layout.wishlist")}
           </NavLink>
         </nav>
         <div className="ml-auto flex items-center gap-1">
-          <NavLink to="/brocante" aria-label="Brocante : je l'ai déjà ?" title="Brocante : je l'ai déjà ?" className={iconClass}>
+          <NavLink to="/brocante" aria-label={t("layout.brocante")} title={t("layout.brocante")} className={iconClass}>
             <BarcodeIcon />
           </NavLink>
           <ThemeToggle />
-          <NavLink to="/reglages" aria-label="Réglages" title="Réglages" className={iconClass}>
+          <NavLink to="/reglages" aria-label={t("layout.settings")} title={t("layout.settings")} className={iconClass}>
             <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <circle cx="12" cy="12" r="3" />
               <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" />
@@ -59,7 +61,7 @@ export function Layout() {
       </header>
       {!online && (
         <p role="status" className="mb-3 rounded-lg bg-muted px-3 py-2 text-sm">
-          Hors ligne : consultation seule, avec les données de la dernière connexion. Rien ne s'enregistre avant le retour du réseau.
+          {t("layout.offline")}
         </p>
       )}
       <div className="flex-1">
@@ -67,8 +69,8 @@ export function Layout() {
       </div>
       {health && (
         <footer className="py-4 text-xs text-muted-foreground">
-          version {CLIENT_VERSION}
-          {health.version !== CLIENT_VERSION && CLIENT_VERSION !== "dev" && ` (serveur ${health.version}, mise à jour en cours…)`} · schéma {health.schema}
+          {t("layout.footerVersion", { version: CLIENT_VERSION })}
+          {health.version !== CLIENT_VERSION && CLIENT_VERSION !== "dev" && ` ${t("layout.footerUpdating", { version: health.version })}`} · {t("layout.footerSchema", { schema: health.schema })}
         </footer>
       )}
       <ScrollRestoration />

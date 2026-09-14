@@ -1,39 +1,36 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react"
+import { useTranslation } from "react-i18next"
 import { Link } from "react-router-dom"
 
 import { ErrorNote, Field, KeyedChips, inputClass } from "@/components/fields"
 import { ServicesForm } from "@/components/services-form"
 import { api, errorMessage, send, type Account, type SteamStatus, type SteamSyncReport } from "@/lib/api"
-import { plural } from "@/lib/format"
+import { formatDateTime } from "@/lib/format"
 import { SORTS } from "@/lib/library"
 import { useLibrary } from "@/lib/library-data"
 import { useLists, type ListKey, type ListValue } from "@/lib/lists"
-import { GROUPS, HARDWARE_SORTS, VIEWS, usePreferences, type Preferences } from "@/lib/preferences"
+import { GROUPS, HARDWARE_SORTS, LANGUAGE_CHOICES, VIEWS, usePreferences, type Preferences } from "@/lib/preferences"
 import { useSession } from "@/lib/session"
 
-const LIST_LABELS: Record<ListKey, string> = {
-  place: "Lieux d'achat",
-  edition: "Éditions (jeux)",
-  tag: "Tags",
-  hw_edition: "Éditions (matériel)",
-  hw_color: "Couleurs",
-}
+// Libellés : `settings.lists.<clé>`.
+const LIST_KEYS: ListKey[] = ["place", "edition", "tag", "hw_edition", "hw_color"]
 
 export default function Settings() {
+  const { t } = useTranslation()
   return (
     <div className="mx-auto max-w-2xl space-y-5 pb-10">
-      <h1 className="text-xl font-semibold">Réglages</h1>
+      <h1 className="text-xl font-semibold">{t("settings.title")}</h1>
       <Profile />
       <DisplaySection />
-      <Section title="Services" note="Clés des services externes, toutes facultatives. Une clé enregistrée n'est jamais réaffichée : seuls ses 4 derniers caractères le sont.">
+      <Section title={t("settings.services.title")} note={t("settings.services.note")}>
         <ServicesForm />
       </Section>
       <Security />
       <ListsManager />
       <SteamSection />
-      <Section title="Codes-barres" note="Les codes appris au scan ou saisis sur tes exemplaires : les voir, les corriger, les exporter.">
+      <Section title={t("settings.barcodes.title")} note={t("settings.barcodes.note")}>
         <Link to="/codes-barres" className="inline-block rounded-lg border border-border px-3 py-2 text-sm">
-          Gérer les codes-barres
+          {t("settings.barcodes.manage")}
         </Link>
       </Section>
     </div>
@@ -55,6 +52,7 @@ function Saved({ message }: { message: string | null }) {
 }
 
 function Profile() {
+  const { t } = useTranslation()
   const [form, setForm] = useState({ username: "", display_name: "", email: "" })
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState<string | null>(null)
@@ -72,27 +70,27 @@ function Profile() {
     setSaved(null)
     try {
       await send("PUT", "/api/account", form)
-      setSaved("Profil enregistré.")
+      setSaved(t("settings.profile.saved"))
     } catch (err) {
       setError(errorMessage(err))
     }
   }
 
   return (
-    <Section title="Profil">
+    <Section title={t("settings.profile.title")}>
       <form onSubmit={save} className="space-y-3">
-        <Field label="Nom affiché">
+        <Field label={t("settings.profile.displayName")}>
           <input className={inputClass} value={form.display_name} onChange={(e) => setForm({ ...form, display_name: e.target.value })} />
         </Field>
-        <Field label="Identifiant" hint="Celui qui sert à se connecter.">
+        <Field label={t("settings.profile.username")} hint={t("settings.profile.usernameHint")}>
           <input className={inputClass} autoComplete="username" autoCapitalize="none" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} />
         </Field>
-        <Field label="E-mail" hint="Facultatif.">
+        <Field label={t("settings.profile.email")} hint={t("settings.profile.emailHint")}>
           <input className={inputClass} type="email" autoComplete="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
         </Field>
         <ErrorNote message={error} />
         <Saved message={saved} />
-        <button className="rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground">Enregistrer le profil</button>
+        <button className="rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground">{t("settings.profile.save")}</button>
       </form>
     </Section>
   )
@@ -100,6 +98,7 @@ function Profile() {
 
 /** Affichage par défaut : enregistré aussitôt, le même sur tous ses appareils. */
 function DisplaySection() {
+  const { t } = useTranslation()
   const { prefs, save } = usePreferences()
   const [error, setError] = useState<string | null>(null)
   const set = (patch: Partial<Preferences>) => {
@@ -108,21 +107,49 @@ function DisplaySection() {
   }
 
   return (
-    <Section title="Affichage par défaut" note="Comment s'ouvrent tes listes, sur tous tes appareils. Le tri et les boutons de la bibliothèque ne changent l'affichage que le temps de la visite.">
+    <Section title={t("settings.display.title")} note={t("settings.display.note")}>
       <div className="space-y-3">
-        <Field label="Jeux : tri">
-          <KeyedChips label="Tri des jeux par défaut" choices={SORTS} value={prefs.games_sort} onChange={(v) => set({ games_sort: v })} />
+        <Field label={t("settings.display.language")}>
+          <KeyedChips
+            label={t("settings.display.languageLabel")}
+            choices={LANGUAGE_CHOICES.map((c) => ({ key: c.key, label: t(`languages.${c.key}`) }))}
+            value={prefs.language}
+            onChange={(v) => set({ language: v })}
+          />
+        </Field>
+        <Field label={t("settings.display.gamesSort")}>
+          <KeyedChips
+            label={t("settings.display.gamesSortLabel")}
+            choices={SORTS.map((s) => ({ key: s.key, label: t(`sorts.games.${s.key}`) }))}
+            value={prefs.games_sort}
+            onChange={(v) => set({ games_sort: v })}
+          />
         </Field>
         {prefs.games_sort === "plateforme" && (
-          <Field label="Jeux : consoles à l'ouverture">
-            <KeyedChips label="Consoles à l'ouverture" choices={GROUPS} value={prefs.games_groups} onChange={(v) => set({ games_groups: v })} />
+          <Field label={t("settings.display.gamesGroups")}>
+            <KeyedChips
+              label={t("settings.display.gamesGroupsLabel")}
+              choices={GROUPS.map((g) => ({ key: g.key, label: t(`groups.${g.key}`) }))}
+              value={prefs.games_groups}
+              onChange={(v) => set({ games_groups: v })}
+            />
           </Field>
         )}
-        <Field label="Jeux : présentation">
-          <KeyedChips label="Présentation des jeux par défaut" choices={VIEWS} value={prefs.games_view} onChange={(v) => set({ games_view: v })} />
+        <Field label={t("settings.display.gamesView")}>
+          <KeyedChips
+            label={t("settings.display.gamesViewLabel")}
+            choices={VIEWS.map((v) => ({ key: v.key, label: t(`views.${v.key}`) }))}
+            value={prefs.games_view}
+            onChange={(v) => set({ games_view: v })}
+          />
         </Field>
-        <Field label="Consoles et matériel : tri">
-          <KeyedChips label="Tri du matériel par défaut" choices={HARDWARE_SORTS} value={prefs.hardware_sort} onChange={(v) => set({ hardware_sort: v })} />
+        <Field label={t("settings.display.hardwareSort")}>
+          <KeyedChips
+            label={t("settings.display.hardwareSortLabel")}
+            choices={HARDWARE_SORTS.map((s) => ({ key: s.key, label: t(`sorts.hardware.${s.key}`) }))}
+            value={prefs.hardware_sort}
+            onChange={(v) => set({ hardware_sort: v })}
+          />
         </Field>
         <ErrorNote message={error} />
       </div>
@@ -131,6 +158,7 @@ function DisplaySection() {
 }
 
 function Security() {
+  const { t } = useTranslation()
   const { logout } = useSession()
   const [saved, setSaved] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -138,36 +166,36 @@ function Security() {
 
   const others = async () => {
     await send("POST", "/api/account/logout-others", {})
-    setSaved("Les autres appareils sont déconnectés.")
+    setSaved(t("settings.security.othersDone"))
   }
   const changePassword = async (e: FormEvent) => {
     e.preventDefault()
     setError(null)
     setSaved(null)
-    if (pw.password !== pw.confirm) return setError("Les deux nouveaux mots de passe ne sont pas identiques.")
+    if (pw.password !== pw.confirm) return setError(t("settings.security.mismatch"))
     try {
       await send("PUT", "/api/account/password", { current: pw.current, password: pw.password })
       setPw({ current: "", password: "", confirm: "" })
-      setSaved("Mot de passe changé ; les autres appareils sont déconnectés.")
+      setSaved(t("settings.security.changed"))
     } catch (err) {
       setError(errorMessage(err))
     }
   }
 
   return (
-    <Section title="Sécurité" note="Une session se ferme après 14 jours sans visite.">
+    <Section title={t("settings.security.title")} note={t("settings.security.note")}>
       <form onSubmit={changePassword} className="space-y-3">
-        <Field label="Mot de passe actuel">
+        <Field label={t("settings.security.current")}>
           <input className={inputClass} type="password" autoComplete="current-password" value={pw.current} onChange={(e) => setPw({ ...pw, current: e.target.value })} />
         </Field>
-        <Field label="Nouveau mot de passe" hint="10 caractères au moins.">
+        <Field label={t("settings.security.new")} hint={t("settings.security.newHint")}>
           <input className={inputClass} type="password" autoComplete="new-password" value={pw.password} onChange={(e) => setPw({ ...pw, password: e.target.value })} />
         </Field>
-        <Field label="Confirme le nouveau mot de passe">
+        <Field label={t("settings.security.confirm")}>
           <input className={inputClass} type="password" autoComplete="new-password" value={pw.confirm} onChange={(e) => setPw({ ...pw, confirm: e.target.value })} />
         </Field>
         <button disabled={!pw.current || pw.password.length < 10} className="rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground disabled:opacity-50">
-          Changer le mot de passe
+          {t("settings.security.change")}
         </button>
       </form>
       <div className="mt-3 space-y-3">
@@ -176,10 +204,10 @@ function Security() {
       </div>
       <div className="mt-4 flex flex-wrap gap-2 border-t border-border pt-4">
         <button onClick={others} className="rounded-lg border border-border px-3 py-2 text-sm">
-          Déconnecter les autres appareils
+          {t("settings.security.logoutOthers")}
         </button>
         <button onClick={logout} className="rounded-lg border border-border px-3 py-2 text-sm">
-          Se déconnecter
+          {t("settings.security.logout")}
         </button>
       </div>
     </Section>
@@ -188,6 +216,7 @@ function Security() {
 
 /** Bibliothèque Steam : lecture au bouton seulement, jeux absents sur un écran de choix. */
 function SteamSection() {
+  const { t } = useTranslation()
   const library = useLibrary()
   const [status, setStatus] = useState<SteamStatus | null>(null)
   const [report, setReport] = useState<string | null>(null)
@@ -205,7 +234,12 @@ function SteamSection() {
     try {
       const r = await send<SteamSyncReport>("POST", "/api/steam/sync")
       setReport(
-        `${plural(r.owned, "jeu")} sur Steam, ${r.recognised} reconnus par IGDB ; ${plural(r.linked, "jeu relié", "jeux reliés")}, ${plural(r.playtime, "temps de jeu mis", "temps de jeu mis")} à jour.`,
+        t("settings.steam.report", {
+          owned: t("settings.steam.reportOwned", { count: r.owned }),
+          recognised: r.recognised,
+          linked: t("settings.steam.reportLinked", { count: r.linked }),
+          playtime: t("settings.steam.reportPlaytime", { count: r.playtime }),
+        }),
       )
       await load()
       await library.reload()
@@ -217,24 +251,26 @@ function SteamSection() {
   }
 
   return (
-    <Section title="Steam" note="Relie tes jeux PC à ta bibliothèque Steam et reprend leur temps de jeu, quand tu appuies sur le bouton.">
-      {status && !status.configured && (
-        <p className="text-sm text-muted-foreground">Steam n'est pas encore configuré : renseigne ta clé API et ton SteamID dans Services, plus haut.</p>
-      )}
+    <Section title={t("settings.steam.title")} note={t("settings.steam.note")}>
+      {status && !status.configured && <p className="text-sm text-muted-foreground">{t("settings.steam.notConfigured")}</p>}
       {status?.configured && (
         <div className="space-y-3">
           <p className="text-sm text-muted-foreground">
             {status.synced_at
-              ? `Dernière lecture le ${new Date(status.synced_at).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" })} : ${plural(status.owned, "jeu")}, ${plural(status.linked, "relié", "reliés")} à ta collection.`
-              : "Jamais synchronisé."}
+              ? t("settings.steam.lastSync", {
+                  date: formatDateTime(status.synced_at),
+                  owned: t("settings.steam.games", { count: status.owned }),
+                  linked: t("settings.steam.linked", { count: status.linked }),
+                })
+              : t("settings.steam.never")}
           </p>
           <div className="flex flex-wrap gap-2">
             <button onClick={sync} disabled={busy} className="rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground disabled:opacity-50">
-              {busy ? "Lecture de Steam…" : "Synchroniser maintenant"}
+              {busy ? t("settings.steam.syncing") : t("settings.steam.sync")}
             </button>
             {status.candidates > 0 && (
               <Link to="/steam" className="rounded-lg border border-border px-3 py-2.5 text-sm">
-                Choisir les jeux à ajouter ({status.candidates})
+                {t("settings.steam.choose", { n: status.candidates })}
               </Link>
             )}
           </div>
@@ -247,6 +283,7 @@ function SteamSection() {
 }
 
 function ListsManager() {
+  const { t } = useTranslation()
   const { lists, reload } = useLists()
   const library = useLibrary()
   const [tab, setTab] = useState<ListKey>("place")
@@ -268,11 +305,11 @@ function ListsManager() {
   const tabClass = (on: boolean) => `rounded-md px-3 py-1.5 text-sm ${on ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"}`
 
   return (
-    <Section title="Listes" note="Les valeurs proposées à la saisie. Renommer met à jour tous les exemplaires ; renommer vers une valeur existante fusionne les deux.">
+    <Section title={t("settings.lists.title")} note={t("settings.lists.note")}>
       <div className="flex flex-wrap gap-1" role="tablist">
-        {(Object.keys(LIST_LABELS) as ListKey[]).map((k) => (
+        {LIST_KEYS.map((k) => (
           <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)} className={tabClass(tab === k)}>
-            {LIST_LABELS[k]} {lists && <span className="text-xs text-muted-foreground">({lists[k].length})</span>}
+            {t(`settings.lists.${k}`)} {lists && <span className="text-xs text-muted-foreground">({lists[k].length})</span>}
           </button>
         ))}
       </div>
@@ -284,9 +321,9 @@ function ListsManager() {
         }}
         className="mt-4 flex gap-2"
       >
-        <input className={`${inputClass} min-w-0 flex-1 py-2`} placeholder="Nouvelle valeur" value={draft} onChange={(e) => setDraft(e.target.value)} />
+        <input className={`${inputClass} min-w-0 flex-1 py-2`} placeholder={t("settings.lists.newValue")} value={draft} onChange={(e) => setDraft(e.target.value)} />
         <button disabled={!draft.trim()} className="rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground disabled:opacity-50">
-          Ajouter
+          {t("common.add")}
         </button>
       </form>
       <div className="mt-3">
@@ -303,12 +340,13 @@ function ListsManager() {
 }
 
 function ValueRow({ list, item, all, run }: { list: ListKey; item: ListValue; all: ListValue[]; run: (a: () => Promise<unknown>) => Promise<void> }) {
+  const { t } = useTranslation()
   const [editing, setEditing] = useState(false)
   const [value, setValue] = useState(item.value)
 
   const rename = () => {
     const target = all.find((x) => x.id !== item.id && x.value.toLowerCase() === value.trim().toLowerCase())
-    if (target && !window.confirm(`« ${target.value} » existe déjà. Fusionner ? Les ${item.count} utilisations de « ${item.value} » passeront sur « ${target.value} ».`)) return
+    if (target && !window.confirm(t("settings.lists.mergeConfirm", { target: target.value, n: item.count, value: item.value }))) return
     run(async () => send("PUT", `/api/lists/${list}/${item.id}`, { value })).then(() => setEditing(false))
   }
 
@@ -326,10 +364,10 @@ function ValueRow({ list, item, all, run }: { list: ListKey; item: ListValue; al
           }}
         />
         <button onClick={rename} className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground">
-          Enregistrer
+          {t("common.save")}
         </button>
         <button onClick={() => setEditing(false)} className="px-1 text-sm text-muted-foreground">
-          Annuler
+          {t("common.cancel")}
         </button>
       </li>
     )
@@ -339,18 +377,18 @@ function ValueRow({ list, item, all, run }: { list: ListKey; item: ListValue; al
     <li className="flex items-center gap-3 py-2 text-sm">
       <div className="min-w-0 flex-1">
         <div className="break-words">{item.value}</div>
-        <div className="text-xs text-muted-foreground tabular-nums">{item.count > 0 ? `utilisée ${item.count} fois` : "inutilisée"}</div>
+        <div className="text-xs text-muted-foreground tabular-nums">{item.count > 0 ? t("settings.lists.used", { count: item.count }) : t("settings.lists.unused")}</div>
       </div>
       <button onClick={() => { setValue(item.value); setEditing(true) }} className="shrink-0 text-muted-foreground hover:text-foreground">
-        Renommer
+        {t("common.rename")}
       </button>
       <button
         disabled={item.count > 0}
-        title={item.count > 0 ? "Utilisée : renomme-la ou fusionne-la plutôt" : undefined}
-        onClick={() => window.confirm(`Supprimer « ${item.value} » de la liste ?`) && run(async () => send("DELETE", `/api/lists/${list}/${item.id}`))}
+        title={item.count > 0 ? t("settings.lists.inUse") : undefined}
+        onClick={() => window.confirm(t("settings.lists.deleteConfirm", { value: item.value })) && run(async () => send("DELETE", `/api/lists/${list}/${item.id}`))}
         className="shrink-0 text-muted-foreground hover:text-destructive disabled:opacity-30"
       >
-        Supprimer
+        {t("common.delete")}
       </button>
     </li>
   )

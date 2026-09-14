@@ -3,6 +3,7 @@ import type { Db } from "./db.js"
 import { isoDate, text } from "./domain.js"
 import type { GameMeta } from "./igdb.js"
 import { setCoverFromUrl } from "./media.js"
+import { msg } from "./i18n.js"
 
 const META_COLUMNS = [
   "igdb_id",
@@ -30,9 +31,9 @@ export function findGame(db: Db, igdbId: number, platform: string): number | nul
 /** Crée le jeu ; la jaquette est téléchargée tout de suite, un échec n'empêche pas l'ajout. */
 export async function createGame(db: Db, dataDir: string, platform: string, meta: GameMeta | ManualGame, fetchImpl?: typeof fetch) {
   const p = text(platform)
-  if (!p) throw new ValidationError("La plateforme est obligatoire.")
+  if (!p) throw new ValidationError(msg("common.platformRequired"))
   const title = text(meta.title)
-  if (!title) throw new ValidationError("Le titre est obligatoire.")
+  if (!title) throw new ValidationError(msg("common.titleRequired"))
   const row: Record<string, unknown> = Object.fromEntries(META_COLUMNS.map((c) => [c, (meta as Record<string, unknown>)[c] ?? null]))
   const coverUrl = "cover_url" in meta ? meta.cover_url : null
   const id = Number(
@@ -56,12 +57,12 @@ export async function createGame(db: Db, dataDir: string, platform: string, meta
 const EDITABLE = ["title", "summary", "developer", "publisher", "release_date", "genres", "game_modes", "perspective", "series", "pegi"] as const
 
 export function updateGame(db: Db, id: number, input: Record<string, unknown>) {
-  if (!db.prepare("SELECT 1 FROM games WHERE id = ?").get(id)) throw new NotFoundError("Jeu introuvable.")
+  if (!db.prepare("SELECT 1 FROM games WHERE id = ?").get(id)) throw new NotFoundError(msg("common.gameNotFound"))
   const title = text(input.title)
-  if (!title) throw new ValidationError("Le titre est obligatoire.")
+  if (!title) throw new ValidationError(msg("common.titleRequired"))
   const rawDate = text(input.release_date)
   const releaseDate = isoDate(rawDate)
-  if (rawDate && !releaseDate) throw new ValidationError(`Date de sortie : « ${rawDate} » n'est pas une date.`)
+  if (rawDate && !releaseDate) throw new ValidationError(msg("common.notADate", { field: msg("fields.releaseDate"), value: rawDate }))
   const data = { ...Object.fromEntries(EDITABLE.map((c) => [c, text(input[c])])), title, release_date: releaseDate, id }
   db.prepare(`UPDATE games SET ${EDITABLE.map((c) => `${c} = @${c}`).join(", ")}, updated_at = datetime('now') WHERE id = @id`).run(data)
 }
@@ -74,9 +75,9 @@ export async function relinkGame(db: Db, dataDir: string, id: number, meta: Game
   const game = db.prepare("SELECT platform, cover_source FROM games WHERE id = ?").get(id) as
     | { platform: string; cover_source: string | null }
     | undefined
-  if (!game) throw new NotFoundError("Jeu introuvable.")
+  if (!game) throw new NotFoundError(msg("common.gameNotFound"))
   const other = findGame(db, meta.igdb_id, game.platform)
-  if (other !== null && other !== id) throw new ValidationError("Ce jeu est déjà dans la collection sur cette plateforme.")
+  if (other !== null && other !== id) throw new ValidationError(msg("games.alreadyInCollection"))
   db.prepare(`UPDATE games SET ${META_COLUMNS.map((c) => `${c} = @${c}`).join(", ")}, updated_at = datetime('now') WHERE id = @id`).run({
     ...Object.fromEntries(META_COLUMNS.map((c) => [c, meta[c]])),
     id,

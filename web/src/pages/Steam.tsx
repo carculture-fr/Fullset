@@ -1,16 +1,19 @@
 import { useEffect, useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { Link, useNavigate } from "react-router-dom"
 
 import { ErrorNote, inputClass } from "@/components/fields"
 import { api, errorMessage, send, type SteamCandidate } from "@/lib/api"
-import { plural } from "@/lib/format"
+import i18n from "@/lib/i18n"
 import { useLibrary } from "@/lib/library-data"
 import { filterOptions } from "@/lib/platform-search"
 
-const hours = (minutes: number) => (minutes >= 60 ? `${Math.round(minutes / 6) / 10} h` : minutes > 0 ? `${minutes} min` : "jamais lancé")
+const hours = (minutes: number) =>
+  minutes >= 60 ? i18n.t("steam.hours", { value: Math.round(minutes / 6) / 10 }) : minutes > 0 ? i18n.t("steam.minutes", { value: minutes }) : i18n.t("steam.neverPlayed")
 
 /** Écran de choix (choix de conception) : les jeux Steam absents de la collection, à cocher. */
 export default function Steam() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { reload } = useLibrary()
   const [items, setItems] = useState<SteamCandidate[] | null>(null)
@@ -43,7 +46,7 @@ export default function Steam() {
     try {
       const r = await send<{ added: unknown[]; failed: Array<{ name: string; error: string }> }>("POST", "/api/steam/import", { appids: [...picked] })
       await reload()
-      if (r.failed.length) setError(`Non ajoutés : ${r.failed.map((f) => `${f.name} (${f.error})`).join(", ")}`)
+      if (r.failed.length) setError(t("steam.failed", { list: r.failed.map((f) => `${f.name} (${f.error})`).join(", ") }))
       else navigate("/?support=D%C3%A9mat%C3%A9rialis%C3%A9", { replace: true })
     } catch (err) {
       setError(errorMessage(err))
@@ -55,28 +58,28 @@ export default function Steam() {
   return (
     <div className="mx-auto max-w-2xl space-y-4 pb-28">
       <Link to="/reglages" className="inline-block text-sm text-muted-foreground hover:text-foreground">
-        ← Réglages
+        {t("steam.back")}
       </Link>
       <div>
-        <h1 className="text-xl font-semibold">Jeux Steam à ajouter</h1>
+        <h1 className="text-xl font-semibold">{t("steam.title")}</h1>
         <p className="text-sm text-muted-foreground">
-          {items ? plural(items.length, "jeu Steam absent", "jeux Steam absents") : "Chargement…"} de ta collection. Coche ceux à ajouter : ils arrivent en dématérialisé, achetés sur Steam, avec leur temps de jeu.
+          {t("steam.intro", { missing: items ? t("steam.missing", { count: items.length }) : t("steam.loading") })}
         </p>
       </div>
       <ErrorNote message={error} />
       {items && items.length > 0 && (
         <div className="flex gap-2">
-          <input className={`${inputClass} min-w-0 flex-1`} placeholder="Chercher un jeu" value={q} onChange={(e) => setQ(e.target.value)} />
+          <input className={`${inputClass} min-w-0 flex-1`} placeholder={t("steam.search")} value={q} onChange={(e) => setQ(e.target.value)} />
           <button
             type="button"
             onClick={() => setPicked((p) => (shown.every((i) => p.has(i.appid)) ? new Set([...p].filter((a) => !shown.some((i) => i.appid === a))) : new Set([...p, ...shown.map((i) => i.appid)])))}
             className="shrink-0 rounded-lg border border-border px-3 text-sm"
           >
-            {shown.length && shown.every((i) => picked.has(i.appid)) ? "Tout décocher" : "Tout cocher"}
+            {shown.length && shown.every((i) => picked.has(i.appid)) ? t("steam.uncheckAll") : t("steam.checkAll")}
           </button>
         </div>
       )}
-      {items && items.length === 0 && <p className="rounded-lg bg-card p-4 text-sm text-muted-foreground">Toute ta bibliothèque Steam est déjà dans Fullset.</p>}
+      {items && items.length === 0 && <p className="rounded-lg bg-card p-4 text-sm text-muted-foreground">{t("steam.allThere")}</p>}
 
       <ul className="divide-y divide-border rounded-lg bg-card">
         {shown.map((i) => (
@@ -86,7 +89,7 @@ export default function Steam() {
               <span className="min-w-0 flex-1">
                 <span className="block truncate font-medium">{i.name}</span>
                 <span className="block text-xs text-muted-foreground">
-                  {hours(i.playtime_minutes)} · {i.igdb_id ? "fiche IGDB reconnue" : "sans fiche IGDB (titre Steam)"}
+                  {hours(i.playtime_minutes)} · {i.igdb_id ? t("steam.igdbKnown") : t("steam.noIgdb")}
                 </span>
               </span>
             </label>
@@ -98,7 +101,7 @@ export default function Steam() {
         <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur">
           <div className="mx-auto max-w-2xl">
             <button onClick={add} disabled={busy} className="w-full rounded-lg bg-primary py-3 font-medium text-primary-foreground disabled:opacity-50">
-              {busy ? "Ajout en cours…" : `Ajouter ${plural(picked.size, "jeu", "jeux")}`}
+              {busy ? t("steam.adding") : t("steam.addGames", { count: picked.size })}
             </button>
           </div>
         </div>

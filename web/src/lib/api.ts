@@ -1,3 +1,4 @@
+import i18n, { currentLanguage } from "./i18n"
 import type { LibraryCopy } from "./library"
 
 export class ApiError extends Error {
@@ -15,18 +16,19 @@ export const UNAUTHORIZED_EVENT = "fullset:unauthorized"
 async function handle<T>(path: string, res: Response): Promise<T> {
   const body = await res.json().catch(() => ({}))
   if (res.status === 401 && !path.startsWith("/api/auth/")) window.dispatchEvent(new Event(UNAUTHORIZED_EVENT))
-  if (!res.ok) throw new ApiError(res.status, body.error ?? `Erreur ${res.status}`)
+  if (!res.ok) throw new ApiError(res.status, body.error ?? i18n.t("common.httpError", { status: res.status }))
   return body as T
 }
 
 /** Hors ligne, l'application se consulte (données en cache) mais n'enregistre rien. */
 const offlineGuard = (method = "GET") => {
-  if (method !== "GET" && !navigator.onLine) throw new ApiError(0, "Hors ligne : rien n'est enregistré tant que le réseau n'est pas revenu.")
+  if (method !== "GET" && !navigator.onLine) throw new ApiError(0, i18n.t("common.offlineWrite"))
 }
 
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   offlineGuard(init?.method)
-  const res = await fetch(path, { ...init, headers: { "Content-Type": "application/json", ...init?.headers } })
+  // Le serveur répond (messages d'erreur, résultats des tests de services) dans la langue affichée.
+  const res = await fetch(path, { ...init, headers: { "Content-Type": "application/json", "Accept-Language": currentLanguage(), ...init?.headers } })
   return handle<T>(path, res)
 }
 
@@ -37,10 +39,10 @@ export async function upload<T>(path: string, blob: Blob, filename = "image.jpg"
   offlineGuard("POST")
   const form = new FormData()
   form.append("file", blob, filename)
-  return handle<T>(path, await fetch(path, { method: "POST", body: form }))
+  return handle<T>(path, await fetch(path, { method: "POST", body: form, headers: { "Accept-Language": currentLanguage() } }))
 }
 
-export const errorMessage = (err: unknown) => (err instanceof Error ? err.message : "Erreur inconnue.")
+export const errorMessage = (err: unknown) => (err instanceof Error ? err.message : i18n.t("common.unknownError"))
 
 export type Health = { ok: boolean; version: string; schema: number; igdb: boolean; time: string }
 export type Me = { setupRequired: boolean; authenticated: boolean }

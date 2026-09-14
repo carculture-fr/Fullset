@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react"
+import { useTranslation } from "react-i18next"
 import { Link, useNavigate, useParams } from "react-router-dom"
 
 import { CONDITIONS, HW_CONTENTS, HW_KINDS, HW_WORKING, MANUAL_CONDITIONS, REGIONS } from "@domain"
@@ -6,6 +7,7 @@ import { Chips, ErrorNote, Field, ListChips, Menu, inputClass } from "@/componen
 import { PhotoField } from "@/components/photo-field"
 import { api, errorMessage, send, type CatalogPlatform, type HardwareDetail, type HardwareItem, type Photo } from "@/lib/api"
 import { todayIso } from "@/lib/format"
+import { currentLanguage } from "@/lib/i18n"
 import { useLibrary } from "@/lib/library-data"
 import { useLists, type ListKey } from "@/lib/lists"
 import { searchPlatforms } from "@/lib/platform-search"
@@ -64,7 +66,8 @@ const toForm = (h: HardwareItem): Form => ({
   condition_box: h.condition_box ?? "",
   condition_manual: h.condition_manual ?? "",
   working: h.working ?? "",
-  price: h.price_cents === null ? "" : (h.price_cents / 100).toFixed(2).replace(".", ","),
+  // Virgule décimale en français ; le serveur accepte les deux.
+  price: h.price_cents === null ? "" : (h.price_cents / 100).toFixed(2).replace(".", currentLanguage() === "fr" ? "," : "."),
   purchase_date: h.purchase_date ?? "",
   purchase_place: h.purchase_place ?? "",
   serial_number: h.serial_number ?? "",
@@ -73,6 +76,7 @@ const toForm = (h: HardwareItem): Form => ({
 
 /** Ajout (/consoles/ajouter) ou modification (/consoles/:id/modifier) d'une console, manette ou accessoire. */
 export default function HardwareEditor() {
+  const { t } = useTranslation()
   const { id } = useParams()
   const navigate = useNavigate()
   const { games } = useLibrary()
@@ -111,7 +115,7 @@ export default function HardwareEditor() {
   }, [catalog, games])
   const models = useMemo(() => catalog.find((p) => p.name.toLowerCase() === (form?.platform ?? "").toLowerCase())?.models ?? [], [catalog, form?.platform])
 
-  if (!form) return <p className="py-16 text-center text-muted-foreground">{error ?? "Chargement…"}</p>
+  if (!form) return <p className="py-16 text-center text-muted-foreground">{error ?? t("library.loading")}</p>
 
   const set = (key: keyof Form, value: string | null) => setForm((f) => ({ ...f!, [key]: value ?? "" }))
   const values = (k: ListKey) => lists?.[k].map((x) => x.value) ?? []
@@ -134,40 +138,38 @@ export default function HardwareEditor() {
   }
 
   const remove = async () => {
-    if (!window.confirm("Supprimer cet élément et ses photos ?")) return
+    if (!window.confirm(t("hardwareEditor.confirmDelete"))) return
     await send("DELETE", `/api/hardware/${id}`)
     navigate("/consoles", { replace: true })
   }
 
   const deletePhoto = async (p: Photo) => {
-    if (!window.confirm("Supprimer cette photo ?")) return
+    if (!window.confirm(t("hardwareEditor.confirmDeletePhoto"))) return
     await send("DELETE", `/api/hardware-photos/${p.id}`)
     setPhotos((list) => list.filter((x) => x.id !== p.id))
   }
 
-  const itemLabel = form.kind === "Console" ? "console" : "objet"
-
   return (
     <div className="mx-auto max-w-2xl">
       <Link to={id ? `/consoles/${id}` : "/consoles"} replace className="mb-3 inline-block text-sm text-muted-foreground hover:text-foreground">
-        ← Retour
+        {t("hardwareEditor.back")}
       </Link>
       <div className="mb-5 flex items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold">{id ? "Modifier" : "Ajouter une console ou un accessoire"}</h1>
+        <h1 className="text-xl font-semibold">{id ? t("common.edit") : t("hardwareEditor.titleAdd")}</h1>
         {id && (
           <button onClick={remove} className="text-sm text-destructive hover:underline">
-            Supprimer
+            {t("common.delete")}
           </button>
         )}
       </div>
 
       <form onSubmit={submit} className="space-y-5 pb-24">
-        <Field label="Type">
-          <Chips options={HW_KINDS} value={form.kind} allowNone={false} onChange={(x) => set("kind", x)} />
+        <Field label={t("hardwareEditor.type")}>
+          <Chips options={HW_KINDS} valueGroup="hwKind" value={form.kind} allowNone={false} onChange={(x) => set("kind", x)} />
         </Field>
-        <Field label="Console">
+        <Field label={t("hardwareEditor.console")}>
           <Menu
-            label="Console"
+            label={t("hardwareEditor.console")}
             options={platformOptions}
             selected={form.platform ? [form.platform] : []}
             onPick={(x) => setForm((f) => ({ ...f!, platform: x, model: "" }))}
@@ -175,56 +177,56 @@ export default function HardwareEditor() {
             onAdd={async (x) => setForm((f) => ({ ...f!, platform: x, model: "" }))}
             search={searchPlatforms}
             addOnlyIfNone
-            placeholder={`Choisir parmi ${platformOptions.length} consoles`}
+            placeholder={t("hardwareEditor.choosePlatform", { count: platformOptions.length })}
           />
         </Field>
         {form.platform && (
-          <Field label="Modèle" hint={models.length ? "Les variantes connues de cette console ; tape une référence (SCPH-90004, DOL-001…) pour l'ajouter." : "Tape la référence ou le nom du modèle : il rejoindra les variantes de cette console."}>
+          <Field label={t("hardwareEditor.model")} hint={models.length ? t("hardwareEditor.modelHintKnown") : t("hardwareEditor.modelHintNew")}>
             <ListChips options={models} selected={form.model ? [form.model] : []} onToggle={toggle("model")} onAdd={async (x) => set("model", x)} visible={12} />
           </Field>
         )}
-        <Field label="Édition">
+        <Field label={t("hardwareEditor.edition")}>
           <ListChips options={values("hw_edition")} selected={form.edition ? [form.edition] : []} onToggle={toggle("edition")} onAdd={async (x) => set("edition", await add("hw_edition", x))} />
         </Field>
-        <Field label="Couleur">
+        <Field label={t("hardwareEditor.color")}>
           <ListChips options={values("hw_color")} selected={form.color ? [form.color] : []} onToggle={toggle("color")} onAdd={async (x) => set("color", await add("hw_color", x))} />
         </Field>
-        <Field label="Région">
-          <Chips options={REGIONS} value={orNull(form.region)} onChange={(x) => set("region", x)} />
+        <Field label={t("hardwareEditor.region")}>
+          <Chips options={REGIONS} valueGroup="region" value={orNull(form.region)} onChange={(x) => set("region", x)} />
         </Field>
-        <Field label="Contenu">
-          <Chips options={HW_CONTENTS} value={orNull(form.content)} onChange={(x) => set("content", x)} />
+        <Field label={t("hardwareEditor.content")}>
+          <Chips options={HW_CONTENTS} valueGroup="hwContent" value={orNull(form.content)} onChange={(x) => set("content", x)} />
         </Field>
-        <Field label={`État de la ${itemLabel === "console" ? "console" : "pièce"}`}>
-          <Chips options={CONDITIONS} value={orNull(form.condition_item)} onChange={(x) => set("condition_item", x)} />
+        <Field label={form.kind === "Console" ? t("hardwareEditor.conditionConsole") : t("hardwareEditor.conditionPiece")}>
+          <Chips options={CONDITIONS} valueGroup="condition" value={orNull(form.condition_item)} onChange={(x) => set("condition_item", x)} />
         </Field>
-        <Field label="État de la boîte">
-          <Chips options={CONDITIONS} value={orNull(form.condition_box)} onChange={(x) => set("condition_box", x)} />
+        <Field label={t("hardwareEditor.conditionBox")}>
+          <Chips options={CONDITIONS} valueGroup="condition" value={orNull(form.condition_box)} onChange={(x) => set("condition_box", x)} />
         </Field>
-        <Field label="État de la notice">
-          <Chips options={MANUAL_CONDITIONS} value={orNull(form.condition_manual)} onChange={(x) => set("condition_manual", x)} />
+        <Field label={t("hardwareEditor.conditionManual")}>
+          <Chips options={MANUAL_CONDITIONS} valueGroup="condition" value={orNull(form.condition_manual)} onChange={(x) => set("condition_manual", x)} />
         </Field>
-        <Field label="Fonctionnement">
-          <Chips options={HW_WORKING} value={orNull(form.working)} onChange={(x) => set("working", x)} />
+        <Field label={t("hardwareEditor.working")}>
+          <Chips options={HW_WORKING} valueGroup="hwWorking" value={orNull(form.working)} onChange={(x) => set("working", x)} />
         </Field>
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Prix payé (€)">
-            <input className={inputClass} inputMode="decimal" placeholder="0,00" value={form.price} onChange={(e) => set("price", e.target.value)} />
+          <Field label={t("hardwareEditor.price")}>
+            <input className={inputClass} inputMode="decimal" placeholder={t("hardwareEditor.pricePlaceholder")} value={form.price} onChange={(e) => set("price", e.target.value)} />
           </Field>
-          <Field label="Date d'achat">
+          <Field label={t("hardwareEditor.purchaseDate")}>
             <input className={inputClass} type="date" value={form.purchase_date} onChange={(e) => set("purchase_date", e.target.value)} />
           </Field>
         </div>
-        <Field label="Lieu d'achat">
+        <Field label={t("hardwareEditor.place")}>
           <ListChips options={values("place")} selected={form.purchase_place ? [form.purchase_place] : []} onToggle={toggle("purchase_place")} onAdd={async (x) => set("purchase_place", await add("place", x))} />
         </Field>
-        <Field label="Numéro de série">
+        <Field label={t("hardwareEditor.serial")}>
           <input className={inputClass} value={form.serial_number} onChange={(e) => set("serial_number", e.target.value)} />
         </Field>
-        <Field label="Commentaire">
+        <Field label={t("hardwareEditor.comment")}>
           <textarea className={inputClass} rows={2} value={form.comment} onChange={(e) => set("comment", e.target.value)} />
         </Field>
-        <Field label="Photos">
+        <Field label={t("hardwareEditor.photos")}>
           <PhotoField existing={photos} onDeleteExisting={id ? deletePhoto : undefined} files={files} onFiles={setFiles} />
         </Field>
 
@@ -233,7 +235,7 @@ export default function HardwareEditor() {
         <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur">
           <div className="mx-auto max-w-2xl">
             <button disabled={busy || !form.platform} className="w-full rounded-lg bg-primary py-3 font-medium text-primary-foreground disabled:opacity-50">
-              {busy ? "Enregistrement…" : id ? "Enregistrer" : "Ajouter"}
+              {busy ? t("hardwareEditor.saving") : id ? t("common.save") : t("common.add")}
             </button>
           </div>
         </div>

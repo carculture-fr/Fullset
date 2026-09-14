@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { Link, RouterProvider, createBrowserRouter } from "react-router-dom"
 
 import { Layout } from "@/components/layout"
@@ -52,6 +53,7 @@ const router = createBrowserRouter([
 ])
 
 export default function App() {
+  const { t, i18n } = useTranslation()
   const [me, setMe] = useState<Me | null>(null)
   const [unreachable, setUnreachable] = useState(false)
   const refresh = useCallback(
@@ -89,9 +91,9 @@ export default function App() {
   if (!me && unreachable) {
     return (
       <main className="flex min-h-dvh flex-col items-center justify-center gap-3 px-4 text-center">
-        <p className="text-muted-foreground">Fullset est injoignable, et rien n'est encore gardé sur cet appareil pour le hors-ligne.</p>
+        <p className="text-muted-foreground">{t("app.unreachable")}</p>
         <button onClick={refresh} className="rounded-lg border border-border px-4 py-2 text-sm">
-          Réessayer
+          {t("common.retry")}
         </button>
       </main>
     )
@@ -104,7 +106,8 @@ export default function App() {
       <LibraryProvider>
         <ListsProvider>
           <PreferencesProvider>
-            <RouterProvider router={router} />
+            {/* Changement de langue : les pages repartent, formats (montants, dates) compris. */}
+            <RouterProvider key={i18n.language} router={router} />
           </PreferencesProvider>
         </ListsProvider>
       </LibraryProvider>
@@ -113,11 +116,12 @@ export default function App() {
 }
 
 function NotFound() {
+  const { t } = useTranslation()
   return (
     <div className="py-16 text-center">
-      <p className="text-muted-foreground">Cette page n'existe pas.</p>
+      <p className="text-muted-foreground">{t("app.notFound")}</p>
       <Link to="/" className="mt-3 inline-block text-sm text-primary underline">
-        Retour à la bibliothèque
+        {t("app.backToLibrary")}
       </Link>
     </div>
   )

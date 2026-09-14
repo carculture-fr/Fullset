@@ -1,14 +1,17 @@
 import { Fragment, useCallback, useEffect, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { Link, useParams } from "react-router-dom"
 
 import { Condition } from "@/components/condition"
 import { HardwareImage } from "@/components/hardware-image"
 import { ValueBlock } from "@/components/value-block"
 import { api, errorMessage, type HardwareDetail as Detail } from "@/lib/api"
-import { euros, frDate } from "@/lib/format"
+import { euros, formatDate } from "@/lib/format"
+import { valueLabel } from "@/lib/i18n"
 import { hardwareTitle } from "@/pages/Hardware"
 
 export default function HardwareDetail() {
+  const { t } = useTranslation()
   const { id } = useParams()
   const [item, setItem] = useState<Detail | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -18,35 +21,35 @@ export default function HardwareDetail() {
   }, [load])
 
   if (error) return <p className="py-16 text-center text-destructive">{error}</p>
-  if (!item) return <p className="py-16 text-center text-muted-foreground">Chargement…</p>
+  if (!item) return <p className="py-16 text-center text-muted-foreground">{t("library.loading")}</p>
 
   const rows: Array<[string, string | null]> = [
-    ["Édition", item.edition],
-    ["Couleur", item.color],
-    ["Région", item.region],
-    ["Contenu", item.content],
-    ["Fonctionnement", item.working],
-    ["Prix", item.price_cents === null ? null : euros(item.price_cents)],
-    ["Acheté le", frDate(item.purchase_date)],
-    ["Lieu", item.purchase_place],
-    ["N° de série", item.serial_number],
+    [t("hardwareDetail.edition"), item.edition],
+    [t("hardwareDetail.color"), item.color],
+    [t("hardwareDetail.region"), valueLabel("region", item.region)],
+    [t("hardwareDetail.content"), valueLabel("hwContent", item.content)],
+    [t("hardwareDetail.working"), valueLabel("hwWorking", item.working)],
+    [t("hardwareDetail.price"), item.price_cents === null ? null : euros(item.price_cents)],
+    [t("hardwareDetail.boughtOn"), formatDate(item.purchase_date)],
+    [t("hardwareDetail.place"), item.purchase_place],
+    [t("hardwareDetail.serial"), item.serial_number],
   ]
 
   return (
     <article className="mx-auto max-w-2xl pb-10">
       <Link to="/consoles" className="mb-3 inline-block text-sm text-muted-foreground hover:text-foreground">
-        ← Consoles et matériel
+        {t("hardwareDetail.back")}
       </Link>
       <div className="flex items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl leading-tight font-semibold">{hardwareTitle(item)}</h1>
           <div className="mt-2 flex flex-wrap gap-2 text-xs">
-            <span className="rounded-full bg-muted px-2.5 py-1">{item.kind}</span>
+            <span className="rounded-full bg-muted px-2.5 py-1">{valueLabel("hwKind", item.kind)}</span>
             <span className="rounded-full bg-muted px-2.5 py-1">{item.platform}</span>
           </div>
         </div>
         <Link to={`/consoles/${item.id}/modifier`} className="shrink-0 text-sm text-muted-foreground hover:text-foreground">
-          Modifier
+          {t("common.edit")}
         </Link>
       </div>
 
@@ -64,9 +67,9 @@ export default function HardwareDetail() {
 
       <section className="mt-4 rounded-lg bg-card p-4">
         <div className="grid grid-cols-3 gap-2">
-          <Condition label={item.kind === "Console" ? "Console" : "Objet"} value={item.condition_item} />
-          <Condition label="Boîte" value={item.condition_box} />
-          <Condition label="Notice" value={item.condition_manual} />
+          <Condition label={item.kind === "Console" ? t("hardwareDetail.console") : t("hardwareDetail.item")} value={item.condition_item} />
+          <Condition label={t("hardwareDetail.box")} value={item.condition_box} />
+          <Condition label={t("hardwareDetail.manual")} value={item.condition_manual} />
         </div>
         <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-sm">
           {rows

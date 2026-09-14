@@ -2,7 +2,7 @@
 
 Self-hosted inventory for your video game collection: physical and digital copies, condition of the game, box and manual, what you paid, what it is worth, and your consoles and accessories. Built for collectors, phone first.
 
-> **Status: early development.** The interface is in French for now; English is on the way.
+> **Status: early development.** The interface is available in English and French (Settings → Default display → Language; before sign-in, the browser language).
 > [Version française plus bas.](#français)
 
 ## Features
@@ -73,5 +73,7 @@ Inventaire auto-hébergé de ta collection de jeux vidéo : exemplaires physique
 **Installation :** `docker compose up -d`, puis ouvre `http://<ton-serveur>:3110` et crée ton compte (un seul par installation). Les services facultatifs (IGDB, Steam, ScanDex, RomM) se règlent dans `.env` (voir `.env.example`). Mot de passe oublié : `docker exec fullset node server/dist/cli/reset-password.js`.
 
 Les services (IGDB, Steam, ScanDex, RomM) se règlent à l'installation puis dans Réglages → Services, avec un bouton « Tester ».
+
+L'interface existe en français et en anglais : Réglages → Affichage par défaut → Langue (avant connexion, celle du navigateur). Les traductions sont dans `web/src/locales/` et `server/src/locales/` (le français fait référence).
 
 Toutes les données sont dans le volume `fullset-data` (`/data`) : pense à le sauvegarder.

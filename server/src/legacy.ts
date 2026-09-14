@@ -8,6 +8,7 @@ import { createGame, findGame } from "./games.js"
 import type { IgdbCandidate, IgdbClient, IgdbGame } from "./igdb.js"
 import { ImportFormatError, parseCsv } from "./transfer.js"
 import { todayIso } from "./valuations.js"
+import { msg } from "./i18n.js"
 
 const norm = (s: unknown) =>
   String(s ?? "")
@@ -112,7 +113,7 @@ export function parseLegacyCsv(content: string): LegacyRow[] {
   const [header, ...lines] = parseCsv(content)
   const keys = (header ?? []).map((h) => HEADERS[norm(h)])
   if (!keys.includes("name") || !keys.includes("platform")) {
-    throw new ImportFormatError("Ce CSV ne ressemble pas à l'export de l'ancienne application (colonnes « Name » / « Nom » et « Platform » / « Plateforme » attendues).")
+    throw new ImportFormatError(msg("legacy.notLegacyCsv"))
   }
   return lines.map((cells, index) => {
     const r: Record<string, string> = {}
@@ -122,25 +123,25 @@ export function parseLegacyCsv(content: string): LegacyRow[] {
       const raw = r[key]
       if (isEmpty(raw)) return null
       const v = dict[norm(raw)]
-      if (!v) warnings.push(`${label} d'origine : ${raw.trim()}`)
+      if (!v) warnings.push(msg("legacy.originalValue", { field: msg(`fields.${label}`), value: raw.trim() }))
       return v ?? null
     }
     const digital = DIGITAL_MARKS.has(norm(r.support)) || DIGITAL_MARKS.has(norm(r.content))
     // Pour une clé Steam, l'ancienne appli écrit « Dematerialized » dans les trois états : ce n'est pas un état.
     const condition = (key: string, dict: Record<string, string>, label: string) =>
       digital || DIGITAL_MARKS.has(norm(r[key])) ? null : map(key, dict, label)
-    const title = text(r.name) ?? "(sans titre)"
+    const title = text(r.name) ?? msg("legacy.untitled")
     const platform = PLATFORM[norm(r.platform)] ?? text(r.platform) ?? "Inconnue"
     const copy: LegacyCopy = {
       title_as_entered: title,
-      support: digital ? DIGITAL : (map("support", SUPPORT, "Support") ?? "Physique"),
-      content: digital ? DIGITAL : map("content", CONTENT, "Contenu"),
-      condition_game: condition("cond_game", CONDITION, "État du jeu"),
-      condition_box: condition("cond_box", CONDITION, "État de la boîte"),
-      condition_manual: condition("cond_manual", MANUAL, "État de la notice"),
-      play_status: map("status", STATUS, "Statut"),
-      goal: map("goal", GOAL, "Objectif"),
-      region: map("region", REGION, "Région"),
+      support: digital ? DIGITAL : (map("support", SUPPORT, "support") ?? "Physique"),
+      content: digital ? DIGITAL : map("content", CONTENT, "content"),
+      condition_game: condition("cond_game", CONDITION, "conditionGame"),
+      condition_box: condition("cond_box", CONDITION, "conditionBox"),
+      condition_manual: condition("cond_manual", MANUAL, "conditionManual"),
+      play_status: map("status", STATUS, "playStatus"),
+      goal: map("goal", GOAL, "goal"),
+      region: map("region", REGION, "region"),
       edition: isEmpty(r.edition) ? null : text(r.edition),
       quantity: positive(r.copies) ?? "1",
       price: isEmpty(r.price) ? null : text(r.price),
@@ -227,9 +228,9 @@ export async function commitLegacy(db: Db, dataDir: string, igdb: IgdbClient | n
     try {
       validateCopy(d.copy ?? {}, d.title)
     } catch (err) {
-      errors.push(`Ligne ${i + 1} (${d.title}) : ${(err as Error).message}`)
+      errors.push(msg("legacy.line", { line: i + 1, title: d.title, error: (err as Error).message }))
     }
-    if (d.igdb_id !== null && !igdb) errors.push(`Ligne ${i + 1} (${d.title}) : IGDB n'est pas configuré.`)
+    if (d.igdb_id !== null && !igdb) errors.push(msg("legacy.line", { line: i + 1, title: d.title, error: msg("legacy.igdbNotConfigured") }))
   })
   if (errors.length) throw new ValidationError(errors.join(" "))
 
@@ -262,7 +263,7 @@ export async function commitLegacy(db: Db, dataDir: string, igdb: IgdbClient | n
         copyId,
         d.estimatedCents,
         todayIso(),
-        "Prix estimé repris de l'ancienne application",
+        msg("legacy.estimatedNote"),
       )
       report.valuations++
     }

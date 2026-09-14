@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from "react"
+import { useTranslation } from "react-i18next"
 
 import { inputClass } from "@/components/fields"
 import { cleanEan } from "@/lib/ean"
@@ -17,12 +18,14 @@ const FORMATS = ["ean_13", "ean_8", "upc_a"]
  * retenu que si sa clé de contrôle est juste, ce qui écarte les lectures partielles.
  * La caméra exige HTTPS : sur l'adresse du réseau local, il reste la saisie à la main.
  */
-export function Scanner({ onDetected, onClose, title = "Scanner le code-barres" }: Props) {
+export function Scanner({ onDetected, onClose, title: titleProp }: Props) {
+  const { t } = useTranslation()
+  const title = titleProp ?? t("scanner.defaultTitle")
   const video = useRef<HTMLVideoElement>(null)
   const callback = useRef(onDetected)
   callback.current = onDetected
   const [error, setError] = useState<string | null>(
-    window.isSecureContext ? null : "La caméra n'est disponible qu'en HTTPS (adresse fullset). Saisis les chiffres sous le code-barres.",
+    window.isSecureContext ? null : t("scanner.httpsOnly"),
   )
   const [manual, setManual] = useState("")
   const [manualError, setManualError] = useState(false)
@@ -82,8 +85,8 @@ export function Scanner({ onDetected, onClose, title = "Scanner le code-barres" 
         const name = (err as Error).name
         setError(
           name === "NotAllowedError"
-            ? "Accès à la caméra refusé : autorise-le dans les réglages du navigateur, ou saisis le code."
-            : "Caméra indisponible : saisis les chiffres sous le code-barres.",
+            ? t("scanner.denied")
+            : t("scanner.unavailable"),
         )
       }
     })()
@@ -105,7 +108,7 @@ export function Scanner({ onDetected, onClose, title = "Scanner le code-barres" 
       <div className="flex items-center justify-between px-4 py-3">
         <h2 className="font-medium">{title}</h2>
         <button onClick={onClose} className="rounded-md px-3 py-1.5 text-sm hover:bg-white/10">
-          Fermer
+          {t("common.close")}
         </button>
       </div>
       <div className="relative min-h-0 flex-1 overflow-hidden">
@@ -114,7 +117,7 @@ export function Scanner({ onDetected, onClose, title = "Scanner le code-barres" 
             <video ref={video} muted playsInline className="absolute inset-0 size-full object-cover" />
             {/* Gabarit : un code-barres est plus large que haut. */}
             <div className="pointer-events-none absolute top-1/2 left-1/2 h-32 w-[80%] max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-xl border-2 border-white/80 shadow-[0_0_0_9999px_rgba(0,0,0,0.45)]" />
-            <p className="absolute right-0 bottom-4 left-0 text-center text-sm text-white/80">Place le code-barres dans le cadre</p>
+            <p className="absolute right-0 bottom-4 left-0 text-center text-sm text-white/80">{t("scanner.frame")}</p>
           </>
         )}
         {error && <p className="px-6 pt-10 text-center text-sm text-white/85">{error}</p>}
@@ -124,7 +127,7 @@ export function Scanner({ onDetected, onClose, title = "Scanner le code-barres" 
           className={`${inputClass} min-w-0 flex-1 text-foreground`}
           inputMode="numeric"
           autoComplete="off"
-          placeholder="Ou tape les chiffres du code"
+          placeholder={t("scanner.manualPlaceholder")}
           value={manual}
           onChange={(e) => {
             setManual(e.target.value)
@@ -133,10 +136,10 @@ export function Scanner({ onDetected, onClose, title = "Scanner le code-barres" 
           aria-invalid={manualError}
         />
         <button disabled={!manual.trim()} className="rounded-lg bg-primary px-4 font-medium text-primary-foreground disabled:opacity-50">
-          OK
+          {t("scanner.ok")}
         </button>
       </form>
-      {manualError && <p className="-mt-2 px-4 pb-4 text-sm text-red-300">Ce n'est pas un code-barres valable : vérifie les chiffres.</p>}
+      {manualError && <p className="-mt-2 px-4 pb-4 text-sm text-red-300">{t("scanner.invalid")}</p>}
     </div>
   )
 }

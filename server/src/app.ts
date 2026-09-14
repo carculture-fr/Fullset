@@ -43,6 +43,7 @@ import { canonicalPlatform, listPlatforms } from "./catalog.js"
 import { COMMONS_UA, CommonsError, commonsFile, imageOptions, isCommonsMedia, pickAutomatic, type CommonsImage } from "./commons.js"
 import { addWish, deleteWish, listWishlist, updateWish } from "./wishlist.js"
 import { getPreferences, setPreferences } from "./preferences.js"
+import { keepLanguage, languageMiddleware, msg } from "./i18n.js"
 
 export const APP_VERSION = process.env.APP_VERSION ?? "dev"
 
@@ -62,12 +63,16 @@ const IGDB_IMAGES = "https://images.igdb.com/"
 
 export function createApp(db: Db, dataDir: string, deps: AppDeps = {}) {
   const fetchImpl = deps.fetchImpl ?? fetch
-  const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_IMAGE_BYTES, files: 1 } })
+  const multerUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_IMAGE_BYTES, files: 1 } })
+  // Multer rend la main depuis la lecture du flux : la suite repart dans la langue de la requête.
+  const upload = { single: (field: string) => keepLanguage(multerUpload.single(field)) }
   // Clients IGDB, Steam, ScanDex et RomM : relus à chaque usage, la configuration change dans l'appli.
   const services = createServices(db, { igdb: deps.igdb, romm: deps.romm, scandex: deps.scandex, steam: deps.steam }, fetchImpl)
 
   const app = express()
   app.disable("x-powered-by")
+  // Langue des messages (Accept-Language), posée avant tout ce qui peut répondre une erreur.
+  app.use(languageMiddleware)
   // Seul un proxy déclaré (TRUST_PROXY) est cru sur l'IP du client et le protocole : un
   // X-Forwarded-For envoyé par n'importe qui d'autre ne doit pas contourner la limite d'essais.
   const trustProxy = process.env.TRUST_PROXY?.trim()
@@ -82,6 +87,8 @@ export function createApp(db: Db, dataDir: string, deps: AppDeps = {}) {
   const smallJson = express.json({ limit: "100kb" })
   const bigJson = express.json({ limit: "10mb" })
   app.use((req, res, next) => (routePath(req).startsWith("/api/import") ? bigJson : smallJson)(req, res, next))
+  // Le lecteur JSON rend la main hors du contexte de la requête : on y rentre de nouveau.
+  app.use(languageMiddleware)
 
   app.post("/api/setup", auth.setup)
   app.post("/api/auth/login", auth.login)
@@ -91,7 +98,7 @@ export function createApp(db: Db, dataDir: string, deps: AppDeps = {}) {
   // --- Compte ---
   app.get("/api/account", (_req, res) => {
     const a = getAccount(db)
-    if (!a) throw new NotFoundError("Aucun compte.")
+    if (!a) throw new NotFoundError(msg("app.noAccount"))
     res.json(a)
   })
   app.put("/api/account", (req, res) => {
@@ -100,7 +107,7 @@ export function createApp(db: Db, dataDir: string, deps: AppDeps = {}) {
   })
   // Nouveau mot de passe : l'actuel est exigé ; les autres appareils sont déconnectés.
   app.put("/api/account/password", async (req, res) => {
-    if (!(await checkCredentials(db, getAccount(db)?.username, req.body?.current))) throw new ValidationError("Mot de passe actuel incorrect.")
+    if (!(await checkCredentials(db, getAccount(db)?.username, req.body?.current))) throw new ValidationError(msg("app.wrongCurrentPassword"))
     await setPassword(db, validatePassword(req.body?.password))
     const token = auth.sessionToken(req)
     if (token) deleteOtherSessions(db, token)
@@ -116,7 +123,7 @@ export function createApp(db: Db, dataDir: string, deps: AppDeps = {}) {
   app.get("/api/steam", (_req, res) => res.json(steamStatus(db, services.steam() !== null)))
   app.post("/api/steam/sync", async (_req, res) => {
     const steam = services.steam()
-    if (!steam) throw new SteamError("Steam n'est pas configuré : Réglages → Services.")
+    if (!steam) throw new SteamError(msg("app.steamNotConfigured"))
     res.json(await syncSteam(db, steam, services.igdb()))
   })
   app.get("/api/steam/candidates", (_req, res) => res.json({ items: steamCandidates(db) }))
@@ -154,7 +161,7 @@ export function createApp(db: Db, dataDir: string, deps: AppDeps = {}) {
   // --- Listes de valeurs ---
   const listKey = (req: Request) => {
     const k = String(req.params.list)
-    if (!isListKey(k)) throw new NotFoundError("Liste inconnue.")
+    if (!isListKey(k)) throw new NotFoundError(msg("app.unknownList"))
     return k
   }
   app.get("/api/lists", (_req, res) => res.json(listValues(db)))
@@ -202,12 +209,12 @@ export function createApp(db: Db, dataDir: string, deps: AppDeps = {}) {
 
   const id = (req: Request, name = "id") => {
     const n = Number(req.params[name])
-    if (!Number.isInteger(n) || n <= 0) throw new ValidationError("Identifiant invalide.")
+    if (!Number.isInteger(n) || n <= 0) throw new ValidationError(msg("common.invalidId"))
     return n
   }
   const needIgdb = () => {
     const igdb = services.igdb()
-    if (!igdb) throw new IgdbError("IGDB n'est pas configuré : Réglages → Services.")
+    if (!igdb) throw new IgdbError(msg("app.igdbNotConfigured"))
     return igdb
   }
 
@@ -228,7 +235,7 @@ export function createApp(db: Db, dataDir: string, deps: AppDeps = {}) {
 
   // Accepte un export Fullset (CSV ou JSON) ou le collection.json de départ (un tableau).
   app.post("/api/import", upload.single("file"), (req, res) => {
-    if (!req.file) throw new ValidationError("Aucun fichier reçu.")
+    if (!req.file) throw new ValidationError(msg("common.noFile"))
     const content = req.file.buffer.toString("utf8")
     const body = content.replace(/^﻿/, "").trimStart()
     let report: { games: number; copies: number; totalCents: number }
@@ -237,7 +244,7 @@ export function createApp(db: Db, dataDir: string, deps: AppDeps = {}) {
       try {
         entries = JSON.parse(body)
       } catch {
-        throw new ImportFormatError("JSON illisible.")
+        throw new ImportFormatError(msg("common.unreadableJson"))
       }
       report = importCollection(db, entries as Parameters<typeof importCollection>[1])
     } else {
@@ -260,7 +267,7 @@ export function createApp(db: Db, dataDir: string, deps: AppDeps = {}) {
   // --- Jeux ---
   app.get("/api/games/:id", async (req, res) => {
     const game = getGame(db, id(req))
-    if (!game) throw new NotFoundError("Jeu introuvable.")
+    if (!game) throw new NotFoundError(msg("common.gameNotFound"))
     const romm = services.romm()
     if (romm && game.igdb_id !== null) {
       try {
@@ -276,9 +283,9 @@ export function createApp(db: Db, dataDir: string, deps: AppDeps = {}) {
   app.post("/api/games", async (req, res) => {
     const { igdb_id, platform, title, copy } = req.body ?? {}
     const igdbId = igdb_id === null || igdb_id === undefined ? null : Number(igdb_id)
-    if (igdbId !== null && !Number.isInteger(igdbId)) throw new ValidationError("Identifiant IGDB invalide.")
+    if (igdbId !== null && !Number.isInteger(igdbId)) throw new ValidationError(msg("common.invalidIgdbId"))
     const p = canonicalPlatform(String(platform ?? ""))
-    if (!p) throw new ValidationError("La plateforme est obligatoire.")
+    if (!p) throw new ValidationError(msg("common.platformRequired"))
 
     let gameId = igdbId === null ? null : findGame(db, igdbId, p)
     const existed = gameId !== null
@@ -300,28 +307,28 @@ export function createApp(db: Db, dataDir: string, deps: AppDeps = {}) {
   app.post("/api/games/:id/igdb", async (req, res) => {
     const gameId = id(req)
     const game = getGame(db, gameId)
-    if (!game) throw new NotFoundError("Jeu introuvable.")
+    if (!game) throw new NotFoundError(msg("common.gameNotFound"))
     const igdbId = Number(req.body?.igdb_id)
-    if (!Number.isInteger(igdbId) || igdbId <= 0) throw new ValidationError("Identifiant IGDB invalide.")
+    if (!Number.isInteger(igdbId) || igdbId <= 0) throw new ValidationError(msg("common.invalidIgdbId"))
     await relinkGame(db, dataDir, gameId, await needIgdb().game(igdbId, game.platform), fetchImpl)
     res.json(getGame(db, gameId))
   })
 
   app.get("/api/games/:id/cover-options", async (req, res) => {
     const game = getGame(db, id(req))
-    if (!game) throw new NotFoundError("Jeu introuvable.")
+    if (!game) throw new NotFoundError(msg("common.gameNotFound"))
     res.json({ covers: game.igdb_id === null ? [] : (await needIgdb().game(game.igdb_id, game.platform)).covers })
   })
 
   app.post("/api/games/:id/cover", upload.single("file"), (req, res) => {
-    if (!req.file) throw new ValidationError("Aucune image reçue.")
+    if (!req.file) throw new ValidationError(msg("common.noImage"))
     res.json({ cover: setCover(db, dataDir, id(req), req.file.buffer, req.file.mimetype, "photo") })
   })
 
   app.post("/api/games/:id/cover/url", async (req, res) => {
     const url = String(req.body?.url ?? "")
     // Seules les images IGDB : le serveur ne va pas chercher n'importe quelle adresse pour le compte du client.
-    if (!url.startsWith(IGDB_IMAGES)) throw new ValidationError("Seules les jaquettes IGDB sont acceptées.")
+    if (!url.startsWith(IGDB_IMAGES)) throw new ValidationError(msg("common.igdbCoversOnly"))
     res.json({ cover: await setCoverFromUrl(db, dataDir, id(req), url, "igdb", fetchImpl) })
   })
 
@@ -343,19 +350,19 @@ export function createApp(db: Db, dataDir: string, deps: AppDeps = {}) {
   })
 
   app.post("/api/copies/:id/photos", upload.single("file"), (req, res) => {
-    if (!req.file) throw new ValidationError("Aucune image reçue.")
+    if (!req.file) throw new ValidationError(msg("common.noImage"))
     res.status(201).json(addPhoto(db, dataDir, id(req), req.file.buffer, req.file.mimetype))
   })
 
   // --- Import de l'ancienne application : analyse (rien n'est écrit), puis import des lignes retenues ---
   app.post("/api/import/legacy/analyze", upload.single("file"), async (req, res) => {
-    if (!req.file) throw new ValidationError("Aucun fichier reçu.")
+    if (!req.file) throw new ValidationError(msg("common.noFile"))
     const igdb = services.igdb()
     res.json({ igdb: igdb !== null, rows: await analyzeLegacy(db, igdb, req.file.buffer.toString("utf8")) })
   })
   app.post("/api/import/legacy/commit", async (req, res) => {
     const rows = req.body?.rows
-    if (!Array.isArray(rows) || rows.length === 0) throw new ValidationError("Aucune ligne à importer.")
+    if (!Array.isArray(rows) || rows.length === 0) throw new ValidationError(msg("app.noRowsToImport"))
     res.status(201).json(await commitLegacy(db, dataDir, services.igdb(), rows as LegacyDecision[], fetchImpl))
   })
 
@@ -364,12 +371,12 @@ export function createApp(db: Db, dataDir: string, deps: AppDeps = {}) {
   app.get("/api/platforms", (_req, res) => res.json({ platforms: listPlatforms(db) }))
   // Télécharge la version réduite d'une image Commons ; seuls les serveurs d'images de Wikimedia sont acceptés.
   const downloadCommons = async (image: CommonsImage) => {
-    if (!isCommonsMedia(image.url)) throw new CommonsError("Adresse d'image inattendue.")
+    if (!isCommonsMedia(image.url)) throw new CommonsError(msg("commons.unexpectedUrl"))
     const res = await fetchImpl(image.url, { headers: { "User-Agent": COMMONS_UA }, signal: AbortSignal.timeout(20_000) })
     const mime = res.headers.get("content-type")?.split(";")[0] ?? ""
-    if (!res.ok || !["image/jpeg", "image/png"].includes(mime)) throw new CommonsError(`Image Commons illisible (HTTP ${res.status}).`)
+    if (!res.ok || !["image/jpeg", "image/png"].includes(mime)) throw new CommonsError(msg("commons.unreadable", { status: res.status }))
     const bytes = Buffer.from(await res.arrayBuffer())
-    if (bytes.length > MAX_IMAGE_BYTES) throw new CommonsError("Image Commons trop lourde.")
+    if (bytes.length > MAX_IMAGE_BYTES) throw new CommonsError(msg("commons.tooLarge"))
     const credit = [image.artist, image.license].filter(Boolean).join(", ") || null
     return { bytes, mime, credit, page: image.page }
   }
@@ -413,7 +420,7 @@ export function createApp(db: Db, dataDir: string, deps: AppDeps = {}) {
     res.json({ ok: true })
   })
   app.post("/api/hardware/:id/photos", upload.single("file"), (req, res) => {
-    if (!req.file) throw new ValidationError("Aucune image reçue.")
+    if (!req.file) throw new ValidationError(msg("common.noImage"))
     res.status(201).json(addHardwarePhoto(db, dataDir, id(req), req.file.buffer, req.file.mimetype))
   })
   app.delete("/api/hardware-photos/:id", (req, res) => {
@@ -466,7 +473,7 @@ export function createApp(db: Db, dataDir: string, deps: AppDeps = {}) {
     res.json({ ok: true })
   })
 
-  app.all(/^\/api\/.*/, (_req, res) => res.status(404).json({ error: "Route inconnue." }))
+  app.all(/^\/api\/.*/, (_req, res) => res.status(404).json({ error: msg("common.unknownRoute") }))
 
   // Jaquettes officielles publiques ; photos des exemplaires derrière la session (requireAuth).
   app.use("/covers", express.static(path.join(dataDir, COVERS_DIR), { maxAge: "7d", fallthrough: false }))
@@ -482,14 +489,14 @@ export function createApp(db: Db, dataDir: string, deps: AppDeps = {}) {
     if (err instanceof ValidationError || err instanceof ImportFormatError) return res.status(400).json({ error: err.message })
     if (err instanceof CollectionNotEmptyError || err instanceof ConflictError) return res.status(409).json({ error: err.message })
     if (err instanceof NotFoundError) return res.status(404).json({ error: err.message })
-    if (err instanceof CommonsError && err.message.includes("invalide")) return res.status(400).json({ error: err.message })
+    if (err instanceof CommonsError && err.invalid) return res.status(400).json({ error: err.message })
     if (err instanceof IgdbError || err instanceof CommonsError || err instanceof SteamError) return res.status(502).json({ error: err.message })
     if (err instanceof multer.MulterError) {
-      return res.status(err.code === "LIMIT_FILE_SIZE" ? 413 : 400).json({ error: err.code === "LIMIT_FILE_SIZE" ? "Image trop lourde (15 Mo au plus)." : err.message })
+      return res.status(err.code === "LIMIT_FILE_SIZE" ? 413 : 400).json({ error: err.code === "LIMIT_FILE_SIZE" ? msg("common.imageTooLarge") : err.message })
     }
     if (err.status && err.status < 500) return res.status(err.status).json({ error: err.message })
     console.error(err)
-    res.status(500).json({ error: "Erreur interne." })
+    res.status(500).json({ error: msg("common.internalError") })
   })
 
   return app

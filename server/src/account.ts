@@ -3,6 +3,7 @@ import { createHash, randomBytes, scrypt, timingSafeEqual, type BinaryLike, type
 import { ValidationError } from "./copies.js"
 import type { Db } from "./db.js"
 import { text } from "./domain.js"
+import { msg } from "./i18n.js"
 
 // Le compte unique de l'installation, créé par l'assistant de premier lancement, et ses sessions.
 
@@ -41,18 +42,18 @@ export const dummyPasswordHash = () => (dummyHash ??= hashPassword(randomBytes(1
 
 export function validatePassword(value: unknown) {
   const password = typeof value === "string" ? value : ""
-  if (password.length < PASSWORD_MIN) throw new ValidationError(`Mot de passe : ${PASSWORD_MIN} caractères au moins.`)
-  if (password.length > 200) throw new ValidationError("Mot de passe : 200 caractères au plus.")
+  if (password.length < PASSWORD_MIN) throw new ValidationError(msg("account.passwordMin", { min: PASSWORD_MIN }))
+  if (password.length > 200) throw new ValidationError(msg("account.passwordMax", { max: 200 }))
   return password
 }
 
 export function validateProfile(input: Record<string, unknown>) {
   const username = text(input.username)
-  if (!username || /\s/.test(username) || username.length > 40) throw new ValidationError("Identifiant : 1 à 40 caractères, sans espace.")
+  if (!username || /\s/.test(username) || username.length > 40) throw new ValidationError(msg("account.username"))
   const email = text(input.email)
-  if (email && !EMAIL.test(email)) throw new ValidationError("E-mail invalide.")
+  if (email && !EMAIL.test(email)) throw new ValidationError(msg("account.email"))
   const displayName = text(input.display_name)
-  if (displayName && displayName.length > 60) throw new ValidationError("Nom affiché : 60 caractères au plus.")
+  if (displayName && displayName.length > 60) throw new ValidationError(msg("account.displayName"))
   return { username, email, display_name: displayName }
 }
 

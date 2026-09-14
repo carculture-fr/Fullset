@@ -19,9 +19,11 @@ export const PREFERENCE_CHOICES = {
   games_view: ["grille", "liste"],
   games_groups: ["replies", "depliees"],
   hardware_sort: ["plateforme", "nom", "achat", "prix"],
+  // Langue de l'interface : « auto » suit le navigateur (français s'il est en tête, anglais sinon).
+  language: ["auto", "fr", "en"],
 } as const
 export type Preferences = { [K in keyof typeof PREFERENCE_CHOICES]: (typeof PREFERENCE_CHOICES)[K][number] }
-export const DEFAULT_PREFERENCES: Preferences = { games_sort: "nom", games_view: "grille", games_groups: "replies", hardware_sort: "plateforme" }
+export const DEFAULT_PREFERENCES: Preferences = { games_sort: "nom", games_view: "grille", games_groups: "replies", hardware_sort: "plateforme", language: "auto" }
 
 export const DIGITAL = "Dématérialisé"
 export const UNDEFINED = "Non défini"

@@ -1,26 +1,18 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react"
 
-import { DEFAULT_PREFERENCES, type Preferences } from "@domain"
+import { DEFAULT_PREFERENCES, PREFERENCE_CHOICES, type Preferences } from "@domain"
 
 import { api, send } from "./api"
+import { applyAccountLanguage } from "./i18n"
 
 export type { Preferences }
 export type HardwareSort = Preferences["hardware_sort"]
 
-export const HARDWARE_SORTS: ReadonlyArray<{ key: HardwareSort; label: string }> = [
-  { key: "plateforme", label: "Par console" },
-  { key: "nom", label: "Nom" },
-  { key: "achat", label: "Achat le plus récent" },
-  { key: "prix", label: "Prix le plus élevé" },
-]
-export const VIEWS: ReadonlyArray<{ key: Preferences["games_view"]; label: string }> = [
-  { key: "grille", label: "Grille de jaquettes" },
-  { key: "liste", label: "Liste" },
-]
-export const GROUPS: ReadonlyArray<{ key: Preferences["games_groups"]; label: string }> = [
-  { key: "replies", label: "Repliées" },
-  { key: "depliees", label: "Toutes dépliées" },
-]
+// Libellés dans les fichiers de langue : `sorts.hardware.<key>`, `views.<key>`, `groups.<key>`, `languages.<key>`.
+export const HARDWARE_SORTS = PREFERENCE_CHOICES.hardware_sort.map((key) => ({ key }))
+export const VIEWS = PREFERENCE_CHOICES.games_view.map((key) => ({ key }))
+export const GROUPS = PREFERENCE_CHOICES.games_groups.map((key) => ({ key }))
+export const LANGUAGE_CHOICES = PREFERENCE_CHOICES.language.map((key) => ({ key }))
 
 // Copie locale : la bibliothèque s'ouvre tout de suite dans le bon affichage, même hors ligne.
 const CACHE_KEY = "fullset-preferences"
@@ -56,6 +48,9 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       () => {},
     )
   }, [])
+
+  // Une fois connecté, la langue du compte fait foi.
+  useEffect(() => applyAccountLanguage(prefs.language), [prefs.language])
 
   const save = useCallback(async (patch: Partial<Preferences>) => {
     const p = await send<Preferences>("PUT", "/api/preferences", patch)

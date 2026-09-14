@@ -1,6 +1,7 @@
 import { NotFoundError, ValidationError } from "./copies.js"
 import type { Db } from "./db.js"
 import { text } from "./domain.js"
+import { msg } from "./i18n.js"
 
 // Listes de valeurs libres gérées dans les réglages. Les listes fixes (états, contenu, statut…)
 // restent dans domain.ts : les filtres et les statistiques s'appuient dessus.
@@ -71,9 +72,9 @@ export function listValues(db: Db): Record<ListKey, ListValue[]> {
 
 function clean(value: unknown) {
   const v = text(value)
-  if (!v) throw new ValidationError("La valeur est vide.")
-  if (v.length > 80) throw new ValidationError("80 caractères au plus.")
-  if (v.includes(",")) throw new ValidationError("Pas de virgule : elle sépare les tags.")
+  if (!v) throw new ValidationError(msg("lists.empty"))
+  if (v.length > 80) throw new ValidationError(msg("lists.tooLong"))
+  if (v.includes(",")) throw new ValidationError(msg("lists.noComma"))
   return v
 }
 
@@ -114,7 +115,7 @@ function replaceEverywhere(db: Db, list: ListKey, from: string, to: string) {
  */
 export function renameValue(db: Db, list: ListKey, id: number, value: unknown) {
   const row = db.prepare("SELECT id, value FROM list_values WHERE id = ? AND list = ?").get(id, list) as { id: number; value: string } | undefined
-  if (!row) throw new NotFoundError("Valeur introuvable.")
+  if (!row) throw new NotFoundError(msg("lists.notFound"))
   const v = clean(value)
   const target = findValue(db, list, v)
   db.transaction(() => {
@@ -128,8 +129,8 @@ export function renameValue(db: Db, list: ListKey, id: number, value: unknown) {
 /** Supprime une valeur inutilisée ; une valeur utilisée se renomme ou se fusionne. */
 export function deleteValue(db: Db, list: ListKey, id: number) {
   const row = db.prepare("SELECT value FROM list_values WHERE id = ? AND list = ?").get(id, list) as { value: string } | undefined
-  if (!row) throw new NotFoundError("Valeur introuvable.")
+  if (!row) throw new NotFoundError(msg("lists.notFound"))
   const count = usage(db, list).get(row.value.toLowerCase())?.count ?? 0
-  if (count > 0) throw new ConflictError(`« ${row.value} » est utilisé ${count} fois : renomme-le ou fusionne-le plutôt.`)
+  if (count > 0) throw new ConflictError(msg("lists.inUse", { value: row.value, count }))
   db.prepare("DELETE FROM list_values WHERE id = ?").run(id)
 }

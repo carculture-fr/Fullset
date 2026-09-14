@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 
 import { CopyForm, copyToValues, newCopyValues } from "@/components/copy-form"
@@ -8,6 +9,7 @@ import { copyPayload, uploadPhotos } from "@/lib/save-copy"
 
 /** Ajout d'un exemplaire à un jeu existant (/jeux/:id/ajouter) ou modification (/jeux/:id/exemplaires/:copyId). */
 export default function CopyEditor() {
+  const { t } = useTranslation()
   const { id, copyId } = useParams()
   // Depuis la page brocante (« j'en prends un autre ») : le code scanné suit dans l'exemplaire.
   const ean = useSearchParams()[0].get("ean") ?? ""
@@ -28,17 +30,15 @@ export default function CopyEditor() {
   }, [id, copyId])
 
   if (error) return <p className="py-16 text-center text-destructive">{error}</p>
-  if (!game) return <p className="py-16 text-center text-muted-foreground">Chargement…</p>
+  if (!game) return <p className="py-16 text-center text-muted-foreground">{t("copyEditor.loading")}</p>
 
   const copy = copyId ? game.copies.find((c) => String(c.id) === copyId) : undefined
-  if (copyId && !copy) return <p className="py-16 text-center text-destructive">Exemplaire introuvable.</p>
+  if (copyId && !copy) return <p className="py-16 text-center text-destructive">{t("copyEditor.notFound")}</p>
   const backToGame = () => navigate(`/jeux/${game.id}`, { replace: true })
 
   const remove = async () => {
     const last = game.copies.length === 1
-    const message = last
-      ? "Supprimer ce dernier exemplaire ? Le jeu sera retiré de la bibliothèque, avec sa jaquette."
-      : "Supprimer cet exemplaire et ses photos ?"
+    const message = last ? t("copyEditor.confirmDeleteLast") : t("copyEditor.confirmDelete")
     if (!window.confirm(message)) return
     try {
       const res = await send<{ gameDeleted: boolean }>("DELETE", `/api/copies/${copy!.id}`)
@@ -51,7 +51,7 @@ export default function CopyEditor() {
   }
 
   const deletePhoto = async (p: Photo) => {
-    if (!window.confirm("Supprimer cette photo ?")) return
+    if (!window.confirm(t("copyEditor.confirmDeletePhoto"))) return
     await send("DELETE", `/api/photos/${p.id}`)
     setPhotos((list) => list.filter((x) => x.id !== p.id))
   }
@@ -62,16 +62,16 @@ export default function CopyEditor() {
         ← {game.title}
       </Link>
       <div className="mb-5 flex items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold">{copy ? "Modifier l'exemplaire" : "Nouvel exemplaire"}</h1>
+        <h1 className="text-xl font-semibold">{copy ? t("copyEditor.editTitle") : t("copyEditor.newTitle")}</h1>
         {copy && (
           <button onClick={remove} className="text-sm text-destructive hover:underline">
-            Supprimer
+            {t("common.delete")}
           </button>
         )}
       </div>
       <CopyForm
         initial={copy ? copyToValues(copy) : { ...newCopyValues(game.platform), barcode: ean }}
-        submitLabel={copy ? "Enregistrer" : "Ajouter l'exemplaire"}
+        submitLabel={copy ? t("common.save") : t("copyEditor.submitNew")}
         existingPhotos={photos}
         onDeletePhoto={copy ? deletePhoto : undefined}
         onSubmit={async (values, newPhotos) => {

@@ -3,6 +3,7 @@ import type { Db } from "./db.js"
 import { DIGITAL } from "./domain.js"
 import { createGame, findGame } from "./games.js"
 import type { IgdbClient } from "./igdb.js"
+import { msg } from "./i18n.js"
 
 // Bibliothèque Steam du compte (API Web Steam, GetOwnedGames). Choix de conception :
 // les jeux absents passent par un écran de choix, et le temps de jeu ne se met à jour qu'au
@@ -30,16 +31,16 @@ export class Steam implements SteamClient {
       res = await this.fetchImpl(`https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/?${params}`, { signal: AbortSignal.timeout(20_000) })
     } catch (err) {
       // Pas d'adresse dans le message : elle porte la clé.
-      throw new SteamError(`Steam injoignable (${(err as Error).name}).`)
+      throw new SteamError(msg("steam.unreachable", { error: (err as Error).name }))
     }
-    if (res.status === 401 || res.status === 403) throw new SteamError("Steam refuse la clé API.")
-    if (!res.ok) throw new SteamError(`Steam a répondu HTTP ${res.status}.`)
+    if (res.status === 401 || res.status === 403) throw new SteamError(msg("steam.keyRefused"))
+    if (!res.ok) throw new SteamError(msg("steam.http", { status: res.status }))
     const body = (await res.json()) as { response?: { games?: Array<{ appid: number; name?: string; playtime_forever?: number; rtime_last_played?: number }> } }
     // Profil privé ou SteamID faux : Steam répond 200 avec une réponse vide.
-    if (!body.response?.games) throw new SteamError("Bibliothèque Steam illisible : vérifie le SteamID et que les « Détails des jeux » du profil sont publics.")
+    if (!body.response?.games) throw new SteamError(msg("steam.unreadable"))
     return body.response.games.map((g) => ({
       appid: g.appid,
-      name: g.name ?? `Jeu Steam ${g.appid}`,
+      name: g.name ?? msg("steam.unnamed", { appid: g.appid }),
       playtime_minutes: g.playtime_forever ?? 0,
       last_played: g.rtime_last_played ? g.rtime_last_played * 1000 : null,
     }))

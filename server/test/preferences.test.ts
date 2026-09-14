@@ -32,15 +32,17 @@ const put = (body: unknown) => fetch(`${base}/api/preferences`, { method: "PUT",
 
 describe("affichage par défaut", () => {
   it("part des valeurs d'origine, puis garde un choix sans toucher aux autres", async () => {
-    expect(await get()).toEqual({ games_sort: "nom", games_view: "grille", games_groups: "replies", hardware_sort: "plateforme" })
+    expect(await get()).toEqual({ games_sort: "nom", games_view: "grille", games_groups: "replies", hardware_sort: "plateforme", language: "auto" })
     expect((await put({ games_sort: "plateforme" })).status).toBe(200)
     await put({ games_view: "liste" })
-    expect(await get()).toEqual({ games_sort: "plateforme", games_view: "liste", games_groups: "replies", hardware_sort: "plateforme" })
+    await put({ language: "en" })
+    expect(await get()).toEqual({ games_sort: "plateforme", games_view: "liste", games_groups: "replies", hardware_sort: "plateforme", language: "en" })
   })
 
   it("refuse une préférence ou une valeur inconnue", async () => {
     expect((await put({ games_sort: "couleur" })).status).toBe(400)
     expect((await put({ theme: "rose" })).status).toBe(400)
+    expect((await put({ language: "de" })).status).toBe(400)
     expect((await get()).games_sort).toBe("plateforme")
   })
 })

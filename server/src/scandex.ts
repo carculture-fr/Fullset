@@ -1,5 +1,6 @@
 import type { Db } from "./db.js"
 import { platformName } from "./igdb.js"
+import { msg } from "./i18n.js"
 
 // ScanDex (scandex.gamery.app) : environ 100 000 codes-barres de jeux reliés à leur fiche IGDB.
 // Mesuré le 14/09/2026 sur 40 codes européens (Open Products Facts) : 18 trouvés, dont 3 faux
@@ -32,10 +33,10 @@ export class Scandex implements ScandexClient {
         signal: AbortSignal.timeout(8000),
       })
     } catch (err) {
-      throw new ScandexError(`ScanDex injoignable : ${(err as Error).message}`)
+      throw new ScandexError(msg("scandex.unreachable", { error: (err as Error).message }))
     }
     if (res.status === 404) return null
-    if (!res.ok) throw new ScandexError(`ScanDex a répondu HTTP ${res.status}`)
+    if (!res.ok) throw new ScandexError(msg("scandex.http", { status: res.status }))
     const body = (await res.json()) as { igdb_metadata?: { id?: number; name?: string; platform?: { name?: string } } }
     const m = body.igdb_metadata
     if (!m?.id || !m.name) return null

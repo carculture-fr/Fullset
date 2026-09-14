@@ -36,9 +36,9 @@ export type LibraryGame = {
 
 export const NONE = "Non renseigné"
 
+// Libellé affiché : clé `facets.<key>` des fichiers de langue.
 type Facet = {
   key: string
-  label: string
   /** « game » : propriété du jeu ; « copy » : un exemplaire au moins doit la porter. */
   level: "game" | "copy"
   order?: readonly string[]
@@ -46,27 +46,22 @@ type Facet = {
 }
 
 export const FACETS: Facet[] = [
-  { key: "plateforme", label: "Plateforme", level: "game", values: (g) => [g.platform] },
-  { key: "support", label: "Support", level: "copy", order: SUPPORTS, values: (_g, c) => [c.support] },
-  { key: "statut", label: "Statut", level: "copy", order: PLAY_STATUSES, values: (_g, c) => [c.play_status] },
-  { key: "contenu", label: "Contenu", level: "copy", order: CONTENTS, values: (_g, c) => [c.content] },
-  { key: "etat-jeu", label: "État du jeu", level: "copy", order: CONDITIONS, values: (_g, c) => [c.condition_game] },
-  { key: "etat-boite", label: "État de la boîte", level: "copy", order: CONDITIONS, values: (_g, c) => [c.condition_box] },
-  { key: "etat-notice", label: "État de la notice", level: "copy", order: MANUAL_CONDITIONS, values: (_g, c) => [c.condition_manual] },
-  { key: "region", label: "Région", level: "copy", order: REGIONS, values: (_g, c) => [c.region] },
-  { key: "lieu", label: "Lieu d'achat", level: "copy", values: (_g, c) => [c.purchase_place] },
-  { key: "tag", label: "Tags", level: "copy", values: (_g, c) => (c.tags ?? "").split(",").map((t) => t.trim()) },
+  { key: "plateforme", level: "game", values: (g) => [g.platform] },
+  { key: "support", level: "copy", order: SUPPORTS, values: (_g, c) => [c.support] },
+  { key: "statut", level: "copy", order: PLAY_STATUSES, values: (_g, c) => [c.play_status] },
+  { key: "contenu", level: "copy", order: CONTENTS, values: (_g, c) => [c.content] },
+  { key: "etat-jeu", level: "copy", order: CONDITIONS, values: (_g, c) => [c.condition_game] },
+  { key: "etat-boite", level: "copy", order: CONDITIONS, values: (_g, c) => [c.condition_box] },
+  { key: "etat-notice", level: "copy", order: MANUAL_CONDITIONS, values: (_g, c) => [c.condition_manual] },
+  { key: "region", level: "copy", order: REGIONS, values: (_g, c) => [c.region] },
+  { key: "lieu", level: "copy", values: (_g, c) => [c.purchase_place] },
+  { key: "tag", level: "copy", values: (_g, c) => (c.tags ?? "").split(",").map((t) => t.trim()) },
 ]
 
 export type Filters = Record<string, string[]>
 
-export const SORTS = [
-  { key: "nom", label: "Nom" },
-  { key: "achat", label: "Achat le plus récent" },
-  { key: "prix", label: "Prix le plus élevé" },
-  { key: "valeur", label: "Valeur estimée" },
-  { key: "plateforme", label: "Par console" },
-] as const
+// Libellé affiché : clé `sorts.games.<key>` des fichiers de langue.
+export const SORTS = [{ key: "nom" }, { key: "achat" }, { key: "prix" }, { key: "valeur" }, { key: "plateforme" }] as const
 export type SortKey = (typeof SORTS)[number]["key"]
 
 export type Result = { game: LibraryGame; copies: LibraryCopy[] }

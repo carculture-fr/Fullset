@@ -12,6 +12,7 @@ import type { Db } from "./db.js"
 import { CONDITIONS, HW_CONTENTS, HW_KINDS, HW_WORKING, MANUAL_CONDITIONS, REGIONS, isoDate, text, toCents } from "./domain.js"
 import { extensionOf } from "./media.js"
 import { parseValuation } from "./valuations.js"
+import { msg } from "./i18n.js"
 
 export const HW_FIELDS = [
   "kind",
@@ -50,32 +51,32 @@ export function validateHardware(input: Record<string, unknown>): HwData {
   const errors: string[] = []
   const pick = (key: string, allowed: readonly string[], label: string) => {
     const v = text(input[key])
-    if (v !== null && !allowed.includes(v)) errors.push(`${label} : « ${v} » n'est pas une valeur proposée.`)
+    if (v !== null && !allowed.includes(v)) errors.push(msg("common.notProposed", { field: msg(`fields.${label}`), value: v }))
     return v
   }
-  const kind = pick("kind", HW_KINDS, "Type")
-  if (!kind) errors.push("Le type est obligatoire.")
+  const kind = pick("kind", HW_KINDS, "kind")
+  if (!kind) errors.push(msg("hardware.kindRequired"))
   const rawPlatform = text(input.platform)
   const platform = rawPlatform && canonicalPlatform(rawPlatform)
-  if (!platform) errors.push("La console (plateforme) est obligatoire.")
+  if (!platform) errors.push(msg("hardware.platformRequired"))
   const price = text(input.price)
   const priceCents = toCents(price)
-  if (price !== null && (priceCents === null || priceCents < 0)) errors.push(`Prix : « ${price} » n'est pas un montant.`)
+  if (price !== null && (priceCents === null || priceCents < 0)) errors.push(msg("common.notAnAmount", { field: msg("fields.price"), value: price }))
   const rawDate = text(input.purchase_date)
   const date = isoDate(rawDate)
-  if (rawDate !== null && (!date || new Date(`${date}T00:00:00Z`).toISOString().slice(0, 10) !== date)) errors.push(`Date d'achat : « ${rawDate} » n'est pas une date.`)
+  if (rawDate !== null && (!date || new Date(`${date}T00:00:00Z`).toISOString().slice(0, 10) !== date)) errors.push(msg("common.notADate", { field: msg("fields.purchaseDate"), value: rawDate }))
   const data: HwData = {
     kind,
     platform,
     model: text(input.model),
     edition: text(input.edition),
     color: text(input.color),
-    region: pick("region", REGIONS, "Région"),
-    content: pick("content", HW_CONTENTS, "Contenu"),
-    condition_item: pick("condition_item", CONDITIONS, "État"),
-    condition_box: pick("condition_box", CONDITIONS, "État de la boîte"),
-    condition_manual: pick("condition_manual", MANUAL_CONDITIONS, "État de la notice"),
-    working: pick("working", HW_WORKING, "Fonctionnement"),
+    region: pick("region", REGIONS, "region"),
+    content: pick("content", HW_CONTENTS, "content"),
+    condition_item: pick("condition_item", CONDITIONS, "condition"),
+    condition_box: pick("condition_box", CONDITIONS, "conditionBox"),
+    condition_manual: pick("condition_manual", MANUAL_CONDITIONS, "conditionManual"),
+    working: pick("working", HW_WORKING, "working"),
     price_cents: priceCents,
     purchase_date: date,
     purchase_place: text(input.purchase_place),
@@ -105,7 +106,7 @@ export function listHardware(db: Db): HardwareItem[] {
 
 export function getHardware(db: Db, id: number) {
   const item = listHardware(db).find((h) => h.id === id)
-  if (!item) throw new NotFoundError("Élément introuvable.")
+  if (!item) throw new NotFoundError(msg("hardware.notFound"))
   const photos = (db.prepare("SELECT id, file FROM hardware_photos WHERE hardware_id = ? ORDER BY id").all(id) as Array<{ id: number; file: string }>).map((p) => ({
     id: p.id,
     url: `/photos/${p.file}`,
@@ -126,20 +127,20 @@ export function updateHardware(db: Db, id: number, input: Record<string, unknown
   const data = validateHardware(input)
   rememberPlatform(db, data.platform, data.model)
   const res = db.prepare(`UPDATE hardware SET ${HW_FIELDS.map((f) => `${f} = @${f}`).join(", ")}, updated_at = datetime('now') WHERE id = @id`).run({ ...data, id })
-  if (res.changes === 0) throw new NotFoundError("Élément introuvable.")
+  if (res.changes === 0) throw new NotFoundError(msg("hardware.notFound"))
 }
 
 export function deleteHardware(db: Db, dataDir: string, id: number) {
   const files = db.prepare("SELECT file FROM hardware_photos WHERE hardware_id = ?").all(id) as Array<{ file: string }>
   const image = imageFile(db, id)
-  if (db.prepare("DELETE FROM hardware WHERE id = ?").run(id).changes === 0) throw new NotFoundError("Élément introuvable.")
+  if (db.prepare("DELETE FROM hardware WHERE id = ?").run(id).changes === 0) throw new NotFoundError(msg("hardware.notFound"))
   for (const f of files) removeFile(path.join(dataDir, PHOTOS_DIR, f.file))
   if (image) removeFile(path.join(dataDir, COVERS_DIR, image))
 }
 
 const imageFile = (db: Db, id: number) => {
   const row = db.prepare("SELECT image_file FROM hardware WHERE id = ?").get(id) as { image_file: string | null } | undefined
-  if (!row) throw new NotFoundError("Élément introuvable.")
+  if (!row) throw new NotFoundError(msg("hardware.notFound"))
   return row.image_file
 }
 
@@ -162,7 +163,7 @@ export function clearHardwareImage(db: Db, dataDir: string, id: number) {
 }
 
 export function addHardwarePhoto(db: Db, dataDir: string, id: number, bytes: Buffer, mime: string) {
-  if (!db.prepare("SELECT 1 FROM hardware WHERE id = ?").get(id)) throw new NotFoundError("Élément introuvable.")
+  if (!db.prepare("SELECT 1 FROM hardware WHERE id = ?").get(id)) throw new NotFoundError(msg("hardware.notFound"))
   const file = `hw-${id}-${randomUUID().slice(0, 8)}${extensionOf(mime)}`
   const dir = path.join(dataDir, PHOTOS_DIR)
   mkdirSync(dir, { recursive: true })
@@ -173,13 +174,13 @@ export function addHardwarePhoto(db: Db, dataDir: string, id: number, bytes: Buf
 
 export function deleteHardwarePhoto(db: Db, dataDir: string, photoId: number) {
   const row = db.prepare("SELECT file FROM hardware_photos WHERE id = ?").get(photoId) as { file: string } | undefined
-  if (!row) throw new NotFoundError("Photo introuvable.")
+  if (!row) throw new NotFoundError(msg("common.photoNotFound"))
   db.prepare("DELETE FROM hardware_photos WHERE id = ?").run(photoId)
   removeFile(path.join(dataDir, PHOTOS_DIR, row.file))
 }
 
 export function addHardwareValuation(db: Db, id: number, input: Record<string, unknown>) {
-  if (!db.prepare("SELECT 1 FROM hardware WHERE id = ?").get(id)) throw new NotFoundError("Élément introuvable.")
+  if (!db.prepare("SELECT 1 FROM hardware WHERE id = ?").get(id)) throw new NotFoundError(msg("hardware.notFound"))
   const v = parseValuation(input)
   return Number(
     db.prepare("INSERT INTO hardware_valuations (hardware_id, amount_cents, valued_on, source, note) VALUES (?, ?, ?, 'manuel', ?)").run(id, v.amount, v.date, v.note)
@@ -188,7 +189,7 @@ export function addHardwareValuation(db: Db, id: number, input: Record<string, u
 }
 
 export function deleteHardwareValuation(db: Db, valuationId: number) {
-  if (db.prepare("DELETE FROM hardware_valuations WHERE id = ?").run(valuationId).changes === 0) throw new NotFoundError("Estimation introuvable.")
+  if (db.prepare("DELETE FROM hardware_valuations WHERE id = ?").run(valuationId).changes === 0) throw new NotFoundError(msg("common.valuationNotFound"))
 }
 
 export type HardwareStats = {

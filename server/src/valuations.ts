@@ -1,6 +1,7 @@
 import { NotFoundError, ValidationError } from "./copies.js"
 import type { Db } from "./db.js"
 import { isoDate, text, toCents } from "./domain.js"
+import { msg } from "./i18n.js"
 
 /** Date du jour à Paris, au format ISO (le conteneur tourne en TZ=Europe/Paris). */
 export const todayIso = () => new Date().toLocaleDateString("sv-SE", { timeZone: process.env.TZ || "Europe/Paris" })
@@ -13,15 +14,15 @@ export const todayIso = () => new Date().toLocaleDateString("sv-SE", { timeZone:
 export function parseValuation(input: Record<string, unknown>) {
   const raw = text(input.amount)
   const amount = toCents(raw)
-  if (amount === null || amount < 0) throw new ValidationError(`Montant : « ${raw ?? ""} » n'est pas un montant.`)
+  if (amount === null || amount < 0) throw new ValidationError(msg("common.notAnAmount", { field: msg("fields.amount"), value: raw ?? "" }))
   const rawDate = text(input.valued_on)
   const date = rawDate === null ? todayIso() : isoDate(rawDate)
-  if (!date || new Date(`${date}T00:00:00Z`).toISOString().slice(0, 10) !== date) throw new ValidationError(`Date : « ${rawDate} » n'est pas une date.`)
+  if (!date || new Date(`${date}T00:00:00Z`).toISOString().slice(0, 10) !== date) throw new ValidationError(msg("common.notADate", { field: msg("fields.date"), value: rawDate }))
   return { amount, date, note: text(input.note) }
 }
 
 export function addValuation(db: Db, copyId: number, input: Record<string, unknown>) {
-  if (!db.prepare("SELECT 1 FROM copies WHERE id = ?").get(copyId)) throw new NotFoundError("Exemplaire introuvable.")
+  if (!db.prepare("SELECT 1 FROM copies WHERE id = ?").get(copyId)) throw new NotFoundError(msg("common.copyNotFound"))
   const v = parseValuation(input)
   const res = db
     .prepare("INSERT INTO valuations (copy_id, amount_cents, valued_on, source, note) VALUES (?, ?, ?, 'manuel', ?)")
@@ -30,7 +31,7 @@ export function addValuation(db: Db, copyId: number, input: Record<string, unkno
 }
 
 export function deleteValuation(db: Db, id: number) {
-  if (db.prepare("DELETE FROM valuations WHERE id = ?").run(id).changes === 0) throw new NotFoundError("Estimation introuvable.")
+  if (db.prepare("DELETE FROM valuations WHERE id = ?").run(id).changes === 0) throw new NotFoundError(msg("common.valuationNotFound"))
 }
 
 /** Sous-requêtes SQL de la dernière estimation d'un exemplaire (alias de table : copies). */

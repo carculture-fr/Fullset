@@ -3,6 +3,7 @@ import { csvCell } from "./csv.js"
 import type { Db } from "./db.js"
 import { text } from "./domain.js"
 import { listLibrary, type LibraryGame } from "./library.js"
+import { msg } from "./i18n.js"
 
 // Il n'existe pas de base ouverte des codes-barres des jeux PAL : Fullset les apprend.
 // Le premier scan d'une boîte se rattache à un jeu (et à son édition) ; les suivants le retrouvent.
@@ -10,10 +11,10 @@ import { listLibrary, type LibraryGame } from "./library.js"
 /** EAN-8, UPC-A (12), EAN-13 ou ITF-14 : que des chiffres, clé de contrôle GS1 juste. */
 export function normalizeEan(raw: unknown): string {
   const digits = String(raw ?? "").replace(/\D/g, "")
-  if (![8, 12, 13, 14].includes(digits.length)) throw new ValidationError(`« ${text(raw) ?? ""} » n'est pas un code-barres EAN.`)
+  if (![8, 12, 13, 14].includes(digits.length)) throw new ValidationError(msg("barcodes.notEan", { value: text(raw) ?? "" }))
   const body = digits.slice(0, -1)
   const sum = [...body].reverse().reduce((n, d, i) => n + Number(d) * (i % 2 === 0 ? 3 : 1), 0)
-  if ((10 - (sum % 10)) % 10 !== Number(digits.at(-1))) throw new ValidationError(`Le code ${digits} a une clé de contrôle fausse : scan à refaire.`)
+  if ((10 - (sum % 10)) % 10 !== Number(digits.at(-1))) throw new ValidationError(msg("barcodes.badCheckDigit", { code: digits }))
   return digits
 }
 
@@ -97,7 +98,7 @@ export function deleteBarcode(db: Db, raw: unknown) {
   })
   const learned = db.prepare("DELETE FROM barcodes WHERE ean = ?").run(ean).changes
   for (const c of copies) db.prepare("UPDATE copies SET barcode = NULL, updated_at = datetime('now') WHERE id = ?").run(c.id)
-  if (!learned && !copies.length) throw new NotFoundError("Code inconnu.")
+  if (!learned && !copies.length) throw new NotFoundError(msg("barcodes.unknown"))
 }
 
 export function exportBarcodesCsv(db: Db) {
@@ -124,7 +125,7 @@ export function lookupBarcode(db: Db, raw: unknown): BarcodeLookup {
 export function linkBarcode(db: Db, raw: unknown, gameId: unknown, edition: unknown) {
   const ean = normalizeEan(raw)
   const id = Number(gameId)
-  if (!Number.isInteger(id) || !db.prepare("SELECT 1 FROM games WHERE id = ?").get(id)) throw new NotFoundError("Jeu introuvable.")
+  if (!Number.isInteger(id) || !db.prepare("SELECT 1 FROM games WHERE id = ?").get(id)) throw new NotFoundError(msg("common.gameNotFound"))
   db.prepare("INSERT INTO barcodes (ean, game_id, edition) VALUES (?, ?, ?) ON CONFLICT(ean) DO UPDATE SET game_id = excluded.game_id, edition = excluded.edition").run(
     ean,
     id,

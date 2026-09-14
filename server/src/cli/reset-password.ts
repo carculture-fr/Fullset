@@ -6,16 +6,19 @@ import path from "node:path"
 
 import { deleteAllSessions, getAccount, setPassword } from "../account.js"
 import { openDb } from "../db.js"
+import { langFromEnv, msg } from "../i18n.js"
 
+// Anglais, sauf si LANG commence par « fr ».
+const lang = langFromEnv()
 const dataDir = process.env.DATA_DIR ?? path.resolve(import.meta.dirname, "../../../data")
 const db = openDb(dataDir)
 try {
   const account = getAccount(db)
-  if (!account) throw new Error("Aucun compte : ouvre Fullset dans le navigateur pour le créer.")
+  if (!account) throw new Error(msg("cli.resetPassword.noAccount", {}, lang))
   const password = randomBytes(12).toString("base64url")
   await setPassword(db, password)
   deleteAllSessions(db)
-  console.log(`Identifiant : ${account.username}\nNouveau mot de passe : ${password}\nChange-le dans Réglages → Sécurité après t'être connecté.`)
+  console.log(msg("cli.resetPassword.done", { username: account.username, password }, lang))
 } catch (err) {
   console.error((err as Error).message)
   process.exitCode = 1
