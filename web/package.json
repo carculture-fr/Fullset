@@ -1,0 +1,27 @@
+{
+  "name": "fullset-web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "@zxing/browser": "^0.1.5",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "react-router-dom": "^7.15.1",
+    "tailwindcss": "^4.3.0",
+    "typescript": "~5.9.3",
+    "vite": "^8.0.12",
+    "vite-plugin-pwa": "^1.3.0",
+    "vitest": "^3.2.4"
+  }
+}

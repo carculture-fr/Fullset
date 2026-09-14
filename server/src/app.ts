@@ -1,0 +1,486 @@
+import express, { type NextFunction, type Request, type Response } from "express"
+import multer from "multer"
+import { existsSync } from "node:fs"
+import path from "node:path"
+
+import { checkCredentials, deleteOtherSessions, getAccount, setPassword, updateProfile, validatePassword, validateProfile } from "./account.js"
+import { createAuth, routePath } from "./auth.js"
+import { barcodeRows, deleteBarcode, exportBarcodesCsv, learnFromCopy, linkBarcode, listBarcodes, lookupBarcode, normalizeEan } from "./barcodes.js"
+import { ScandexError, identifyBarcode, scandexFromEnv, type ScandexClient } from "./scandex.js"
+import { SteamError, importSteam, steamCandidates, steamFromEnv, steamStatus, syncSteam, type SteamClient } from "./steam.js"
+import { ConflictError, addValue, deleteValue, isListKey, listValues, renameValue } from "./lists.js"
+import { allowedOriginsFromEnv, originCheck, securityHeaders } from "./security.js"
+import { NotFoundError, PHOTOS_DIR, ValidationError, createCopy, deleteCopy, updateCopy, validateCopy } from "./copies.js"
+import { COVERS_DIR } from "./covers.js"
+import { schemaVersion, type Db } from "./db.js"
+import { createGame, findGame, relinkGame, updateGame } from "./games.js"
+import { IgdbError, igdbFromEnv, type IgdbClient } from "./igdb.js"
+import { getGame, listLibrary } from "./library.js"
+import { MAX_IMAGE_BYTES, addPhoto, deletePhoto, setCover, setCoverFromUrl } from "./media.js"
+import { downloadMissingCovers } from "./covers.js"
+import { CollectionNotEmptyError, importCollection } from "./import-collection.js"
+import { stats, summary } from "./stats.js"
+import { ImportFormatError, exportCsv, exportJson, importExport } from "./transfer.js"
+import { rommFromEnv, type RommClient } from "./romm.js"
+import { analyzeLegacy, commitLegacy, type LegacyDecision } from "./legacy.js"
+import {
+  addHardwarePhoto,
+  addHardwareValuation,
+  clearHardwareImage,
+  createHardware,
+  deleteHardware,
+  deleteHardwarePhoto,
+  deleteHardwareValuation,
+  exportHardwareCsv,
+  getHardware,
+  listHardware,
+  setHardwareImage,
+  updateHardware,
+} from "./hardware.js"
+import { addValuation, deleteValuation } from "./valuations.js"
+import { canonicalPlatform, listPlatforms } from "./catalog.js"
+import { COMMONS_UA, CommonsError, commonsFile, imageOptions, isCommonsMedia, pickAutomatic, type CommonsImage } from "./commons.js"
+import { addWish, deleteWish, listWishlist, updateWish } from "./wishlist.js"
+import { getPreferences, setPreferences } from "./preferences.js"
+
+export const APP_VERSION = process.env.APP_VERSION ?? "dev"
+
+export type AppDeps = {
+  igdb?: IgdbClient | null
+  romm?: RommClient | null
+  scandex?: ScandexClient | null
+  steam?: SteamClient | null
+  /** Origines admises pour les écritures ; sans liste, le site lui-même (Host / X-Forwarded-Host). */
+  allowedOrigins?: string[]
+  /** Tests seulement : API ouverte sans compte ni session, et sans contrôle d'origine faute de liste. */
+  openAccess?: boolean
+  fetchImpl?: typeof fetch
+}
+
+const IGDB_IMAGES = "https://images.igdb.com/"
+
+export function createApp(db: Db, dataDir: string, deps: AppDeps = {}) {
+  const igdb = deps.igdb === undefined ? igdbFromEnv() : deps.igdb
+  const romm = deps.romm === undefined ? rommFromEnv() : deps.romm
+  const fetchImpl = deps.fetchImpl ?? fetch
+  const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_IMAGE_BYTES, files: 1 } })
+
+  const scandex = deps.scandex === undefined ? scandexFromEnv() : deps.scandex
+  const steam = deps.steam === undefined ? steamFromEnv() : deps.steam
+
+  const app = express()
+  app.disable("x-powered-by")
+  // Seul un proxy déclaré (TRUST_PROXY) est cru sur l'IP du client et le protocole : un
+  // X-Forwarded-For envoyé par n'importe qui d'autre ne doit pas contourner la limite d'essais.
+  const trustProxy = process.env.TRUST_PROXY?.trim()
+  if (trustProxy) app.set("trust proxy", trustProxy.split(",").map((a) => a.trim()))
+  app.use(securityHeaders)
+  const allowed = deps.allowedOrigins ?? allowedOriginsFromEnv()
+  app.use(originCheck(allowed, { disabled: Boolean(deps.openAccess) && !allowed.length }))
+  const auth = createAuth(db, { openAccess: deps.openAccess })
+  app.use(auth.requireAuth)
+  // Corps JSON lus après la garde, 100 ko au plus ; 10 Mo pour les imports (un export complet,
+  // la validation d'un import de l'ancienne appli qui renvoie toutes ses lignes).
+  const smallJson = express.json({ limit: "100kb" })
+  const bigJson = express.json({ limit: "10mb" })
+  app.use((req, res, next) => (routePath(req).startsWith("/api/import") ? bigJson : smallJson)(req, res, next))
+
+  app.post("/api/setup", auth.setup)
+  app.post("/api/auth/login", auth.login)
+  app.post("/api/auth/logout", auth.logout)
+  app.get("/api/auth/me", auth.handleMe)
+
+  // --- Compte ---
+  app.get("/api/account", (_req, res) => {
+    const a = getAccount(db)
+    if (!a) throw new NotFoundError("Aucun compte.")
+    res.json(a)
+  })
+  app.put("/api/account", (req, res) => {
+    updateProfile(db, validateProfile(req.body ?? {}))
+    res.json({ ok: true })
+  })
+  // Nouveau mot de passe : l'actuel est exigé ; les autres appareils sont déconnectés.
+  app.put("/api/account/password", async (req, res) => {
+    if (!(await checkCredentials(db, getAccount(db)?.username, req.body?.current))) throw new ValidationError("Mot de passe actuel incorrect.")
+    await setPassword(db, validatePassword(req.body?.password))
+    const token = auth.sessionToken(req)
+    if (token) deleteOtherSessions(db, token)
+    res.json({ ok: true })
+  })
+  app.post("/api/account/logout-others", (req, res) => {
+    const token = auth.sessionToken(req)
+    if (token) deleteOtherSessions(db, token)
+    res.json({ ok: true })
+  })
+
+  // --- Steam : lecture au bouton, jeux absents ajoutés sur choix ---
+  app.get("/api/steam", (_req, res) => res.json(steamStatus(db, steam !== null)))
+  app.post("/api/steam/sync", async (_req, res) => {
+    if (!steam) throw new SteamError("Steam n'est pas configuré (STEAM_API_KEY et STEAM_ID).")
+    res.json(await syncSteam(db, steam, igdb))
+  })
+  app.get("/api/steam/candidates", (_req, res) => res.json({ items: steamCandidates(db) }))
+  app.post("/api/steam/import", async (req, res) => {
+    res.status(201).json(await importSteam(db, dataDir, igdb, req.body?.appids, fetchImpl))
+  })
+
+  // --- Codes-barres ---
+  // ?details=1 : la liste à gérer (jeu, console, date) ; sans, la forme compacte gardée hors ligne.
+  app.get("/api/barcodes", (req, res) => res.json(req.query.details ? { rows: barcodeRows(db) } : { codes: listBarcodes(db) }))
+  app.delete("/api/barcodes/:ean", (req, res) => {
+    deleteBarcode(db, req.params.ean)
+    res.json({ ok: true })
+  })
+  app.get("/api/barcodes/:ean", (req, res) => res.json(lookupBarcode(db, req.params.ean)))
+  // Code inconnu : ScanDex propose un jeu ; on dit si le jeu est déjà là (même fiche IGDB), sur quelle console.
+  app.get("/api/barcodes/:ean/identify", async (req, res) => {
+    const ean = normalizeEan(req.params.ean)
+    let suggestion = null
+    try {
+      suggestion = await identifyBarcode(db, scandex, ean)
+    } catch (err) {
+      if (!(err instanceof ScandexError)) throw err
+      console.warn(err.message)
+    }
+    const owned = suggestion
+      ? (db.prepare("SELECT id, platform FROM games WHERE igdb_id = ? ORDER BY platform = ? DESC, id").all(suggestion.igdb_id, suggestion.platform) as Array<{ id: number; platform: string }>)
+      : []
+    res.json({ ean, configured: scandex !== null, suggestion, owned })
+  })
+  app.post("/api/barcodes", (req, res) => {
+    res.json(linkBarcode(db, req.body?.ean, req.body?.game_id, req.body?.edition))
+  })
+
+  // --- Listes de valeurs ---
+  const listKey = (req: Request) => {
+    const k = String(req.params.list)
+    if (!isListKey(k)) throw new NotFoundError("Liste inconnue.")
+    return k
+  }
+  app.get("/api/lists", (_req, res) => res.json(listValues(db)))
+  app.post("/api/lists/:list", (req, res) => {
+    res.status(201).json(addValue(db, listKey(req), req.body?.value))
+  })
+  app.put("/api/lists/:list/:id", (req, res) => {
+    res.json(renameValue(db, listKey(req), id(req), req.body?.value))
+  })
+  app.delete("/api/lists/:list/:id", (req, res) => {
+    deleteValue(db, listKey(req), id(req))
+    res.json({ ok: true })
+  })
+
+  // --- Affichage par défaut ---
+  app.get("/api/preferences", (_req, res) => res.json(getPreferences(db)))
+  app.put("/api/preferences", (req, res) => res.json(setPreferences(db, req.body)))
+
+  // La sonde lit la base : un process vivant sur une base illisible doit tomber en 503,
+  // pas rester vert dans la supervision. Le détail de l'erreur reste dans les journaux.
+  app.get("/api/health", (_req, res) => {
+    try {
+      db.prepare("SELECT value FROM meta WHERE key = 'created_at'").get()
+      res.json({
+        ok: true,
+        version: APP_VERSION,
+        schema: schemaVersion(db),
+        igdb: igdb !== null,
+        romm: romm !== null,
+        time: new Date().toLocaleString("fr-FR", { timeZone: process.env.TZ || undefined }),
+      })
+    } catch (err) {
+      console.error(`Sonde : base illisible (${(err as Error).message})`)
+      res.status(503).json({ ok: false })
+    }
+  })
+
+  const id = (req: Request, name = "id") => {
+    const n = Number(req.params[name])
+    if (!Number.isInteger(n) || n <= 0) throw new ValidationError("Identifiant invalide.")
+    return n
+  }
+  const needIgdb = () => {
+    if (!igdb) throw new IgdbError("IGDB n'est pas configuré (IGDB_CLIENT_ID / IGDB_CLIENT_SECRET).")
+    return igdb
+  }
+
+  app.get("/api/stats/summary", (_req, res) => res.json(summary(db)))
+  app.get("/api/stats", (_req, res) => res.json(stats(db)))
+
+  // --- Export / import ---
+  const today = () => new Date().toLocaleDateString("sv-SE", { timeZone: process.env.TZ || undefined })
+  app.get("/api/export.csv", (_req, res) => {
+    res.setHeader("Content-Type", "text/csv; charset=utf-8")
+    res.setHeader("Content-Disposition", `attachment; filename="fullset-${today()}.csv"`)
+    res.send(exportCsv(db))
+  })
+  app.get("/api/export.json", (_req, res) => {
+    res.setHeader("Content-Disposition", `attachment; filename="fullset-${today()}.json"`)
+    res.type("application/json").send(JSON.stringify(exportJson(db), null, 2))
+  })
+
+  // Accepte un export Fullset (CSV ou JSON) ou le collection.json de départ (un tableau).
+  app.post("/api/import", upload.single("file"), (req, res) => {
+    if (!req.file) throw new ValidationError("Aucun fichier reçu.")
+    const content = req.file.buffer.toString("utf8")
+    const body = content.replace(/^﻿/, "").trimStart()
+    let report: { games: number; copies: number; totalCents: number }
+    if (body.startsWith("[")) {
+      let entries: unknown
+      try {
+        entries = JSON.parse(body)
+      } catch {
+        throw new ImportFormatError("JSON illisible.")
+      }
+      report = importCollection(db, entries as Parameters<typeof importCollection>[1])
+    } else {
+      report = importExport(db, content)
+    }
+    // Les jaquettes se téléchargent ensuite, sans faire attendre la réponse.
+    downloadMissingCovers(db, dataDir, fetchImpl).then(
+      (r) => r.failed.length && console.warn(`Import : ${r.failed.length} jaquettes en échec`),
+      () => {},
+    )
+    res.status(201).json({ games: report.games, copies: report.copies, totalCents: report.totalCents })
+  })
+  app.get("/api/library", (_req, res) => res.json({ games: listLibrary(db) }))
+
+  // --- IGDB ---
+  app.get("/api/igdb/search", async (req, res) => {
+    res.json({ results: await needIgdb().search(String(req.query.q ?? "")) })
+  })
+
+  // --- Jeux ---
+  app.get("/api/games/:id", async (req, res) => {
+    const game = getGame(db, id(req))
+    if (!game) throw new NotFoundError("Jeu introuvable.")
+    if (romm && game.igdb_id !== null) {
+      try {
+        game.romm = await romm.romFor(game.igdb_id)
+      } catch {
+        game.romm = null // RomM en panne ne doit pas empêcher d'ouvrir la fiche.
+      }
+    }
+    res.json(game)
+  })
+
+  // Un jeu naît toujours avec son premier exemplaire : pas de jeu orphelin si la saisie est abandonnée.
+  app.post("/api/games", async (req, res) => {
+    const { igdb_id, platform, title, copy } = req.body ?? {}
+    const igdbId = igdb_id === null || igdb_id === undefined ? null : Number(igdb_id)
+    if (igdbId !== null && !Number.isInteger(igdbId)) throw new ValidationError("Identifiant IGDB invalide.")
+    const p = canonicalPlatform(String(platform ?? ""))
+    if (!p) throw new ValidationError("La plateforme est obligatoire.")
+
+    let gameId = igdbId === null ? null : findGame(db, igdbId, p)
+    const existed = gameId !== null
+    if (gameId === null) {
+      const meta = igdbId === null ? { title: String(title ?? "") } : await needIgdb().game(igdbId, p)
+      validateCopy(copy ?? {}, meta.title || "")
+      gameId = await createGame(db, dataDir, p, meta, fetchImpl)
+    }
+    const copyId = createCopy(db, gameId, copy ?? {})
+    learnFromCopy(db, copyId)
+    res.status(201).json({ gameId, copyId, existed })
+  })
+
+  app.put("/api/games/:id", (req, res) => {
+    updateGame(db, id(req), req.body ?? {})
+    res.json(getGame(db, id(req)))
+  })
+
+  app.post("/api/games/:id/igdb", async (req, res) => {
+    const gameId = id(req)
+    const game = getGame(db, gameId)
+    if (!game) throw new NotFoundError("Jeu introuvable.")
+    const igdbId = Number(req.body?.igdb_id)
+    if (!Number.isInteger(igdbId) || igdbId <= 0) throw new ValidationError("Identifiant IGDB invalide.")
+    await relinkGame(db, dataDir, gameId, await needIgdb().game(igdbId, game.platform), fetchImpl)
+    res.json(getGame(db, gameId))
+  })
+
+  app.get("/api/games/:id/cover-options", async (req, res) => {
+    const game = getGame(db, id(req))
+    if (!game) throw new NotFoundError("Jeu introuvable.")
+    res.json({ covers: game.igdb_id === null ? [] : (await needIgdb().game(game.igdb_id, game.platform)).covers })
+  })
+
+  app.post("/api/games/:id/cover", upload.single("file"), (req, res) => {
+    if (!req.file) throw new ValidationError("Aucune image reçue.")
+    res.json({ cover: setCover(db, dataDir, id(req), req.file.buffer, req.file.mimetype, "photo") })
+  })
+
+  app.post("/api/games/:id/cover/url", async (req, res) => {
+    const url = String(req.body?.url ?? "")
+    // Seules les images IGDB : le serveur ne va pas chercher n'importe quelle adresse pour le compte du client.
+    if (!url.startsWith(IGDB_IMAGES)) throw new ValidationError("Seules les jaquettes IGDB sont acceptées.")
+    res.json({ cover: await setCoverFromUrl(db, dataDir, id(req), url, "igdb", fetchImpl) })
+  })
+
+  // --- Exemplaires ---
+  app.post("/api/games/:id/copies", (req, res) => {
+    const copyId = createCopy(db, id(req), req.body ?? {})
+    learnFromCopy(db, copyId)
+    res.status(201).json({ copyId })
+  })
+
+  app.put("/api/copies/:id", (req, res) => {
+    const gameId = updateCopy(db, id(req), req.body ?? {})
+    learnFromCopy(db, id(req))
+    res.json({ gameId })
+  })
+
+  app.delete("/api/copies/:id", (req, res) => {
+    res.json(deleteCopy(db, dataDir, id(req)))
+  })
+
+  app.post("/api/copies/:id/photos", upload.single("file"), (req, res) => {
+    if (!req.file) throw new ValidationError("Aucune image reçue.")
+    res.status(201).json(addPhoto(db, dataDir, id(req), req.file.buffer, req.file.mimetype))
+  })
+
+  // --- Import de l'ancienne application : analyse (rien n'est écrit), puis import des lignes retenues ---
+  app.post("/api/import/legacy/analyze", upload.single("file"), async (req, res) => {
+    if (!req.file) throw new ValidationError("Aucun fichier reçu.")
+    res.json({ igdb: igdb !== null, rows: await analyzeLegacy(db, igdb, req.file.buffer.toString("utf8")) })
+  })
+  app.post("/api/import/legacy/commit", async (req, res) => {
+    const rows = req.body?.rows
+    if (!Array.isArray(rows) || rows.length === 0) throw new ValidationError("Aucune ligne à importer.")
+    res.status(201).json(await commitLegacy(db, dataDir, igdb, rows as LegacyDecision[], fetchImpl))
+  })
+
+  // --- Matériel : consoles, manettes, accessoires ---
+  app.get("/api/hardware", (_req, res) => res.json({ items: listHardware(db) }))
+  app.get("/api/platforms", (_req, res) => res.json({ platforms: listPlatforms(db) }))
+  // Télécharge la version réduite d'une image Commons ; seuls les serveurs d'images de Wikimedia sont acceptés.
+  const downloadCommons = async (image: CommonsImage) => {
+    if (!isCommonsMedia(image.url)) throw new CommonsError("Adresse d'image inattendue.")
+    const res = await fetchImpl(image.url, { headers: { "User-Agent": COMMONS_UA }, signal: AbortSignal.timeout(20_000) })
+    const mime = res.headers.get("content-type")?.split(";")[0] ?? ""
+    if (!res.ok || !["image/jpeg", "image/png"].includes(mime)) throw new CommonsError(`Image Commons illisible (HTTP ${res.status}).`)
+    const bytes = Buffer.from(await res.arrayBuffer())
+    if (bytes.length > MAX_IMAGE_BYTES) throw new CommonsError("Image Commons trop lourde.")
+    const credit = [image.artist, image.license].filter(Boolean).join(", ") || null
+    return { bytes, mime, credit, page: image.page }
+  }
+  const applyImage = async (id: number, image: CommonsImage) => {
+    const { bytes, mime, credit, page } = await downloadCommons(image)
+    return setHardwareImage(db, dataDir, id, bytes, mime, credit, page)
+  }
+
+  app.post("/api/hardware", (req, res) => {
+    const hwId = createHardware(db, req.body ?? {})
+    res.status(201).json({ id: hwId })
+    // Sans photo, une image par défaut est cherchée aussitôt, sans faire attendre la réponse.
+    const item = getHardware(db, hwId)
+    imageOptions(item, fetchImpl)
+      .then(({ options }) => {
+        const pick = pickAutomatic(item, options)
+        return pick ? applyImage(hwId, pick) : undefined
+      })
+      .catch((err) => console.warn(`Image par défaut non trouvée pour le matériel ${hwId} : ${(err as Error).message}`))
+  })
+  app.get("/api/hardware/:id/image-options", async (req, res) => {
+    const q = typeof req.query.q === "string" && req.query.q.trim() ? req.query.q.trim().slice(0, 120) : undefined
+    res.json(await imageOptions(getHardware(db, id(req)), fetchImpl, q))
+  })
+  app.post("/api/hardware/:id/image", async (req, res) => {
+    const hwId = id(req)
+    getHardware(db, hwId)
+    res.json({ image: await applyImage(hwId, await commonsFile(String(req.body?.title ?? ""), fetchImpl)) })
+  })
+  app.delete("/api/hardware/:id/image", (req, res) => {
+    clearHardwareImage(db, dataDir, id(req))
+    res.json({ ok: true })
+  })
+  app.get("/api/hardware/:id", (req, res) => res.json(getHardware(db, id(req))))
+  app.put("/api/hardware/:id", (req, res) => {
+    updateHardware(db, id(req), req.body ?? {})
+    res.json(getHardware(db, id(req)))
+  })
+  app.delete("/api/hardware/:id", (req, res) => {
+    deleteHardware(db, dataDir, id(req))
+    res.json({ ok: true })
+  })
+  app.post("/api/hardware/:id/photos", upload.single("file"), (req, res) => {
+    if (!req.file) throw new ValidationError("Aucune image reçue.")
+    res.status(201).json(addHardwarePhoto(db, dataDir, id(req), req.file.buffer, req.file.mimetype))
+  })
+  app.delete("/api/hardware-photos/:id", (req, res) => {
+    deleteHardwarePhoto(db, dataDir, id(req))
+    res.json({ ok: true })
+  })
+  app.post("/api/hardware/:id/valuations", (req, res) => {
+    res.status(201).json({ id: addHardwareValuation(db, id(req), req.body ?? {}) })
+  })
+  app.delete("/api/hardware-valuations/:id", (req, res) => {
+    deleteHardwareValuation(db, id(req))
+    res.json({ ok: true })
+  })
+  app.get("/api/export-codes.csv", (_req, res) => {
+    res.setHeader("Content-Type", "text/csv; charset=utf-8")
+    res.setHeader("Content-Disposition", `attachment; filename="fullset-codes-barres-${today()}.csv"`)
+    res.send(exportBarcodesCsv(db))
+  })
+  app.get("/api/export-materiel.csv", (_req, res) => {
+    res.setHeader("Content-Type", "text/csv; charset=utf-8")
+    res.setHeader("Content-Disposition", `attachment; filename="fullset-materiel-${today()}.csv"`)
+    res.send(exportHardwareCsv(db))
+  })
+
+  // --- Valeur estimée ---
+  app.post("/api/copies/:id/valuations", (req, res) => {
+    res.status(201).json({ id: addValuation(db, id(req), req.body ?? {}) })
+  })
+  app.delete("/api/valuations/:id", (req, res) => {
+    deleteValuation(db, id(req))
+    res.json({ ok: true })
+  })
+
+  // --- Liste de souhaits ---
+  app.get("/api/wishlist", (_req, res) => res.json({ items: listWishlist(db) }))
+  app.post("/api/wishlist", (req, res) => {
+    res.status(201).json({ id: addWish(db, req.body ?? {}) })
+  })
+  app.put("/api/wishlist/:id", (req, res) => {
+    updateWish(db, id(req), req.body ?? {})
+    res.json({ ok: true })
+  })
+  app.delete("/api/wishlist/:id", (req, res) => {
+    deleteWish(db, id(req))
+    res.json({ ok: true })
+  })
+
+  app.delete("/api/photos/:id", (req, res) => {
+    deletePhoto(db, dataDir, id(req))
+    res.json({ ok: true })
+  })
+
+  app.all(/^\/api\/.*/, (_req, res) => res.status(404).json({ error: "Route inconnue." }))
+
+  // Jaquettes officielles publiques ; photos des exemplaires derrière la session (requireAuth).
+  app.use("/covers", express.static(path.join(dataDir, COVERS_DIR), { maxAge: "7d", fallthrough: false }))
+  app.use("/photos", express.static(path.join(dataDir, PHOTOS_DIR), { maxAge: "7d", fallthrough: false }))
+
+  const webDist = path.resolve(import.meta.dirname, "../../web/dist")
+  if (existsSync(webDist)) {
+    app.use(express.static(webDist, { index: false }))
+    app.get(/.*/, (_req, res) => res.sendFile(path.join(webDist, "index.html")))
+  }
+
+  app.use((err: Error & { status?: number; code?: string }, _req: Request, res: Response, _next: NextFunction) => {
+    if (err instanceof ValidationError || err instanceof ImportFormatError) return res.status(400).json({ error: err.message })
+    if (err instanceof CollectionNotEmptyError || err instanceof ConflictError) return res.status(409).json({ error: err.message })
+    if (err instanceof NotFoundError) return res.status(404).json({ error: err.message })
+    if (err instanceof CommonsError && err.message.includes("invalide")) return res.status(400).json({ error: err.message })
+    if (err instanceof IgdbError || err instanceof CommonsError || err instanceof SteamError) return res.status(502).json({ error: err.message })
+    if (err instanceof multer.MulterError) {
+      return res.status(err.code === "LIMIT_FILE_SIZE" ? 413 : 400).json({ error: err.code === "LIMIT_FILE_SIZE" ? "Image trop lourde (15 Mo au plus)." : err.message })
+    }
+    if (err.status && err.status < 500) return res.status(err.status).json({ error: err.message })
+    console.error(err)
+    res.status(500).json({ error: "Erreur interne." })
+  })
+
+  return app
+}

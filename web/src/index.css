@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+/* Thème sombre par défaut ; le clair est posé par data-theme="light" (voir index.html et lib/theme.ts). */
+:root {
+  color-scheme: dark;
+  --background: #14161c;
+  --foreground: #eceef3;
+  --card: #1d2029;
+  --muted: #262a35;
+  --muted-foreground: #9aa0ae;
+  --primary: #e8b04a;
+  --primary-foreground: #14161c;
+  --destructive: #ef6b6b;
+  --border: #2f3441;
+  --radius: 0.75rem;
+
+  /* Données : une seule teinte (bleu du skill dataviz, pas du chrome ambre), validée par mode. */
+  --viz-bar: #3987e5;
+  --viz-muted: #5a6070;
+  --viz-grid: #2f3441;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --background: #f6f5f2;
+  --foreground: #16181d;
+  --card: #ffffff;
+  --muted: #ecebe6;
+  --muted-foreground: #5c6170;
+  /* Ambre assombri : l'ambre du mode sombre ne passe pas en texte sur fond clair. */
+  --primary: #a3650f;
+  --primary-foreground: #ffffff;
+  --destructive: #c62828;
+  --border: #dcdad3;
+
+  --viz-bar: #2a78d6;
+  --viz-muted: #b4b2ab;
+  --viz-grid: #e4e2dc;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --radius-lg: var(--radius);
+  --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+body {
+  @apply bg-background text-foreground font-sans antialiased;
+}

@@ -1,0 +1,13 @@
+{
+  "name": "Fullset",
+  "short_name": "Fullset",
+  "description": "Ta collection de jeux vidéo",
+  "lang": "fr",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#14161c",
+  "theme_color": "#14161c",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

@@ -1,0 +1,26 @@
+# Fullset — docker compose up -d, puis ouvre http://<serveur>:3110 pour créer ton compte.
+# Fullset — run `docker compose up -d`, then open http://<server>:3110 to create your account.
+services:
+  fullset:
+    image: ghcr.io/carculture-fr/fullset:latest
+    # Construit l'image depuis les sources si elle n'est pas disponible.
+    # Builds the image from source when it is not available.
+    build: .
+    container_name: fullset
+    restart: unless-stopped
+    ports:
+      - "3110:3110"
+    environment:
+      - TZ=Europe/Paris
+    # Réglages facultatifs (clés d'API, proxy) : copie .env.example en .env.
+    # Optional settings (API keys, reverse proxy): copy .env.example to .env.
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      # Tout l'état est ici : base SQLite, jaquettes, photos. À sauvegarder.
+      # All state lives here: SQLite database, covers, photos. Back it up.
+      - fullset-data:/data
+
+volumes:
+  fullset-data:
