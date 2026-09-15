@@ -10,7 +10,7 @@ import { openDb, type Db } from "../src/db.js"
 
 // Services réglés dans l'appli : secrets jamais renvoyés, variables d'environnement prioritaires.
 
-const STEAM_KEY = "0123456789ABCDEF0123456789ABCDEF"
+const STEAM_KEY = "0123456789ABCDEF0123456789ABCDEF" // gitleaks:allow (fausse clé de test)
 const fakeFetch = (async (url: string) => {
   if (url.includes("GetOwnedGames")) return Response.json({ response: { game_count: 2, games: [{ appid: 1, name: "A" }, { appid: 2, name: "B" }] } })
   return new Response("", { status: 404 })
