@@ -9,7 +9,7 @@ import { CLIENT_VERSION, reloadIfOutdated } from "@/lib/pwa"
 
 // À 400 px, la navigation défile plutôt que de passer sous les icônes (« Souhaits » était masqué).
 const navClass = ({ isActive }: { isActive: boolean }) =>
-  `shrink-0 whitespace-nowrap rounded-md px-2 py-1.5 sm:px-2.5 ${isActive ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"}`
+  `shrink-0 whitespace-nowrap rounded-md px-1.5 py-1.5 sm:px-2.5 ${isActive ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"}`
 
 const iconClass = ({ isActive }: { isActive: boolean }) =>
   `flex size-8 shrink-0 items-center justify-center rounded-md hover:bg-muted hover:text-foreground sm:size-9 ${isActive ? "bg-muted text-foreground" : "text-muted-foreground"}`
@@ -30,7 +30,7 @@ export function Layout() {
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-6xl flex-col px-4">
-      <header className="flex items-center gap-2 py-3 sm:gap-3">
+      <header className="flex items-center gap-1 py-3 sm:gap-3">
         <Link to="/" className="flex shrink-0 items-center gap-2 font-semibold">
           <img src="/icon.svg" alt="" className="size-7" />
           <span className="hidden sm:inline">Fullset</span>
