@@ -7,5 +7,5 @@
   } catch (e) {}
   if (t !== "light" && t !== "dark") t = matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"
   document.documentElement.dataset.theme = t
-  if (t === "light") document.querySelector('meta[name="theme-color"]').setAttribute("content", "#f6f5f2")
+  if (t === "light") document.querySelector('meta[name="theme-color"]').setAttribute("content", "#f7f3ea")
 })()

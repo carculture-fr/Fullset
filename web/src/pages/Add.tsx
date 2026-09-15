@@ -1,11 +1,12 @@
+import { Barcode } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useSearchParams } from "react-router-dom"
 
-import { CopyForm, newCopyValues } from "@/components/copy-form"
+import { CopyForm, GameRecap, newCopyValues } from "@/components/copy-form"
 import { Chips, Field, inputClass } from "@/components/fields"
 import { IgdbSearch } from "@/components/igdb-search"
-import { BarcodeIcon } from "@/components/copy-form"
+import { BackBar, ICON } from "@/components/page-bits"
 import { Scanner } from "@/components/scanner"
 import { api, errorMessage, send, type BarcodeIdentify, type IgdbCandidate, type WishItem } from "@/lib/api"
 import type { LibraryGame } from "@/lib/library"
@@ -15,6 +16,19 @@ import { copyPayload, uploadPhotos } from "@/lib/save-copy"
 type Choice = { candidate: IgdbCandidate | null; title: string; platform: string }
 
 const knownPlatformsOf = (games: LibraryGame[] | null) => [...new Set((games ?? []).map((g) => g.platform))]
+
+const noteClass = "rounded-[16px] bg-card px-4 py-2.5 text-[13px]"
+
+/** Indicateur d'étape « 2 / 3 » en chasse fixe, lu en toutes lettres. */
+function Step({ n }: { n: number }) {
+  const { t } = useTranslation()
+  return (
+    <span className="shrink-0 font-mono text-[12px] text-muted-foreground">
+      <span aria-hidden="true">{n} / 3</span>
+      <span className="sr-only">{t("add.step", { n, total: 3 })}</span>
+    </span>
+  )
+}
 
 /**
  * Ajout d'un achat en trois temps : le jeu (IGDB ou saisie libre), la plateforme, l'exemplaire.
@@ -87,27 +101,26 @@ export default function Add() {
     else setCandidate(c)
   }
 
+  const platformList = (
+    <datalist id="gc-platforms">
+      {knownPlatforms.map((p) => (
+        <option key={p} value={p} />
+      ))}
+    </datalist>
+  )
+
   if (choice) {
     return (
       <div className="mx-auto max-w-2xl">
-        <button onClick={() => setChoice(null)} className="mb-3 text-sm text-muted-foreground hover:text-foreground">
-          {t("add.changeGame")}
-        </button>
-        <div className="mb-5 flex items-center gap-3">
-          {choice.candidate?.cover && <img src={choice.candidate.cover} alt="" className="aspect-[3/4] w-14 rounded object-cover" />}
-          <div>
-            <h1 className="text-xl leading-tight font-semibold">{choice.title}</h1>
-            <div className="text-sm text-muted-foreground">{choice.platform}</div>
-          </div>
-        </div>
-        {existing && (
-          <p className="mb-4 rounded-lg bg-primary/15 px-3 py-2 text-sm">
-            {t("add.alreadyOwned", { count: existing.copies.length })}
-          </p>
-        )}
+        <BackBar onBack={() => setChoice(null)} label={t("add.changeGameLabel")}>
+          <Step n={3} />
+        </BackBar>
+        <GameRecap cover={choice.candidate?.cover ?? existing?.cover ?? null} title={choice.title} platform={choice.platform} ean={ean} />
+        {existing && <p className="mb-4 rounded-[16px] bg-primary-tint px-4 py-2.5 text-[13px] text-primary-tint-foreground">{t("add.alreadyOwned", { count: existing.copies.length })}</p>}
         <CopyForm
           initial={{ ...newCopyValues(choice.platform), barcode: ean ?? "" }}
           submitLabel={t("add.submit")}
+          repeatAmount
           onSubmit={async (values, photos) => {
             const res = await send<{ gameId: number; copyId: number }>("POST", "/api/games", {
               igdb_id: choice.candidate?.igdb_id ?? null,
@@ -129,11 +142,11 @@ export default function Add() {
   if (candidate) {
     const platforms = [...candidate.platforms].sort((a, b) => Number(knownPlatforms.includes(b)) - Number(knownPlatforms.includes(a)))
     return (
-      <div className="mx-auto max-w-2xl space-y-5">
-        <button onClick={() => setCandidate(null)} className="text-sm text-muted-foreground hover:text-foreground">
-          {t("add.changeGame")}
-        </button>
-        <h1 className="text-xl font-semibold">{candidate.name}</h1>
+      <div className="mx-auto max-w-2xl space-y-4">
+        <BackBar onBack={() => setCandidate(null)} label={t("add.changeGameLabel")}>
+          <Step n={2} />
+        </BackBar>
+        <GameRecap cover={candidate.cover} title={candidate.name} platform={candidate.year ? String(candidate.year) : null} />
         <Field label={t("add.whichPlatform")}>
           <Chips options={platforms} value={null} onChange={(p) => p && setChoice({ candidate, title: candidate.name, platform: p })} placeholder={t("add.choosePlatform")} />
         </Field>
@@ -143,17 +156,13 @@ export default function Add() {
             <button
               disabled={!otherPlatform.trim()}
               onClick={() => setChoice({ candidate, title: candidate.name, platform: otherPlatform.trim() })}
-              className="rounded-lg bg-primary px-4 font-medium text-primary-foreground disabled:opacity-50"
+              className="shrink-0 rounded-full bg-primary px-5 font-heading text-[15px] text-primary-foreground disabled:opacity-45"
             >
               {t("add.ok")}
             </button>
           </div>
         </Field>
-        <datalist id="gc-platforms">
-          {knownPlatforms.map((p) => (
-            <option key={p} value={p} />
-          ))}
-        </datalist>
+        {platformList}
       </div>
     )
   }
@@ -161,25 +170,21 @@ export default function Add() {
   if (manual) {
     return (
       <div className="mx-auto max-w-2xl space-y-4">
-        <button onClick={() => setManual(false)} className="text-sm text-muted-foreground hover:text-foreground">
-          {t("add.backToIgdb")}
-        </button>
-        <h1 className="text-xl font-semibold">{t("add.manualHeading")}</h1>
+        <BackBar onBack={() => setManual(false)} label={t("add.backToIgdbLabel")}>
+          <Step n={2} />
+        </BackBar>
+        <h1 className="text-[26px]">{t("add.manualHeading")}</h1>
         <Field label={t("add.title")}>
           <input className={inputClass} autoFocus value={manualTitle} onChange={(e) => setManualTitle(e.target.value)} />
         </Field>
         <Field label={t("add.platform")}>
           <input className={inputClass} list="gc-platforms" value={otherPlatform} onChange={(e) => setOtherPlatform(e.target.value)} />
-          <datalist id="gc-platforms">
-            {knownPlatforms.map((p) => (
-              <option key={p} value={p} />
-            ))}
-          </datalist>
+          {platformList}
         </Field>
         <button
           disabled={!manualTitle.trim() || !otherPlatform.trim()}
           onClick={() => setChoice({ candidate: null, title: manualTitle.trim(), platform: otherPlatform.trim() })}
-          className="w-full rounded-lg bg-primary py-2.5 font-medium text-primary-foreground disabled:opacity-50"
+          className="h-[54px] w-full rounded-full bg-primary font-heading text-[17px] text-primary-foreground shadow-md transition-transform duration-150 active:scale-[.98] disabled:opacity-45"
         >
           {t("add.continue")}
         </button>
@@ -189,16 +194,22 @@ export default function Add() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-4">
-      <h1 className="text-xl font-semibold">{t("add.heading")}</h1>
+      <div className="flex items-baseline justify-between gap-3">
+        <h1 className="text-[36px]">{t("add.heading")}</h1>
+        <Step n={1} />
+      </div>
       {scanning && <Scanner title={t("add.scanTitle")} onDetected={onScan} onClose={() => setScanning(false)} />}
-      <button onClick={() => setScanning(true)} className="flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-card py-3 text-sm font-medium">
-        <BarcodeIcon />
+      <button
+        onClick={() => setScanning(true)}
+        className="flex h-[52px] w-full items-center justify-center gap-2.5 rounded-full bg-ink px-5 font-heading text-[15px] text-ink-foreground shadow-md transition-transform duration-150 active:scale-[.98]"
+      >
+        <Barcode size={20} {...ICON} aria-hidden="true" />
         {t("add.scanButton")}
       </button>
-      {scanNote && <p className="rounded-lg bg-muted px-3 py-2 text-sm">{scanNote}</p>}
-      {ean && <p className="rounded-lg bg-muted px-3 py-2 text-sm">{t("add.eanKept", { ean })}</p>}
+      {scanNote && <p className={noteClass}>{scanNote}</p>}
+      {ean && <p className={noteClass}>{t("add.eanKept", { ean })}</p>}
       <IgdbSearch onPick={pick} />
-      <button onClick={() => setManual(true)} className="text-sm text-muted-foreground underline">
+      <button onClick={() => setManual(true)} className="min-h-11 text-[13px] text-muted-foreground underline hover:text-foreground">
         {t("add.notFound")}
       </button>
     </div>

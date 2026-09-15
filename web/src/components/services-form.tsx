@@ -31,6 +31,11 @@ const INFO: Record<ServiceName, Info> = {
   },
 }
 
+const tag = "inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold"
+const primaryButton =
+  "inline-flex min-h-11 items-center justify-center rounded-full bg-primary px-5 font-heading text-[15px] text-primary-foreground transition-[filter,transform] duration-150 hover:brightness-95 active:scale-[.98] disabled:opacity-45"
+const ghostButton = "inline-flex min-h-11 items-center rounded-full border border-border-strong px-4 text-sm font-semibold transition-colors duration-150 hover:bg-foreground/[.07] disabled:opacity-45"
+
 /** Clés des services externes, toutes facultatives : assistant de premier lancement et Réglages. */
 export function ServicesForm() {
   const { t } = useTranslation()
@@ -50,6 +55,7 @@ export function ServicesForm() {
   )
 }
 
+/** Carte d'un service, en sous-carte (fond) posée sur la carte de la section. */
 function ServiceCard({ name, status, onSaved }: { name: ServiceName; status: ServicesStatus[ServiceName]; onSaved: (s: ServicesStatus) => void }) {
   const { t } = useTranslation()
   const info = INFO[name]
@@ -87,26 +93,33 @@ function ServiceCard({ name, status, onSaved }: { name: ServiceName; status: Ser
   const fromApp = Object.values(status.fields).some((f) => f.source === "app")
 
   return (
-    <div className="rounded-lg border border-border p-3">
-      <div className="flex items-center gap-2">
-        <span className="font-medium">{info.title}</span>
-        <span className={`rounded px-1.5 text-xs ${status.configured ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>{status.configured ? t("servicesForm.configured") : t("servicesForm.notConfigured")}</span>
-        <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} className="ml-auto text-sm text-primary">
+    <div className="rounded-[16px] bg-muted p-4">
+      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+        <span className="font-heading text-[17px]">{info.title}</span>
+        <span className={`${tag} ${status.configured ? "bg-primary-tint text-primary-tint-foreground" : "border border-border-strong text-muted-foreground"}`}>
+          {status.configured ? t("servicesForm.configured") : t("servicesForm.notConfigured")}
+        </span>
+        <button
+          type="button"
+          onClick={() => setOpen(!open)}
+          aria-expanded={open}
+          className="ml-auto min-h-9 rounded-full px-2 text-[13px] font-semibold text-primary-text transition-colors duration-150 hover:bg-foreground/[.07]"
+        >
           {open ? t("common.close") : status.configured ? t("common.edit") : t("servicesForm.configure")}
         </button>
       </div>
-      <p className="mt-1 text-xs text-muted-foreground">{t(`servicesForm.${name}.what`)}</p>
+      <p className="mt-1 text-[13px] text-muted-foreground">{t(`servicesForm.${name}.what`)}</p>
 
       {open && (
-        <div className="mt-3 space-y-3">
+        <div className="mt-4 space-y-3.5">
           {Object.entries(info.fields).map(([key, f]) => {
             const s = status.fields[key]
             const byEnv = s?.source === "env"
             return (
-              <label key={key} className="block space-y-1 text-sm">
-                <span className="text-muted-foreground">{t(f.label)}</span>
+              <label key={key} className="block">
+                <span className="mb-1.5 block text-[13px] font-semibold text-muted-foreground">{t(f.label)}</span>
                 <input
-                  className={inputClass}
+                  className={`${inputClass} disabled:opacity-60`}
                   type={s?.secret ? "password" : "text"}
                   autoComplete="off"
                   disabled={byEnv}
@@ -114,31 +127,36 @@ function ServiceCard({ name, status, onSaved }: { name: ServiceName; status: Ser
                   value={draft[key] ?? ""}
                   onChange={(e) => setDraft({ ...draft, [key]: e.target.value })}
                 />
-                {byEnv && <span className="block text-xs text-muted-foreground">{t("servicesForm.byEnv")}</span>}
+                {byEnv && <span className="mt-1 block text-xs text-subtle-foreground">{t("servicesForm.byEnv")}</span>}
               </label>
             )
           })}
-          <a href={info.helpUrl} target="_blank" rel="noreferrer" className="inline-block text-xs text-primary underline">
+          <a href={info.helpUrl} target="_blank" rel="noreferrer" className="inline-block text-[13px] font-semibold text-primary-text underline underline-offset-2">
             {t(`servicesForm.${name}.help`)} ↗
           </a>
           <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={save} disabled={busy || !Object.values(draft).some((v) => v.trim())} className="rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50">
+            <button type="button" onClick={save} disabled={busy || !Object.values(draft).some((v) => v.trim())} className={primaryButton}>
               {t("servicesForm.saveAndTest")}
             </button>
             {status.configured && (
-              <button type="button" onClick={() => run(test)} disabled={busy} className="rounded-lg border border-border px-3 py-2 text-sm disabled:opacity-50">
+              <button type="button" onClick={() => run(test)} disabled={busy} className={ghostButton}>
                 {busy ? t("servicesForm.testing") : t("servicesForm.test")}
               </button>
             )}
             {fromApp && (
-              <button type="button" onClick={remove} disabled={busy} className="rounded-lg px-3 py-2 text-sm text-muted-foreground hover:text-destructive disabled:opacity-50">
+              <button type="button" onClick={remove} disabled={busy} className={`${ghostButton} border-transparent text-muted-foreground hover:text-destructive`}>
                 {t("servicesForm.remove")}
               </button>
             )}
           </div>
         </div>
       )}
-      {result && <p className={`mt-2 rounded-lg px-3 py-2 text-sm ${result.ok ? "bg-muted" : "bg-destructive/15 text-destructive"}`}>{result.text}</p>}
+      {result && (
+        <p role="status" className={`mt-3 flex items-start gap-2 rounded-[16px] px-3.5 py-2 text-[13px] ${result.ok ? "bg-primary-tint text-primary-tint-foreground" : "bg-viz-bg text-destructive"}`}>
+          <span aria-hidden="true" className="mt-[5px] size-2 shrink-0 rounded-full" style={{ background: result.ok ? "var(--cond-good)" : "var(--cond-bad)" }} />
+          {result.text}
+        </p>
+      )}
     </div>
   )
 }

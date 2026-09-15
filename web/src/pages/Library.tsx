@@ -1,12 +1,24 @@
-import { useMemo, useState, type ReactNode } from "react"
+import { Search } from "lucide-react"
+import { useMemo, useState } from "react"
 import { Trans, useTranslation } from "react-i18next"
 import { Link, useSearchParams } from "react-router-dom"
 
-import { BarcodeIcon } from "@/components/copy-form"
+import { ConditionDot } from "@/components/condition"
 import { Cover } from "@/components/cover"
-import { KeyedChips } from "@/components/fields"
-import { FilterPanel, facetValueLabel } from "@/components/filter-panel"
-import { LibraryTabs } from "@/components/library-tabs"
+import { FilterPanel, facetValueLabel, useDesktop } from "@/components/filter-panel"
+import {
+  CARD_FRAME,
+  GRID_CLASS,
+  GroupSummary,
+  LibraryTabs,
+  ROW_CLASS,
+  SortMenu,
+  ViewToggle,
+  readSession,
+  readView,
+  writeSession,
+  type View,
+} from "@/components/library-tabs"
 import { euros, formatDate } from "@/lib/format"
 import { valueLabel } from "@/lib/i18n"
 import {
@@ -27,30 +39,10 @@ import { useLibrary } from "@/lib/library-data"
 import { usePreferences } from "@/lib/preferences"
 import { DIGITAL } from "@domain"
 
-type View = "grille" | "liste"
 const VIEW_KEY = "fullset-view"
 const OPEN_KEY = "fullset-open-platforms"
 
-// L'affichage par défaut vient des réglages ; ce qu'on change ici ne vaut que pour la visite
-// (sessionStorage), sans conséquence si le stockage est indisponible.
-const readSession = (key: string) => {
-  try {
-    return sessionStorage.getItem(key)
-  } catch {
-    return null
-  }
-}
-const writeSession = (key: string, value: string) => {
-  try {
-    sessionStorage.setItem(key, value)
-  } catch {
-    // navigation privée : le choix vaut pour la page
-  }
-}
-const readView = (): View | null => {
-  const v = readSession(VIEW_KEY)
-  return v === "grille" || v === "liste" ? v : null
-}
+// L'affichage par défaut vient des réglages ; ce qu'on change ici ne vaut que pour la visite.
 const readOpen = (): string[] | null => {
   try {
     const raw = readSession(OPEN_KEY)
@@ -64,10 +56,11 @@ export default function Library() {
   const { t } = useTranslation()
   const { games, error, reload } = useLibrary()
   const { prefs } = usePreferences()
+  const desktop = useDesktop()
   const [params, setParams] = useSearchParams()
   const { filters, q, sort } = useMemo(() => readParams(params, prefs.games_sort), [params, prefs.games_sort])
   const [panelOpen, setPanelOpen] = useState(false)
-  const [viewChoice, setViewChoice] = useState<View | null>(readView)
+  const [viewChoice, setViewChoice] = useState<View | null>(() => readView(VIEW_KEY))
   const view = viewChoice ?? prefs.games_view
   const [open, setOpen] = useState<string[] | null>(readOpen)
 
@@ -76,7 +69,9 @@ export default function Library() {
     setParams(writeParams(next.filters ?? filters, next.q ?? q, next.sort ?? sort, prefs.games_sort), { replace: true })
 
   const results = useMemo(() => (games ? sortResults(applyFilters(games, filters, q), sort) : []), [games, filters, q, sort])
-  const counts = useMemo(() => (games && panelOpen ? facetCounts(games, filters, q) : {}), [games, filters, q, panelOpen])
+  // Sur grand écran les filtres sont toujours affichés dans le tiroir : leurs compteurs aussi.
+  const showCounts = panelOpen || desktop
+  const counts = useMemo(() => (games && showCounts ? facetCounts(games, filters, q) : {}), [games, filters, q, showCounts])
   const groups = useMemo(() => (sort === "plateforme" ? groupByPlatform(results) : null), [results, sort])
   const sum = totals(results)
   const active = FACETS.flatMap((f) => (filters[f.key] ?? []).map((value) => ({ key: f.key, value, shown: facetValueLabel(f, value) })))
@@ -94,22 +89,43 @@ export default function Library() {
     writeSession(OPEN_KEY, JSON.stringify(list))
   }
 
+  const title = <h1 className="text-[36px] leading-[1.1]">{t("layout.library")}</h1>
+
   if (error) {
     return (
-      <div className="py-16 text-center">
-        <p className="text-destructive">{error}</p>
-        <button onClick={reload} className="mt-3 text-sm underline">
-          {t("common.retry")}
-        </button>
+      <div>
+        {title}
+        <div className="py-16 text-center">
+          <p className="text-destructive">{error}</p>
+          <button onClick={reload} className="mt-4 min-h-11 rounded-full bg-card px-5 font-heading text-[14px]">
+            {t("common.retry")}
+          </button>
+        </div>
       </div>
     )
   }
-  if (!games) return <p className="py-16 text-center text-muted-foreground">{t("library.loading")}</p>
-  if (!games.length) return <p className="py-16 text-center text-muted-foreground">{t("library.empty")}</p>
+  if (!games) return <LibrarySkeleton title={title} />
+  if (!games.length) {
+    return (
+      <div>
+        {title}
+        <div className="flex flex-col items-center py-14 text-center">
+          <EmptyBox />
+          <p className="mt-4 text-muted-foreground">{t("library.empty")}</p>
+          <Link to="/ajouter" className="mt-5 flex h-12 items-center rounded-full bg-primary px-6 font-heading text-[15px] text-primary-foreground">
+            {t("library.addGame")}
+          </Link>
+          <Link to="/stats" className="mt-3 text-[13px] text-muted-foreground underline">
+            {t("library.emptyImport")}
+          </Link>
+        </div>
+      </div>
+    )
+  }
 
   const renderResults = (list: Result[], showPlatform: boolean) =>
     view === "grille" ? (
-      <ul className="grid grid-cols-3 gap-x-3 gap-y-4 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
+      <ul className={GRID_CLASS}>
         {list.map((r) => (
           <li key={r.game.id}>
             <GameCard result={r} showPlatform={showPlatform} />
@@ -117,7 +133,7 @@ export default function Library() {
         ))}
       </ul>
     ) : (
-      <ul className="divide-y divide-border">
+      <ul>
         {list.map((r) => (
           <li key={r.game.id}>
             <GameRow result={r} showPlatform={showPlatform} />
@@ -126,72 +142,85 @@ export default function Library() {
       </ul>
     )
 
+  const filtered = active.map((a) => a.shown).join(", ")
+
   return (
-    <div className="pb-24">
-      <LibraryTabs />
-      <div className="sticky top-0 z-30 -mx-4 bg-background/95 px-4 pt-1 pb-3 backdrop-blur">
-        <div className="flex gap-2">
-          <input
-            type="search"
-            value={q}
-            onChange={(e) => update({ q: e.target.value })}
-            placeholder={t("library.searchPlaceholder")}
-            aria-label={t("library.searchLabel")}
-            className="min-w-0 flex-1 rounded-lg border border-border bg-muted px-3 py-2.5 outline-none focus:border-primary"
+    <div>
+      {title}
+      <p className="num mt-1 text-[13px] text-muted-foreground">
+        {t("library.games", { count: sum.games })} · {t("library.copies", { count: sum.copies })} ·{" "}
+        <strong className="font-semibold text-foreground">{euros(sum.spentCents)}</strong>
+      </p>
+
+      {/* Commandes gardées en haut au défilement sur téléphone. */}
+      <div className="sticky top-0 z-20 -mx-[18px] bg-background/95 px-[18px] pt-3.5 pb-3 backdrop-blur lg:static lg:mx-0 lg:bg-transparent lg:px-0 lg:backdrop-blur-none">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-3 lg:flex-nowrap lg:gap-3">
+          <LibraryTabs />
+          <div className="order-last flex basis-full gap-2 lg:order-none lg:max-w-md lg:flex-1 lg:basis-auto">
+            <label className="relative min-w-0 flex-1">
+              <Search size={18} strokeWidth={2.75} aria-hidden="true" className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-muted-foreground" />
+              <input
+                type="search"
+                value={q}
+                onChange={(e) => update({ q: e.target.value })}
+                placeholder={t("library.searchPlaceholder")}
+                aria-label={t("library.searchLabel")}
+                className="h-11 w-full rounded-full border border-border-strong bg-card pr-4 pl-11 text-base outline-none transition-[border-color,box-shadow] duration-150 placeholder:text-muted-foreground focus:border-primary focus:shadow-[0_0_0_3px_var(--primary-tint)]"
+              />
+            </label>
+            <button
+              type="button"
+              onClick={() => setPanelOpen(true)}
+              className="flex h-11 shrink-0 items-center gap-2 rounded-full bg-card px-4 font-heading text-[14px] transition-colors duration-150 hover:bg-foreground/7 lg:hidden"
+            >
+              {t("library.filters")}
+              {active.length > 0 && (
+                <span className="num rounded-full bg-primary px-[7px] py-px font-sans text-[11px] font-semibold text-primary-foreground">{active.length}</span>
+              )}
+            </button>
+          </div>
+          <div className="ml-auto lg:ml-0">
+            <ViewToggle value={view} onChange={changeView} />
+          </div>
+        </div>
+
+        <div className="mt-3 flex items-center gap-3 text-[12px] text-muted-foreground">
+          <SortMenu
+            label={t("library.sortBy")}
+            choices={SORTS.map((s) => ({ key: s.key, label: t(`sorts.games.${s.key}`) }))}
+            value={sort}
+            onChange={(s) => update({ sort: s })}
           />
-          <button onClick={() => setPanelOpen(true)} className="rounded-lg border border-border bg-card px-3 text-sm">
-            {t("library.filters")}
-            {active.length > 0 && (
-              <span className="ml-1.5 rounded-full bg-primary px-1.5 text-xs font-semibold text-primary-foreground">{active.length}</span>
-            )}
-          </button>
+          {/* Filtres actifs en une ligne : un toucher rouvre le panneau (sur grand écran, il est dans le tiroir). */}
+          {active.length > 0 && (
+            <div className="ml-auto flex min-w-0 items-center gap-3">
+              {desktop ? (
+                <span className="min-w-0 truncate">
+                  <Trans i18nKey="library.filtered" values={{ values: filtered }} components={{ value: <span className="text-foreground" /> }} />
+                </span>
+              ) : (
+                <button type="button" onClick={() => setPanelOpen(true)} className="-my-3 min-w-0 truncate py-3 text-right">
+                  <Trans i18nKey="library.filtered" values={{ values: filtered }} components={{ value: <span className="text-foreground" /> }} />
+                </button>
+              )}
+              <button type="button" onClick={() => update({ filters: {} })} className="-my-3 shrink-0 py-3 underline">
+                {t("library.clearAll")}
+              </button>
+            </div>
+          )}
         </div>
-
-        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
-          <div className="w-52">
-            <KeyedChips
-              label={t("library.sortBy")}
-              choices={SORTS.map((s) => ({ key: s.key, label: t(`sorts.games.${s.key}`) }))}
-              value={sort}
-              onChange={(s) => update({ sort: s })}
-            />
-          </div>
-          <div className="flex rounded-md border border-border bg-card p-0.5" role="group" aria-label={t("library.display")}>
-            <ViewButton on={view === "grille"} label={t("library.grid")} onClick={() => changeView("grille")}>
-              <path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" />
-            </ViewButton>
-            <ViewButton on={view === "liste"} label={t("library.list")} onClick={() => changeView("liste")}>
-              <path d="M4 6h16M4 12h16M4 18h16" />
-            </ViewButton>
-          </div>
-          <span className="text-muted-foreground">
-            {t("library.games", { count: sum.games })} · {t("library.copies", { count: sum.copies })} · {euros(sum.spentCents)}
-          </span>
-        </div>
-
-        {/* Filtres actifs en une ligne (plus de pastilles) : un toucher rouvre les menus. */}
-        {active.length > 0 && (
-          <div className="mt-2 flex items-center gap-3 text-xs">
-            <button onClick={() => setPanelOpen(true)} className="min-w-0 flex-1 truncate text-left text-muted-foreground">
-              <Trans i18nKey="library.filtered" values={{ values: active.map((a) => a.shown).join(", ") }} components={{ value: <span className="text-foreground" /> }} />
-            </button>
-            <button onClick={() => update({ filters: {} })} className="shrink-0 text-muted-foreground underline">
-              {t("library.clearAll")}
-            </button>
-          </div>
-        )}
       </div>
 
       {results.length === 0 ? (
         <p className="py-16 text-center text-muted-foreground">{t("library.noMatch")}</p>
       ) : groups ? (
-        <div className="space-y-2">
+        <div className="mt-1 space-y-3 lg:space-y-5">
           {!forceOpen && (
-            <div className="flex justify-end gap-3 text-xs text-muted-foreground">
-              <button onClick={() => setOpenList(groups.map((g) => g.platform))} className="underline">
+            <div className="flex justify-end gap-3 text-[12px] text-muted-foreground">
+              <button type="button" onClick={() => setOpenList(groups.map((g) => g.platform))} className="underline">
                 {t("library.expandAll")}
               </button>
-              <button onClick={() => setOpenList([])} className="underline">
+              <button type="button" onClick={() => setOpenList([])} className="underline">
                 {t("library.collapseAll")}
               </button>
             </div>
@@ -205,40 +234,16 @@ export default function Library() {
                 const isOpen = e.currentTarget.open
                 if (isOpen !== openList.includes(g.platform)) setOpenList(isOpen ? [...openList, g.platform] : openList.filter((p) => p !== g.platform))
               }}
-              className="group rounded-lg bg-card"
+              className="group"
             >
-              <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3 [&::-webkit-details-marker]:hidden">
-                <svg viewBox="0 0 24 24" className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-90" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-                  <path d="M9 6l6 6-6 6" />
-                </svg>
-                <span className="min-w-0 flex-1 truncate font-medium">{g.platform}</span>
-                <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
-                  {t("library.games", { count: g.results.length })} · {euros(g.spentCents)}
-                </span>
-              </summary>
-              <div className={view === "grille" ? "px-4 pt-1 pb-4" : "px-2 pb-2"}>{renderResults(g.results, false)}</div>
+              <GroupSummary name={g.platform} meta={`${t("library.games", { count: g.results.length })} · ${euros(g.spentCents)}`} />
+              <div className="pb-2">{renderResults(g.results, false)}</div>
             </details>
           ))}
         </div>
       ) : (
-        renderResults(results, true)
+        <div className="mt-1">{renderResults(results, true)}</div>
       )}
-
-      <Link
-        to="/brocante"
-        aria-label={t("library.scanBox")}
-        title={t("library.scanBox")}
-        className="fixed right-5 bottom-[calc(max(1rem,env(safe-area-inset-bottom))+4.25rem)] z-30 flex size-12 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-lg shadow-black/30"
-      >
-        <BarcodeIcon className="size-6" />
-      </Link>
-      <Link
-        to="/ajouter"
-        aria-label={t("library.addGame")}
-        className="fixed right-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-30 flex size-14 items-center justify-center rounded-full bg-primary text-3xl text-primary-foreground shadow-lg shadow-black/40"
-      >
-        +
-      </Link>
 
       <FilterPanel
         open={panelOpen}
@@ -252,46 +257,78 @@ export default function Library() {
   )
 }
 
-function ViewButton({ on, label, onClick, children }: { on: boolean; label: string; onClick: () => void; children: ReactNode }) {
+/** Chargement : les formes finales sur la surface, le texte pour les lecteurs d'écran. */
+function LibrarySkeleton({ title }: { title: React.ReactNode }) {
+  const { t } = useTranslation()
   return (
-    <button
-      onClick={onClick}
-      aria-pressed={on}
-      aria-label={label}
-      title={label}
-      className={`flex size-7 items-center justify-center rounded ${on ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-    >
-      <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        {children}
-      </svg>
-    </button>
+    <div>
+      {title}
+      <p role="status" className="sr-only">
+        {t("library.loading")}
+      </p>
+      <div aria-hidden="true">
+        <div className="mt-2 h-4 w-48 rounded-full bg-card" />
+        <div className="mt-4 flex gap-2">
+          <div className="h-10 w-40 rounded-full bg-card" />
+          <div className="ml-auto size-10 rounded-full bg-card" />
+        </div>
+        <div className="mt-3 h-11 rounded-full bg-card lg:max-w-md" />
+        <ul className={`mt-6 ${GRID_CLASS}`}>
+          {Array.from({ length: 12 }, (_, i) => (
+            <li key={i}>
+              <div className="aspect-[3/4] rounded-[12px] bg-card" />
+              <div className="mt-1.5 h-3 w-4/5 rounded-full bg-card" />
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  )
+}
+
+/** Silhouette de boîtier vide, 96 px : collection vide. */
+function EmptyBox() {
+  return (
+    <div aria-hidden="true" className="flex h-24 w-[72px] overflow-hidden rounded-[12px] border-[1.5px] border-border-strong bg-muted">
+      <div className="w-[9px] shrink-0 bg-border-strong" />
+      <div className="flex flex-1 flex-col justify-between p-2">
+        <div className="h-1 w-8 rounded-full bg-border-strong" />
+        <div className="space-y-1">
+          <div className="h-1.5 w-10 rounded-full bg-border-strong" />
+          <div className="h-1.5 w-7 rounded-full bg-border-strong" />
+        </div>
+      </div>
+    </div>
   )
 }
 
 // Dans un groupe par console, la plateforme est dans l'en-tête : inutile de la répéter sous chaque jaquette.
 function GameCard({ result: { game }, showPlatform }: { result: Result; showPlatform: boolean }) {
   return (
-    <Link to={`/jeux/${game.id}`} className="group block">
-      <div className="relative overflow-hidden rounded-md">
-        <Cover src={game.cover} title={game.title} className="aspect-[3/4] w-full transition-transform group-hover:scale-[1.03]" />
+    <Link to={`/jeux/${game.id}`} className="group block rounded-[12px]">
+      <div className={CARD_FRAME}>
+        <Cover src={game.cover} title={game.title} platform={game.platform} className="w-full" />
         {game.copies.length > 1 && (
-          <span className="absolute top-1 right-1 rounded bg-background/85 px-1.5 text-xs font-medium">×{game.copies.length}</span>
+          <span className="num absolute top-2 right-2 rounded-full bg-ink px-[7px] py-0.5 text-[10px] leading-tight font-semibold text-ink-foreground">
+            ×{game.copies.length}
+          </span>
         )}
       </div>
-      <div className="mt-1.5 line-clamp-2 text-sm leading-tight">{game.title}</div>
-      {showPlatform && <div className="truncate text-xs text-muted-foreground">{game.platform}</div>}
+      <div className="mt-1.5 line-clamp-2 text-[12px] leading-[1.25]">{game.title}</div>
+      {showPlatform && <div className="truncate text-[11px] text-muted-foreground">{game.platform}</div>}
     </Link>
   )
 }
 
 const COMPLETE = "Complet (jeu + boîte + notice)"
 
-/** Ligne de la vue liste : vignette, titre, ce qu'on possède, et ce que ça a coûté. */
+/** Ligne de la vue liste : vignette, titre, ce qu'on possède et dans quel état, et ce que ça a coûté. */
 function GameRow({ result: { game, copies }, showPlatform }: { result: Result; showPlatform: boolean }) {
   const { t } = useTranslation()
   const first = copies[0]
+  const physical = first && first.support !== DIGITAL
   const what = first
-    ? first.support === DIGITAL
+    ? !physical
       ? valueLabel("support", DIGITAL)
       : first.content === COMPLETE
         ? t("library.shortComplete")
@@ -300,17 +337,30 @@ function GameRow({ result: { game, copies }, showPlatform }: { result: Result; s
   const last = copies.reduce<string | null>((max, c) => (c.purchase_date && (!max || c.purchase_date > max) ? c.purchase_date : max), null)
   const spent = copies.reduce((n, c) => n + (c.price_cents ?? 0), 0)
   const details = [showPlatform ? game.platform : null, copies.length > 1 ? t("library.copies", { count: copies.length }) : null, what].filter(Boolean).join(" · ")
+  const condition = physical ? first.condition_game : null
 
   return (
-    <Link to={`/jeux/${game.id}`} className="flex items-center gap-3 rounded-md px-2 py-2 hover:bg-muted">
-      <Cover src={game.cover} title={game.title} placeholder="" className="aspect-[3/4] w-10 shrink-0 rounded" />
-      <div className="min-w-0 flex-1">
-        <div className="truncate text-sm font-medium">{game.title}</div>
-        <div className="truncate text-xs text-muted-foreground">{details}</div>
+    <Link to={`/jeux/${game.id}`} className={ROW_CLASS}>
+      <Cover src={game.cover} title={game.title} platform={game.platform} size="thumb" className="w-[38px]" />
+      <div className="min-w-0">
+        <div className="truncate text-[14px] font-semibold">{game.title}</div>
+        <div className="flex min-w-0 items-center gap-1 text-[12px] text-muted-foreground">
+          <span className="truncate">{details}</span>
+          {condition && (
+            <>
+              {details && <span aria-hidden="true">·</span>}
+              <ConditionDot value={condition} size={7} />
+            </>
+          )}
+        </div>
       </div>
-      <div className="shrink-0 text-right">
-        <div className="text-sm tabular-nums">{euros(spent)}</div>
-        {last && <div className="text-xs text-muted-foreground tabular-nums">{formatDate(last)}</div>}
+      <div className="text-right">
+        <div className="num text-[14px] font-semibold">{euros(spent)}</div>
+        {last ? (
+          <div className="num text-[11px] text-muted-foreground">{formatDate(last)}</div>
+        ) : (
+          first?.purchase_place && <div className="max-w-24 truncate text-[11px] text-muted-foreground">{first.purchase_place}</div>
+        )}
       </div>
     </Link>
   )

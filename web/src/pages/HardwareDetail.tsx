@@ -1,9 +1,13 @@
+import { Pencil } from "lucide-react"
 import { Fragment, useCallback, useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { Link, useParams } from "react-router-dom"
 
-import { Condition } from "@/components/condition"
+import { ConditionBlock, toneOf } from "@/components/condition"
+import { Cover } from "@/components/cover"
 import { HardwareImage } from "@/components/hardware-image"
+import { BackBar, ICON, tagClass } from "@/components/page-bits"
+import { PhotoStrip } from "@/components/photo-field"
 import { ValueBlock } from "@/components/value-block"
 import { api, errorMessage, type HardwareDetail as Detail } from "@/lib/api"
 import { euros, formatDate } from "@/lib/format"
@@ -23,67 +27,100 @@ export default function HardwareDetail() {
   if (error) return <p className="py-16 text-center text-destructive">{error}</p>
   if (!item) return <p className="py-16 text-center text-muted-foreground">{t("library.loading")}</p>
 
-  const rows: Array<[string, string | null]> = [
+  const title = hardwareTitle(item)
+  // Une photo prise passe devant l'image de référence de Wikimedia Commons.
+  const photo = item.photos[0]?.url ?? null
+  const edit = `/consoles/${item.id}/modifier`
+  const meta: Array<[string, string | null]> = [
     [t("hardwareDetail.edition"), item.edition],
     [t("hardwareDetail.color"), item.color],
     [t("hardwareDetail.region"), valueLabel("region", item.region)],
-    [t("hardwareDetail.content"), valueLabel("hwContent", item.content)],
-    [t("hardwareDetail.working"), valueLabel("hwWorking", item.working)],
-    [t("hardwareDetail.price"), item.price_cents === null ? null : euros(item.price_cents)],
-    [t("hardwareDetail.boughtOn"), formatDate(item.purchase_date)],
-    [t("hardwareDetail.place"), item.purchase_place],
     [t("hardwareDetail.serial"), item.serial_number],
   ]
+  const shortMeta = [item.edition, item.color, item.serial_number && `${t("hardwareDetail.serial")} ${item.serial_number}`].filter(Boolean).join(" · ")
+  const bought = [formatDate(item.purchase_date), item.purchase_place].filter(Boolean).join(" · ")
 
   return (
-    <article className="mx-auto max-w-2xl pb-10">
-      <Link to="/consoles" className="mb-3 inline-block text-sm text-muted-foreground hover:text-foreground">
-        {t("hardwareDetail.back")}
-      </Link>
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl leading-tight font-semibold">{hardwareTitle(item)}</h1>
-          <div className="mt-2 flex flex-wrap gap-2 text-xs">
-            <span className="rounded-full bg-muted px-2.5 py-1">{valueLabel("hwKind", item.kind)}</span>
-            <span className="rounded-full bg-muted px-2.5 py-1">{item.platform}</span>
-          </div>
-        </div>
-        <Link to={`/consoles/${item.id}/modifier`} className="shrink-0 text-sm text-muted-foreground hover:text-foreground">
+    <article className="pb-10">
+      <BackBar to="/consoles" label={t("libraryTabs.hardware")}>
+        <Link to={edit} className={tagClass.surface}>
           {t("common.edit")}
         </Link>
+      </BackBar>
+
+      {/* Même charpente que la fiche d'un jeu : deux colonnes au téléphone, trois sur grand écran. */}
+      <div className="grid grid-cols-[132px_minmax(0,1fr)] gap-x-4 gap-y-5 lg:grid-cols-[240px_minmax(0,1fr)_380px] lg:items-start lg:gap-8">
+        <div className="contents lg:col-start-1 lg:row-start-1 lg:flex lg:flex-col lg:gap-4">
+          <Cover src={photo ?? item.image} title={title} platform={item.platform} size="large" fit={photo ? "cover" : "contain"} className="col-start-1 row-start-1 w-full shadow-md" />
+          <div className="col-span-2 row-start-2">
+            <HardwareImage item={item} onChanged={load} />
+          </div>
+        </div>
+
+        <header className="col-start-2 row-start-1 min-w-0 self-end lg:col-start-2 lg:self-start">
+          <div className="text-[11px] tracking-[0.08em] text-primary-text uppercase">{[valueLabel("hwKind", item.kind), item.platform].join(" · ")}</div>
+          <h1 className="mt-1.5 text-[26px] leading-[1.05] break-words lg:text-[40px] lg:leading-[1.02]">{title}</h1>
+          {shortMeta && <div className="mt-2 text-[12px] text-muted-foreground lg:hidden">{shortMeta}</div>}
+          <dl className="mt-5 hidden grid-cols-[auto_1fr] gap-x-7 gap-y-1.5 text-[13px] lg:grid">
+            {meta
+              .filter(([, v]) => v)
+              .map(([k, v]) => (
+                <Fragment key={k}>
+                  <dt className="text-muted-foreground">{k}</dt>
+                  <dd className="min-w-0 break-words">{v}</dd>
+                </Fragment>
+              ))}
+          </dl>
+        </header>
+
+        <section className="col-span-2 row-start-3 flex flex-col gap-3.5 rounded-card bg-card p-4 lg:col-span-1 lg:col-start-3 lg:row-start-1">
+          <div className="flex items-start gap-2">
+            <div className="flex min-w-0 flex-1 flex-wrap gap-1.5">
+              {item.content && <span className={tagClass.ink}>{valueLabel("hwContent", item.content)}</span>}
+              {item.region && <span className={tagClass.neutral}>{valueLabel("region", item.region)}</span>}
+              {item.working && (
+                <span className={`${tagClass.neutral} inline-flex items-center gap-1.5`}>
+                  <span className="size-2 shrink-0 rounded-full" style={{ background: toneOf(item.working) }} aria-hidden="true" />
+                  {valueLabel("hwWorking", item.working)}
+                </span>
+              )}
+            </div>
+            <Link
+              to={edit}
+              aria-label={t("common.edit")}
+              title={t("common.edit")}
+              className="-mt-1.5 -mr-1.5 grid size-11 shrink-0 place-items-center rounded-full text-muted-foreground transition-colors duration-150 hover:bg-background/60 hover:text-foreground"
+            >
+              <Pencil size={16} {...ICON} aria-hidden="true" />
+            </Link>
+          </div>
+
+          <ConditionBlock
+            items={[
+              { label: item.kind === "Console" ? t("hardwareDetail.console") : t("hardwareDetail.item"), value: item.condition_item },
+              { label: t("hardwareDetail.box"), value: item.condition_box },
+              { label: t("hardwareDetail.manual"), value: item.condition_manual },
+            ]}
+          />
+
+          {(item.price_cents !== null || bought) && (
+            <dl className="grid grid-cols-2 gap-3">
+              <div>
+                <dt className="text-[11px] text-muted-foreground">{t("hardwareDetail.paid")}</dt>
+                <dd className="num text-[13px] font-semibold">{item.price_cents === null ? "—" : euros(item.price_cents)}</dd>
+              </div>
+              <div>
+                <dt className="text-[11px] text-muted-foreground">{t("hardwareDetail.boughtOn")}</dt>
+                <dd className="num text-[13px] break-words">{bought || "—"}</dd>
+              </div>
+            </dl>
+          )}
+
+          <ValueBlock valuations={item.valuations} priceCents={item.price_cents} postUrl={`/api/hardware/${item.id}/valuations`} deleteBase="/api/hardware-valuations" onChanged={load} />
+          {item.comment && <p className="rounded-[16px] bg-muted px-3 py-2.5 text-[13px] whitespace-pre-line">{item.comment}</p>}
+          <PhotoStrip photos={item.photos} addTo={edit} />
+        </section>
       </div>
-
-      <HardwareImage item={item} onChanged={load} />
-
-      {item.photos.length > 0 && (
-        <div className="mt-4 grid grid-cols-3 gap-2">
-          {item.photos.map((p) => (
-            <a key={p.id} href={p.url} target="_blank" rel="noreferrer">
-              <img src={p.url} alt="" loading="lazy" className="aspect-square w-full rounded-md object-cover" />
-            </a>
-          ))}
-        </div>
-      )}
-
-      <section className="mt-4 rounded-lg bg-card p-4">
-        <div className="grid grid-cols-3 gap-2">
-          <Condition label={item.kind === "Console" ? t("hardwareDetail.console") : t("hardwareDetail.item")} value={item.condition_item} />
-          <Condition label={t("hardwareDetail.box")} value={item.condition_box} />
-          <Condition label={t("hardwareDetail.manual")} value={item.condition_manual} />
-        </div>
-        <dl className="mt-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-sm">
-          {rows
-            .filter(([, v]) => v)
-            .map(([k, v]) => (
-              <Fragment key={k}>
-                <dt className="text-muted-foreground">{k}</dt>
-                <dd className="min-w-0 break-words">{v}</dd>
-              </Fragment>
-            ))}
-        </dl>
-        <ValueBlock valuations={item.valuations} priceCents={item.price_cents} postUrl={`/api/hardware/${item.id}/valuations`} deleteBase="/api/hardware-valuations" onChanged={load} />
-        {item.comment && <p className="mt-3 rounded-md bg-muted px-3 py-2 text-sm">{item.comment}</p>}
-      </section>
     </article>
   )
 }

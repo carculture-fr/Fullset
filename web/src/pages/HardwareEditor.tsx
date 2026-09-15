@@ -1,13 +1,17 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react"
 import { useTranslation } from "react-i18next"
-import { Link, useNavigate, useParams } from "react-router-dom"
+import { useNavigate, useParams } from "react-router-dom"
 
-import { CONDITIONS, HW_CONTENTS, HW_KINDS, HW_WORKING, MANUAL_CONDITIONS, REGIONS } from "@domain"
-import { Chips, ErrorNote, Field, ListChips, Menu, inputClass } from "@/components/fields"
+import { HW_CONTENTS, HW_KINDS, HW_WORKING, REGIONS } from "@domain"
+import { toneOf } from "@/components/condition"
+import { ConditionGauge } from "@/components/condition-gauge"
+import { ConditionsCard } from "@/components/copy-form"
+import { Chips, ErrorNote, Field, ListChips, Menu, areaClass, inputClass } from "@/components/fields"
+import { BackBar, Segmented, StickyCta } from "@/components/page-bits"
 import { PhotoField } from "@/components/photo-field"
 import { api, errorMessage, send, type CatalogPlatform, type HardwareDetail, type HardwareItem, type Photo } from "@/lib/api"
 import { todayIso } from "@/lib/format"
-import { currentLanguage } from "@/lib/i18n"
+import { currentLanguage, valueLabel } from "@/lib/i18n"
 import { useLibrary } from "@/lib/library-data"
 import { useLists, type ListKey } from "@/lib/lists"
 import { searchPlatforms } from "@/lib/platform-search"
@@ -151,22 +155,23 @@ export default function HardwareEditor() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <Link to={id ? `/consoles/${id}` : "/consoles"} replace className="mb-3 inline-block text-sm text-muted-foreground hover:text-foreground">
-        {t("hardwareEditor.back")}
-      </Link>
-      <div className="mb-5 flex items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold">{id ? t("common.edit") : t("hardwareEditor.titleAdd")}</h1>
+      <BackBar to={id ? `/consoles/${id}` : "/consoles"} replace label={t("hardwareEditor.backLabel")}>
         {id && (
-          <button onClick={remove} className="text-sm text-destructive hover:underline">
+          <button onClick={remove} className="min-h-11 shrink-0 rounded-full px-3 text-[13px] font-semibold text-destructive hover:underline">
             {t("common.delete")}
           </button>
         )}
-      </div>
+      </BackBar>
+      <h1 className="mb-5 text-[26px]">{id ? t("common.edit") : t("hardwareEditor.titleAdd")}</h1>
 
-      <form onSubmit={submit} className="space-y-5 pb-24">
-        <Field label={t("hardwareEditor.type")}>
-          <Chips options={HW_KINDS} valueGroup="hwKind" value={form.kind} allowNone={false} onChange={(x) => set("kind", x)} />
-        </Field>
+      <form onSubmit={submit} className="space-y-3.5 pb-[90px]">
+        <Segmented
+          label={t("hardwareEditor.type")}
+          options={HW_KINDS}
+          value={form.kind as (typeof HW_KINDS)[number]}
+          display={(k) => valueLabel("hwKind", k)}
+          onChange={(k) => set("kind", k)}
+        />
         <Field label={t("hardwareEditor.console")}>
           <Menu
             label={t("hardwareEditor.console")}
@@ -182,49 +187,71 @@ export default function HardwareEditor() {
         </Field>
         {form.platform && (
           <Field label={t("hardwareEditor.model")} hint={models.length ? t("hardwareEditor.modelHintKnown") : t("hardwareEditor.modelHintNew")}>
-            <ListChips options={models} selected={form.model ? [form.model] : []} onToggle={toggle("model")} onAdd={async (x) => set("model", x)} visible={12} />
+            <ListChips options={models} selected={form.model ? [form.model] : []} onToggle={toggle("model")} onAdd={async (x) => set("model", x)} />
           </Field>
         )}
-        <Field label={t("hardwareEditor.edition")}>
-          <ListChips options={values("hw_edition")} selected={form.edition ? [form.edition] : []} onToggle={toggle("edition")} onAdd={async (x) => set("edition", await add("hw_edition", x))} />
-        </Field>
-        <Field label={t("hardwareEditor.color")}>
-          <ListChips options={values("hw_color")} selected={form.color ? [form.color] : []} onToggle={toggle("color")} onAdd={async (x) => set("color", await add("hw_color", x))} />
-        </Field>
-        <Field label={t("hardwareEditor.region")}>
-          <Chips options={REGIONS} valueGroup="region" value={orNull(form.region)} onChange={(x) => set("region", x)} />
-        </Field>
-        <Field label={t("hardwareEditor.content")}>
-          <Chips options={HW_CONTENTS} valueGroup="hwContent" value={orNull(form.content)} onChange={(x) => set("content", x)} />
-        </Field>
-        <Field label={form.kind === "Console" ? t("hardwareEditor.conditionConsole") : t("hardwareEditor.conditionPiece")}>
-          <Chips options={CONDITIONS} valueGroup="condition" value={orNull(form.condition_item)} onChange={(x) => set("condition_item", x)} />
-        </Field>
-        <Field label={t("hardwareEditor.conditionBox")}>
-          <Chips options={CONDITIONS} valueGroup="condition" value={orNull(form.condition_box)} onChange={(x) => set("condition_box", x)} />
-        </Field>
-        <Field label={t("hardwareEditor.conditionManual")}>
-          <Chips options={MANUAL_CONDITIONS} valueGroup="condition" value={orNull(form.condition_manual)} onChange={(x) => set("condition_manual", x)} />
-        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label={t("hardwareEditor.edition")}>
+            <ListChips options={values("hw_edition")} selected={form.edition ? [form.edition] : []} onToggle={toggle("edition")} onAdd={async (x) => set("edition", await add("hw_edition", x))} />
+          </Field>
+          <Field label={t("hardwareEditor.color")}>
+            <ListChips options={values("hw_color")} selected={form.color ? [form.color] : []} onToggle={toggle("color")} onAdd={async (x) => set("color", await add("hw_color", x))} />
+          </Field>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label={t("hardwareEditor.region")}>
+            <Chips options={REGIONS} valueGroup="region" value={orNull(form.region)} onChange={(x) => set("region", x)} />
+          </Field>
+          <Field label={t("hardwareEditor.content")}>
+            <Chips options={HW_CONTENTS} valueGroup="hwContent" value={orNull(form.content)} onChange={(x) => set("content", x)} />
+          </Field>
+        </div>
+
+        <ConditionsCard>
+          <ConditionGauge label={form.kind === "Console" ? t("hardwareDetail.console") : t("hardwareDetail.item")} value={orNull(form.condition_item)} onChange={(x) => set("condition_item", x)} />
+          <ConditionGauge label={t("hardwareDetail.box")} value={orNull(form.condition_box)} onChange={(x) => set("condition_box", x)} />
+          <ConditionGauge label={t("hardwareDetail.manual")} value={orNull(form.condition_manual)} onChange={(x) => set("condition_manual", x)} allowAbsent />
+        </ConditionsCard>
+
         <Field label={t("hardwareEditor.working")}>
-          <Chips options={HW_WORKING} valueGroup="hwWorking" value={orNull(form.working)} onChange={(x) => set("working", x)} />
+          <div role="radiogroup" aria-label={t("hardwareEditor.working")} className="flex flex-wrap gap-2">
+            {HW_WORKING.map((w) => {
+              const on = form.working === w
+              return (
+                <button
+                  key={w}
+                  type="button"
+                  role="radio"
+                  aria-checked={on}
+                  onClick={() => set("working", on ? "" : w)}
+                  className={`inline-flex min-h-11 items-center gap-2 rounded-full border px-4 text-[14px] transition-colors duration-150 ${
+                    on ? "border-primary bg-primary-tint font-semibold text-primary-tint-foreground" : "border-border-strong bg-card"
+                  }`}
+                >
+                  <span className="size-2 shrink-0 rounded-full" style={{ background: toneOf(w) }} aria-hidden="true" />
+                  {valueLabel("hwWorking", w)}
+                </button>
+              )
+            })}
+          </div>
         </Field>
+
         <div className="grid grid-cols-2 gap-3">
           <Field label={t("hardwareEditor.price")}>
-            <input className={inputClass} inputMode="decimal" placeholder={t("hardwareEditor.pricePlaceholder")} value={form.price} onChange={(e) => set("price", e.target.value)} />
+            <input className={`${inputClass} num`} inputMode="decimal" placeholder={t("hardwareEditor.pricePlaceholder")} value={form.price} onChange={(e) => set("price", e.target.value)} />
           </Field>
           <Field label={t("hardwareEditor.purchaseDate")}>
-            <input className={inputClass} type="date" value={form.purchase_date} onChange={(e) => set("purchase_date", e.target.value)} />
+            <input className={`${inputClass} num`} type="date" value={form.purchase_date} onChange={(e) => set("purchase_date", e.target.value)} />
           </Field>
         </div>
         <Field label={t("hardwareEditor.place")}>
           <ListChips options={values("place")} selected={form.purchase_place ? [form.purchase_place] : []} onToggle={toggle("purchase_place")} onAdd={async (x) => set("purchase_place", await add("place", x))} />
         </Field>
         <Field label={t("hardwareEditor.serial")}>
-          <input className={inputClass} value={form.serial_number} onChange={(e) => set("serial_number", e.target.value)} />
+          <input className={`${inputClass} num`} value={form.serial_number} onChange={(e) => set("serial_number", e.target.value)} />
         </Field>
         <Field label={t("hardwareEditor.comment")}>
-          <textarea className={inputClass} rows={2} value={form.comment} onChange={(e) => set("comment", e.target.value)} />
+          <textarea className={areaClass} rows={2} value={form.comment} onChange={(e) => set("comment", e.target.value)} />
         </Field>
         <Field label={t("hardwareEditor.photos")}>
           <PhotoField existing={photos} onDeleteExisting={id ? deletePhoto : undefined} files={files} onFiles={setFiles} />
@@ -232,13 +259,7 @@ export default function HardwareEditor() {
 
         <ErrorNote message={error} />
 
-        <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur">
-          <div className="mx-auto max-w-2xl">
-            <button disabled={busy || !form.platform} className="w-full rounded-lg bg-primary py-3 font-medium text-primary-foreground disabled:opacity-50">
-              {busy ? t("hardwareEditor.saving") : id ? t("common.save") : t("common.add")}
-            </button>
-          </div>
-        </div>
+        <StickyCta disabled={busy || !form.platform} label={busy ? t("hardwareEditor.saving") : id ? t("common.save") : t("common.add")} />
       </form>
     </div>
   )

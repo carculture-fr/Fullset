@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { Link, RouterProvider, createBrowserRouter } from "react-router-dom"
 
-import { Layout } from "@/components/layout"
+import { Layout, Logo } from "@/components/layout"
 import { Login } from "@/components/login"
 import { Setup } from "@/components/setup"
 import { api, UNAUTHORIZED_EVENT, type Me } from "@/lib/api"
@@ -90,11 +90,14 @@ export default function App() {
 
   if (!me && unreachable) {
     return (
-      <main className="flex min-h-dvh flex-col items-center justify-center gap-3 px-4 text-center">
-        <p className="text-muted-foreground">{t("app.unreachable")}</p>
-        <button onClick={refresh} className="rounded-lg border border-border px-4 py-2 text-sm">
-          {t("common.retry")}
-        </button>
+      <main className="flex min-h-dvh items-center justify-center px-4 py-8">
+        <div className="flex w-full max-w-[440px] flex-col items-center gap-5 rounded-[28px] bg-card p-6 text-center shadow-sm sm:p-8">
+          <Logo size={48} />
+          <p className="text-[15px] text-muted-foreground">{t("app.unreachable")}</p>
+          <button onClick={refresh} className="inline-flex min-h-12 items-center rounded-full bg-primary px-6 font-heading text-[16px] text-primary-foreground transition-[filter,transform] duration-150 hover:brightness-95 active:scale-[.98]">
+            {t("common.retry")}
+          </button>
+        </div>
       </main>
     )
   }
@@ -118,9 +121,13 @@ export default function App() {
 function NotFound() {
   const { t } = useTranslation()
   return (
-    <div className="py-16 text-center">
-      <p className="text-muted-foreground">{t("app.notFound")}</p>
-      <Link to="/" className="mt-3 inline-block text-sm text-primary underline">
+    <div className="flex flex-col items-center py-16 text-center">
+      <div aria-hidden="true" className="aspect-[3/4] w-[96px] rounded-[12px] border-[1.5px] border-dashed border-border-strong bg-card" />
+      <h1 className="mt-6 text-[26px]">{t("app.notFound")}</h1>
+      <Link
+        to="/"
+        className="mt-5 inline-flex min-h-12 items-center rounded-full bg-primary px-6 font-heading text-[16px] text-primary-foreground transition-[filter,transform] duration-150 hover:brightness-95 active:scale-[.98]"
+      >
         {t("app.backToLibrary")}
       </Link>
     </div>

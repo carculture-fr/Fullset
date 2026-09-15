@@ -1,7 +1,7 @@
 export type Theme = "light" | "dark"
 
 const KEY = "fullset-theme"
-const THEME_COLOR: Record<Theme, string> = { dark: "#14161c", light: "#f6f5f2" }
+const THEME_COLOR: Record<Theme, string> = { dark: "#1b1917", light: "#f7f3ea" }
 
 export const currentTheme = (): Theme => (document.documentElement.dataset.theme === "light" ? "light" : "dark")
 

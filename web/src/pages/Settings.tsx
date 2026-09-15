@@ -15,11 +15,16 @@ import { useSession } from "@/lib/session"
 // Libellés : `settings.lists.<clé>`.
 const LIST_KEYS: ListKey[] = ["place", "edition", "tag", "hw_edition", "hw_color"]
 
+const primaryButton =
+  "inline-flex min-h-11 items-center justify-center rounded-full bg-primary px-5 font-heading text-[15px] text-primary-foreground transition-[filter,transform] duration-150 hover:brightness-95 active:scale-[.98] disabled:opacity-45"
+const ghostButton = "inline-flex min-h-11 items-center rounded-full border border-border-strong px-4 text-sm font-semibold transition-colors duration-150 hover:bg-foreground/[.07] disabled:opacity-45"
+const textButton = "inline-flex min-h-9 shrink-0 items-center rounded-full px-3 text-[13px] font-semibold text-muted-foreground transition-colors duration-150 hover:bg-foreground/[.07] hover:text-foreground disabled:opacity-30"
+
 export default function Settings() {
   const { t } = useTranslation()
   return (
-    <div className="mx-auto max-w-2xl space-y-5 pb-10">
-      <h1 className="text-xl font-semibold">{t("settings.title")}</h1>
+    <div className="mx-auto max-w-2xl space-y-4 pb-4 lg:space-y-5">
+      <h1 className="text-[36px]">{t("settings.title")}</h1>
       <Profile />
       <DisplaySection />
       <Section title={t("settings.services.title")} note={t("settings.services.note")}>
@@ -29,7 +34,7 @@ export default function Settings() {
       <ListsManager />
       <SteamSection />
       <Section title={t("settings.barcodes.title")} note={t("settings.barcodes.note")}>
-        <Link to="/codes-barres" className="inline-block rounded-lg border border-border px-3 py-2 text-sm">
+        <Link to="/codes-barres" className={ghostButton}>
           {t("settings.barcodes.manage")}
         </Link>
       </Section>
@@ -37,18 +42,23 @@ export default function Settings() {
   )
 }
 
+/** Une section = une carte 24 px, titre en Caprasimo 20 px. */
 function Section({ title, note, children }: { title: string; note?: string; children: ReactNode }) {
   return (
-    <section className="rounded-lg bg-card p-5">
-      <h2 className="font-semibold">{title}</h2>
-      {note && <p className="mt-0.5 text-xs text-muted-foreground">{note}</p>}
-      <div className="mt-4">{children}</div>
+    <section className="rounded-card bg-card p-5 sm:p-6">
+      <h2 className="text-[20px]">{title}</h2>
+      {note && <p className="mt-1 text-[13px] text-muted-foreground">{note}</p>}
+      <div className="mt-5">{children}</div>
     </section>
   )
 }
 
 function Saved({ message }: { message: string | null }) {
-  return message ? <p className="rounded-lg bg-muted px-3 py-2 text-sm">{message}</p> : null
+  return message ? (
+    <p role="status" className="rounded-[16px] bg-primary-tint px-4 py-2.5 text-sm text-primary-tint-foreground">
+      {message}
+    </p>
+  ) : null
 }
 
 function Profile() {
@@ -78,7 +88,7 @@ function Profile() {
 
   return (
     <Section title={t("settings.profile.title")}>
-      <form onSubmit={save} className="space-y-3">
+      <form onSubmit={save} className="space-y-3.5">
         <Field label={t("settings.profile.displayName")}>
           <input className={inputClass} value={form.display_name} onChange={(e) => setForm({ ...form, display_name: e.target.value })} />
         </Field>
@@ -90,7 +100,7 @@ function Profile() {
         </Field>
         <ErrorNote message={error} />
         <Saved message={saved} />
-        <button className="rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground">{t("settings.profile.save")}</button>
+        <button className={primaryButton}>{t("settings.profile.save")}</button>
       </form>
     </Section>
   )
@@ -108,7 +118,7 @@ function DisplaySection() {
 
   return (
     <Section title={t("settings.display.title")} note={t("settings.display.note")}>
-      <div className="space-y-3">
+      <div className="space-y-3.5">
         <Field label={t("settings.display.language")}>
           <KeyedChips
             label={t("settings.display.languageLabel")}
@@ -184,7 +194,7 @@ function Security() {
 
   return (
     <Section title={t("settings.security.title")} note={t("settings.security.note")}>
-      <form onSubmit={changePassword} className="space-y-3">
+      <form onSubmit={changePassword} className="space-y-3.5">
         <Field label={t("settings.security.current")}>
           <input className={inputClass} type="password" autoComplete="current-password" value={pw.current} onChange={(e) => setPw({ ...pw, current: e.target.value })} />
         </Field>
@@ -194,7 +204,7 @@ function Security() {
         <Field label={t("settings.security.confirm")}>
           <input className={inputClass} type="password" autoComplete="new-password" value={pw.confirm} onChange={(e) => setPw({ ...pw, confirm: e.target.value })} />
         </Field>
-        <button disabled={!pw.current || pw.password.length < 10} className="rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground disabled:opacity-50">
+        <button disabled={!pw.current || pw.password.length < 10} className={primaryButton}>
           {t("settings.security.change")}
         </button>
       </form>
@@ -202,11 +212,11 @@ function Security() {
         <ErrorNote message={error} />
         <Saved message={saved} />
       </div>
-      <div className="mt-4 flex flex-wrap gap-2 border-t border-border pt-4">
-        <button onClick={others} className="rounded-lg border border-border px-3 py-2 text-sm">
+      <div className="mt-5 flex flex-wrap gap-2 border-t border-border pt-5">
+        <button onClick={others} className={ghostButton}>
           {t("settings.security.logoutOthers")}
         </button>
-        <button onClick={logout} className="rounded-lg border border-border px-3 py-2 text-sm">
+        <button onClick={logout} className={ghostButton}>
           {t("settings.security.logout")}
         </button>
       </div>
@@ -254,7 +264,7 @@ function SteamSection() {
     <Section title={t("settings.steam.title")} note={t("settings.steam.note")}>
       {status && !status.configured && <p className="text-sm text-muted-foreground">{t("settings.steam.notConfigured")}</p>}
       {status?.configured && (
-        <div className="space-y-3">
+        <div className="space-y-3.5">
           <p className="text-sm text-muted-foreground">
             {status.synced_at
               ? t("settings.steam.lastSync", {
@@ -265,11 +275,11 @@ function SteamSection() {
               : t("settings.steam.never")}
           </p>
           <div className="flex flex-wrap gap-2">
-            <button onClick={sync} disabled={busy} className="rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground disabled:opacity-50">
+            <button onClick={sync} disabled={busy} className={primaryButton}>
               {busy ? t("settings.steam.syncing") : t("settings.steam.sync")}
             </button>
             {status.candidates > 0 && (
-              <Link to="/steam" className="rounded-lg border border-border px-3 py-2.5 text-sm">
+              <Link to="/steam" className={ghostButton}>
                 {t("settings.steam.choose", { n: status.candidates })}
               </Link>
             )}
@@ -302,14 +312,18 @@ function ListsManager() {
   }
 
   const values = lists?.[tab] ?? []
-  const tabClass = (on: boolean) => `rounded-md px-3 py-1.5 text-sm ${on ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"}`
+  const tabClass = (on: boolean) =>
+    `inline-flex min-h-10 items-center gap-1.5 rounded-full px-4 text-[14px] transition-colors duration-150 ${
+      on ? "bg-primary font-heading text-primary-foreground" : "bg-background text-muted-foreground hover:text-foreground"
+    }`
 
   return (
     <Section title={t("settings.lists.title")} note={t("settings.lists.note")}>
-      <div className="flex flex-wrap gap-1" role="tablist">
+      <div className="flex flex-wrap gap-1.5" role="tablist">
         {LIST_KEYS.map((k) => (
           <button key={k} role="tab" aria-selected={tab === k} onClick={() => setTab(k)} className={tabClass(tab === k)}>
-            {t(`settings.lists.${k}`)} {lists && <span className="text-xs text-muted-foreground">({lists[k].length})</span>}
+            {t(`settings.lists.${k}`)}
+            {lists && <span className={`num font-sans text-xs ${tab === k ? "opacity-80" : "text-subtle-foreground"}`}>{lists[k].length}</span>}
           </button>
         ))}
       </div>
@@ -321,8 +335,8 @@ function ListsManager() {
         }}
         className="mt-4 flex gap-2"
       >
-        <input className={`${inputClass} min-w-0 flex-1 py-2`} placeholder={t("settings.lists.newValue")} value={draft} onChange={(e) => setDraft(e.target.value)} />
-        <button disabled={!draft.trim()} className="rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground disabled:opacity-50">
+        <input className={`${inputClass} min-w-0 flex-1`} placeholder={t("settings.lists.newValue")} value={draft} onChange={(e) => setDraft(e.target.value)} />
+        <button disabled={!draft.trim()} className={`${primaryButton} min-h-12`}>
           {t("common.add")}
         </button>
       </form>
@@ -352,10 +366,10 @@ function ValueRow({ list, item, all, run }: { list: ListKey; item: ListValue; al
 
   if (editing) {
     return (
-      <li className="flex flex-wrap items-center gap-2 py-2">
+      <li className="flex flex-wrap items-center gap-2 py-2.5">
         <input
           autoFocus
-          className={`${inputClass} min-w-0 flex-1 py-1.5`}
+          className={`${inputClass} min-w-0 flex-1`}
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={(e) => {
@@ -363,10 +377,10 @@ function ValueRow({ list, item, all, run }: { list: ListKey; item: ListValue; al
             if (e.key === "Escape") setEditing(false)
           }}
         />
-        <button onClick={rename} className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground">
+        <button onClick={rename} className={primaryButton}>
           {t("common.save")}
         </button>
-        <button onClick={() => setEditing(false)} className="px-1 text-sm text-muted-foreground">
+        <button onClick={() => setEditing(false)} className={textButton}>
           {t("common.cancel")}
         </button>
       </li>
@@ -374,19 +388,19 @@ function ValueRow({ list, item, all, run }: { list: ListKey; item: ListValue; al
   }
   // Le libellé garde toute la largeur (sur téléphone, les boutons le tronquaient en « Easy… »).
   return (
-    <li className="flex items-center gap-3 py-2 text-sm">
+    <li className="flex items-center gap-2 py-2.5 text-[14px]">
       <div className="min-w-0 flex-1">
         <div className="break-words">{item.value}</div>
-        <div className="text-xs text-muted-foreground tabular-nums">{item.count > 0 ? t("settings.lists.used", { count: item.count }) : t("settings.lists.unused")}</div>
+        <div className="num text-xs text-muted-foreground">{item.count > 0 ? t("settings.lists.used", { count: item.count }) : t("settings.lists.unused")}</div>
       </div>
-      <button onClick={() => { setValue(item.value); setEditing(true) }} className="shrink-0 text-muted-foreground hover:text-foreground">
+      <button onClick={() => { setValue(item.value); setEditing(true) }} className={textButton}>
         {t("common.rename")}
       </button>
       <button
         disabled={item.count > 0}
         title={item.count > 0 ? t("settings.lists.inUse") : undefined}
         onClick={() => window.confirm(t("settings.lists.deleteConfirm", { value: item.value })) && run(async () => send("DELETE", `/api/lists/${list}/${item.id}`))}
-        className="shrink-0 text-muted-foreground hover:text-destructive disabled:opacity-30"
+        className={`${textButton} hover:text-destructive`}
       >
         {t("common.delete")}
       </button>

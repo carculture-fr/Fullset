@@ -213,7 +213,9 @@
     "collapseAll": "Collapse all",
     "scanBox": "Do I already own it? Scan a box",
     "addGame": "Add a game",
-    "shortComplete": "Complete"
+    "shortComplete": "Complete",
+    "sortedBy": "Sorted by",
+    "emptyImport": "Import a collection"
   },
   "filterPanel": {
     "title": "Filters",
@@ -225,7 +227,8 @@
   },
   "libraryTabs": {
     "games": "Games",
-    "hardware": "Consoles and hardware"
+    "hardware": "Consoles and hardware",
+    "hardwareShort": "Hardware"
   },
   "hardware": {
     "sortLabel": "Sort hardware",
@@ -244,6 +247,7 @@
     "working": "Working order",
     "price": "Price",
     "boughtOn": "Bought on",
+    "paid": "Paid",
     "place": "Place",
     "serial": "Serial no.",
     "console": "Console",
@@ -253,6 +257,7 @@
   },
   "hardwareEditor": {
     "back": "← Back",
+    "backLabel": "Back",
     "titleAdd": "Add a console or accessory",
     "type": "Type",
     "console": "Console",
@@ -320,6 +325,10 @@
     "rommLinkPlatform": "In RomM ({{platform}}) ↗",
     "copies": "Copies ({{n}})",
     "addCopy": "+ Copy",
+    "copiesHeading_one": "Copy",
+    "copiesHeading_other": "Copies",
+    "readMore": "Read more",
+    "readLess": "Show less",
     "copy": {
       "content": "Content",
       "edition": "Edition",
@@ -327,6 +336,7 @@
       "status": "Status",
       "goal": "Goal",
       "price": "Price",
+      "paid": "Paid",
       "purchased": "Bought on",
       "place": "Place",
       "quantity": "Quantity",
@@ -401,7 +411,10 @@
     "scanTitle": "Scan the game box",
     "scanButton": "Scan the barcode on the box",
     "eanKept": "Barcode {{ean}}: it will be saved for this game.",
-    "notFound": "Can't find the game? Add it without IGDB"
+    "notFound": "Can't find the game? Add it without IGDB",
+    "changeGameLabel": "Change game",
+    "backToIgdbLabel": "Back to IGDB search",
+    "step": "Step {{n}} of {{total}}"
   },
   "copyForm": {
     "support": "Format",
@@ -423,6 +436,11 @@
     "comment": "Comment",
     "photos": "Photos of this copy",
     "more": "More fields",
+    "moreDetail": "More fields: edition, region, status, goal, tags, photos",
+    "fewer": "Fewer fields",
+    "conditionsTitle": "The three conditions",
+    "conditionsHint": "tap a notch",
+    "eanKept": "EAN {{ean}} · kept",
     "titleEntered": "Title as entered",
     "titleEnteredHint": "Leave empty to use the game's title.",
     "quantity": "Quantity",
@@ -449,11 +467,15 @@
     "notePlaceholder": "Source or note (optional)",
     "save": "Save estimate",
     "deleteLabel": "Delete estimate",
-    "confirmDelete": "Delete this estimate?"
+    "confirmDelete": "Delete this estimate?",
+    "count_one": "{{count}} estimate",
+    "count_other": "{{count}} estimates",
+    "none": "Not estimated yet: tap to add one"
   },
   "photoField": {
     "delete": "Delete photo",
-    "remove": "Remove photo"
+    "remove": "Remove photo",
+    "add": "Add a photo"
   },
   "igdbSearch": {
     "placeholder": "Game title (PAL title accepted)",
@@ -475,15 +497,19 @@
     "estimatedCopies_other": "{{count}} copies estimated out of {{total}}, bought for {{cost}}",
     "wishlist": "Wishlist",
     "wishlistBudget": "Target budget {{amount}}",
-    "hardware": "Consoles and hardware",
-    "noHardware": "Nothing yet: add your consoles from the library.",
+    "hardwareLine": "Hardware: {{items}} · {{amount}}",
+    "hardwareNone": "Hardware: nothing yet",
     "kindCount": "{{count}} {{kind}}",
     "hardwareValue": "estimated value {{amount}}",
     "overTime": "Spending over time",
-    "byPurchaseDate": "By purchase date.",
-    "undated_one": "By purchase date. {{count}} copy without a date ({{amount}}) is not included.",
-    "undated_other": "By purchase date. {{count}} copies without a date ({{amount}}) are not included.",
-    "byPlatform": "Spent by platform",
+    "undatedShort_one": "{{count}} copy without a date ({{amount}})",
+    "undatedShort_other": "{{count}} copies without a date ({{amount}})",
+    "consoles_one": "{{count}} console",
+    "consoles_other": "{{count}} consoles",
+    "table": "Table",
+    "viewLabel": "Statistics view",
+    "physicalTotal": "Physical copies · {{count}}",
+    "byPlatform": "Spent by console",
     "byPlace": "Spent by place of purchase",
     "byContent": "Copies by content",
     "byStatus": "Copies by status",
@@ -512,19 +538,21 @@
   "charts": {
     "noData": "No data.",
     "noDatedPurchase": "No dated purchase.",
-    "period": "Period",
     "lastTwelveMonths": "Last 12 months",
     "byYear": "By year",
-    "showChart": "Show chart",
-    "showTable": "Show table",
     "copies_one": "{{count}} copy",
     "copies_other": "{{count}} copies",
     "twelveMonthsTotal": "Over these twelve months: {{amount}}",
+    "allYearsTotal": "All dated purchases: {{amount}}",
     "month": "Month",
     "year": "Year",
     "copiesHeader": "Copies",
     "spentHeader": "Spent",
-    "tick": "€{{value}}",
+    "platformHeader": "Console",
+    "placeHeader": "Place",
+    "contentHeader": "Content",
+    "statusHeader": "Status",
+    "conditionHeader": "Condition",
     "column": "{{period}}: {{amount}}, {{copies}}"
   },
   "wishlist": {
@@ -533,7 +561,7 @@
     "games_one": "{{count}} game",
     "games_other": "{{count}} games",
     "budget": "target budget {{amount}}",
-    "add": "+ Add",
+    "add": "Add",
     "empty": "No wishes yet.",
     "confirmRemove": "Remove “{{title}}” from the wishlist?",
     "noPlatform": "Platform not specified",
@@ -578,7 +606,6 @@
         "summary": "{{n}} already in the collection"
       }
     },
-    "back": "← Statistics",
     "title": "Import from the old app",
     "intro": "Its CSV export, with English or French columns. Nothing is written before you confirm; copies already here are recognised and skipped.",
     "reportCopies_one": "{{count}} copy imported",
@@ -608,7 +635,6 @@
     "hours": "{{value}} h",
     "minutes": "{{value}} min",
     "neverPlayed": "never played",
-    "back": "← Settings",
     "title": "Steam games to add",
     "loading": "Loading…",
     "missing_one": "{{count}} Steam game missing",
@@ -640,7 +666,8 @@
     "offline": "Offline: read-only, with the data from your last connection. Nothing is saved until the network is back.",
     "footerVersion": "version {{version}}",
     "footerUpdating": "(server {{version}}, updating…)",
-    "footerSchema": "schema {{schema}}"
+    "footerSchema": "schema {{schema}}",
+    "navigation": "Navigation"
   },
   "theme": {
     "toLight": "Switch to light mode",
@@ -797,6 +824,8 @@
     "allCodes": "All my codes",
     "scannerTitle": "Do I have it already?",
     "chainTitle": "Scan your boxes one after another",
+    "chainOn": "In a row · on",
+    "chainOff": "In a row · off",
     "lastKnown": "Already known: {{title}} ({{platform}})",
     "lastLinked": "Linked: {{title}} ({{platform}})",
     "scan": "Scan a box",
@@ -817,7 +846,8 @@
       "title": "Already in your collection",
       "edition": "Code known for the {{edition}} edition",
       "standard": "Standard",
-      "another": "I'm getting another one"
+      "another": "I'm getting another one",
+      "platformCode": "{{platform}} · code <mono>{{ean}}</mono>"
     },
     "unknown": {
       "code": "Code {{ean}}",
@@ -825,13 +855,14 @@
       "probablyOwned": "Probably already in your collection",
       "suggestionOwned": "According to ScanDex this code is <strong>{{name}}</strong> ({{platform}}), and you own this game on {{owned}}.",
       "keep": "Yes, it's my game: remember the code",
-      "notThisOne": "Code {{ean}}. If it's not the right game, search for it below.",
       "notOwned": "Not in your collection",
       "suggestion": "According to ScanDex, it's <strong>{{name}}</strong> ({{platform}}). Check the box to be sure.",
       "neverSeen": "Code {{ean}}, never seen before. If you own this game but its code isn't known, link it below.",
       "neverSeenScandex": "Code {{ean}}, never seen before, not even by ScanDex. If you own this game but its code isn't known, link it below.",
       "buyNamed": "I'm buying it: add {{name}}",
-      "buy": "I'm buying it: add it"
+      "buy": "I'm buying it: add it",
+      "linkPlaceholder": "Title in your collection…",
+      "rejectSuggestion": "That's not it"
     }
   },
   "barcodes": {

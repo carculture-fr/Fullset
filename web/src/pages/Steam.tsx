@@ -1,12 +1,16 @@
+import { ArrowLeft, Check, Search } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { Link, useNavigate } from "react-router-dom"
 
+import { Cover } from "@/components/cover"
 import { ErrorNote, inputClass } from "@/components/fields"
 import { api, errorMessage, send, type SteamCandidate } from "@/lib/api"
 import i18n from "@/lib/i18n"
 import { useLibrary } from "@/lib/library-data"
 import { filterOptions } from "@/lib/platform-search"
+
+const ICON = { strokeWidth: 2.75 } as const
 
 const hours = (minutes: number) =>
   minutes >= 60 ? i18n.t("steam.hours", { value: Math.round(minutes / 6) / 10 }) : minutes > 0 ? i18n.t("steam.minutes", { value: minutes }) : i18n.t("steam.neverPlayed")
@@ -55,52 +59,79 @@ export default function Steam() {
     }
   }
 
+  const allShownPicked = shown.length > 0 && shown.every((i) => picked.has(i.appid))
+
   return (
-    <div className="mx-auto max-w-2xl space-y-4 pb-28">
-      <Link to="/reglages" className="inline-block text-sm text-muted-foreground hover:text-foreground">
-        {t("steam.back")}
+    <div className={`mx-auto max-w-2xl space-y-4 ${picked.size > 0 ? "pb-20 lg:pb-24" : ""}`}>
+      <Link to="/reglages" className="inline-flex items-center gap-2.5 text-[13px] text-muted-foreground hover:text-foreground">
+        <span className="grid size-10 place-items-center rounded-full bg-card text-foreground">
+          <ArrowLeft size={18} {...ICON} aria-hidden="true" />
+        </span>
+        {t("layout.settings")}
       </Link>
       <div>
-        <h1 className="text-xl font-semibold">{t("steam.title")}</h1>
-        <p className="text-sm text-muted-foreground">
+        <h1 className="text-[36px]">{t("steam.title")}</h1>
+        <p className="mt-1 text-[13px] text-muted-foreground">
           {t("steam.intro", { missing: items ? t("steam.missing", { count: items.length }) : t("steam.loading") })}
         </p>
       </div>
       <ErrorNote message={error} />
       {items && items.length > 0 && (
         <div className="flex gap-2">
-          <input className={`${inputClass} min-w-0 flex-1`} placeholder={t("steam.search")} value={q} onChange={(e) => setQ(e.target.value)} />
+          <div className="relative min-w-0 flex-1">
+            <Search size={18} {...ICON} aria-hidden="true" className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-muted-foreground" />
+            <input className={`${inputClass} pl-11`} aria-label={t("steam.search")} placeholder={t("steam.search")} value={q} onChange={(e) => setQ(e.target.value)} />
+          </div>
           <button
             type="button"
-            onClick={() => setPicked((p) => (shown.every((i) => p.has(i.appid)) ? new Set([...p].filter((a) => !shown.some((i) => i.appid === a))) : new Set([...p, ...shown.map((i) => i.appid)])))}
-            className="shrink-0 rounded-lg border border-border px-3 text-sm"
+            onClick={() => setPicked((p) => (allShownPicked ? new Set([...p].filter((a) => !shown.some((i) => i.appid === a))) : new Set([...p, ...shown.map((i) => i.appid)])))}
+            className="min-h-12 shrink-0 rounded-full bg-card px-4 text-[13px] font-semibold"
           >
-            {shown.length && shown.every((i) => picked.has(i.appid)) ? t("steam.uncheckAll") : t("steam.checkAll")}
+            {allShownPicked ? t("steam.uncheckAll") : t("steam.checkAll")}
           </button>
         </div>
       )}
-      {items && items.length === 0 && <p className="rounded-lg bg-card p-4 text-sm text-muted-foreground">{t("steam.allThere")}</p>}
+      {items && items.length === 0 && <p className="rounded-card bg-card p-5 text-[13px] text-muted-foreground">{t("steam.allThere")}</p>}
 
-      <ul className="divide-y divide-border rounded-lg bg-card">
-        {shown.map((i) => (
-          <li key={i.appid}>
-            <label className="flex cursor-pointer items-center gap-3 px-3 py-2.5 text-sm">
-              <input type="checkbox" className="size-4 shrink-0 accent-[var(--color-primary)]" checked={picked.has(i.appid)} onChange={() => toggle(i.appid)} />
-              <span className="min-w-0 flex-1">
-                <span className="block truncate font-medium">{i.name}</span>
-                <span className="block text-xs text-muted-foreground">
-                  {hours(i.playtime_minutes)} · {i.igdb_id ? t("steam.igdbKnown") : t("steam.noIgdb")}
+      <ul>
+        {shown.map((i) => {
+          const on = picked.has(i.appid)
+          return (
+            <li key={i.appid} className="border-t border-border first:border-t-0">
+              <label className="grid cursor-pointer grid-cols-[38px_minmax(0,1fr)_auto] items-center gap-3 py-2">
+                <Cover src={null} title={i.name} platform="PC" size="thumb" />
+                <span className="min-w-0">
+                  <span className="block truncate text-[14px] font-semibold">{i.name}</span>
+                  <span className="block truncate text-[12px] text-muted-foreground">
+                    {hours(i.playtime_minutes)} · {i.igdb_id ? t("steam.igdbKnown") : t("steam.noIgdb")}
+                  </span>
                 </span>
-              </span>
-            </label>
-          </li>
-        ))}
+                {/* Case à cocher ronde : la case native reste, invisible, pour le clavier et les lecteurs d'écran. */}
+                <span className="relative grid size-11 place-items-center">
+                  <input type="checkbox" className="peer absolute inset-0 cursor-pointer opacity-0" checked={on} onChange={() => toggle(i.appid)} />
+                  <span
+                    aria-hidden="true"
+                    className={`grid size-6 place-items-center rounded-full border-[1.5px] transition-colors duration-150 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary ${
+                      on ? "border-primary bg-primary text-primary-foreground" : "border-border-strong bg-transparent"
+                    }`}
+                  >
+                    {on && <Check size={14} {...ICON} />}
+                  </span>
+                </span>
+              </label>
+            </li>
+          )
+        })}
       </ul>
 
       {picked.size > 0 && (
-        <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-background/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur">
+        <div className="fixed inset-x-0 bottom-[calc(78px+env(safe-area-inset-bottom))] z-20 bg-gradient-to-t from-background from-70% to-transparent px-[18px] pt-8 pb-3 lg:bottom-0 lg:left-[280px] lg:px-8 lg:pb-6">
           <div className="mx-auto max-w-2xl">
-            <button onClick={add} disabled={busy} className="w-full rounded-lg bg-primary py-3 font-medium text-primary-foreground disabled:opacity-50">
+            <button
+              onClick={add}
+              disabled={busy}
+              className="min-h-[54px] w-full rounded-full bg-primary px-5 font-heading text-[16px] text-primary-foreground shadow-md transition-transform duration-150 active:scale-[.98] disabled:opacity-45"
+            >
               {busy ? t("steam.adding") : t("steam.addGames", { count: picked.size })}
             </button>
           </div>

@@ -1,16 +1,21 @@
+import { Barcode, Download, Search, X } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { Link } from "react-router-dom"
 
-import { BarcodeIcon } from "@/components/copy-form"
+import { Cover } from "@/components/cover"
 import { ErrorNote, inputClass } from "@/components/fields"
 import { api, errorMessage, send, type BarcodeRow } from "@/lib/api"
 import { formatDate } from "@/lib/format"
+import { useLibrary } from "@/lib/library-data"
 import { filterOptions } from "@/lib/platform-search"
+
+const ICON = { strokeWidth: 2.75 } as const
 
 /** Tous les codes-barres connus : appris au scan ou saisis sur un exemplaire. */
 export default function Barcodes() {
   const { t } = useTranslation()
+  const { games } = useLibrary()
   const [rows, setRows] = useState<BarcodeRow[] | null>(null)
   const [q, setQ] = useState("")
   const [error, setError] = useState<string | null>(null)
@@ -19,6 +24,9 @@ export default function Barcodes() {
   useEffect(() => {
     load()
   }, [])
+
+  // La jaquette vient de la bibliothèque déjà en mémoire : la liste des codes ne la porte pas.
+  const covers = useMemo(() => new Map((games ?? []).map((g) => [g.id, g.cover])), [games])
 
   const shown = useMemo(() => {
     if (!rows) return []
@@ -39,44 +47,57 @@ export default function Barcodes() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-4 pb-10">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold">{t("barcodes.title")}</h1>
-          <p className="text-sm text-muted-foreground">{t("barcodes.summary", { what: rows ? t("barcodes.count", { count: rows.length }) : t("common.loading") })}</p>
+    <div className="mx-auto max-w-2xl space-y-4">
+      <div className="flex items-end justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-[36px]">{t("barcodes.title")}</h1>
+          <p className="mt-1 text-[13px] text-muted-foreground">{t("barcodes.summary", { what: rows ? t("barcodes.count", { count: rows.length }) : t("common.loading") })}</p>
         </div>
-        <a href="/api/export-codes.csv" className="shrink-0 rounded-lg border border-border px-3 py-2 text-sm">
+        <a href="/api/export-codes.csv" className="flex min-h-10 shrink-0 items-center gap-1.5 rounded-full bg-card px-3.5 text-[13px] font-semibold">
+          <Download size={16} {...ICON} aria-hidden="true" />
           {t("barcodes.export")}
         </a>
       </div>
 
-      <Link to="/brocante?enchainer=1" className="flex items-center justify-center gap-2 rounded-lg bg-primary py-3 font-medium text-primary-foreground">
-        <BarcodeIcon />
+      <Link
+        to="/brocante?enchainer=1"
+        className="flex min-h-[52px] items-center justify-center gap-2.5 rounded-full bg-ink px-5 font-heading text-[15px] text-ink-foreground shadow-md transition-transform duration-150 active:scale-[.98]"
+      >
+        <Barcode size={20} {...ICON} aria-hidden="true" />
         {t("barcodes.scanChain")}
       </Link>
       <ErrorNote message={error} />
 
-      {rows && rows.length > 0 && <input className={inputClass} placeholder={t("barcodes.search")} value={q} onChange={(e) => setQ(e.target.value)} />}
-      {rows && rows.length === 0 && (
-        <p className="rounded-lg bg-card p-4 text-sm text-muted-foreground">
-          {t("barcodes.empty")}
-        </p>
+      {rows && rows.length > 0 && (
+        <div className="relative">
+          <Search size={18} {...ICON} aria-hidden="true" className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-muted-foreground" />
+          <input className={`${inputClass} pl-11`} aria-label={t("barcodes.search")} placeholder={t("barcodes.search")} value={q} onChange={(e) => setQ(e.target.value)} />
+        </div>
       )}
+      {rows && rows.length === 0 && <p className="rounded-card bg-card p-5 text-[13px] text-muted-foreground">{t("barcodes.empty")}</p>}
 
-      <ul className="divide-y divide-border rounded-lg bg-card">
+      <ul>
         {shown.map((r) => (
-          <li key={r.ean} className="flex items-center gap-3 px-3 py-2.5 text-sm">
-            <div className="min-w-0 flex-1">
-              <Link to={`/jeux/${r.game_id}`} className="block truncate font-medium hover:underline">
+          <li key={r.ean} className="grid grid-cols-[38px_minmax(0,1fr)_auto] items-center gap-3 border-t border-border py-2 first:border-t-0">
+            <Link to={`/jeux/${r.game_id}`} tabIndex={-1} aria-hidden="true">
+              <Cover src={covers.get(r.game_id) ?? null} title={r.title} platform={r.platform} size="thumb" />
+            </Link>
+            <div className="min-w-0">
+              <Link to={`/jeux/${r.game_id}`} className="block truncate text-[14px] font-semibold hover:underline">
                 {r.title}
               </Link>
-              <div className="truncate text-xs text-muted-foreground">
+              <div className="truncate text-[12px] text-muted-foreground">
                 {[r.platform, r.edition, r.created_at && t("barcodes.learnedOn", { date: formatDate(r.created_at.slice(0, 10)) }), r.on_copy && t("barcodes.onCopy")].filter(Boolean).join(" · ")}
               </div>
+              <code className="num block truncate font-mono text-[11px] tracking-[0.04em] text-subtle-foreground">{r.ean}</code>
             </div>
-            <code className="shrink-0 text-xs tabular-nums text-muted-foreground">{r.ean}</code>
-            <button onClick={() => forget(r)} aria-label={t("barcodes.forget", { ean: r.ean })} className="shrink-0 px-1 text-muted-foreground hover:text-destructive">
-              ×
+            <button
+              onClick={() => forget(r)}
+              aria-label={t("barcodes.forget", { ean: r.ean })}
+              title={t("barcodes.forget", { ean: r.ean })}
+              className="grid size-10 place-items-center rounded-full text-muted-foreground transition-colors duration-150 hover:bg-card hover:text-destructive"
+            >
+              <X size={18} {...ICON} aria-hidden="true" />
             </button>
           </li>
         ))}

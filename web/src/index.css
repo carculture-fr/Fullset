@@ -1,41 +1,161 @@
 @import "tailwindcss";
 
-/* Thème sombre par défaut ; le clair est posé par data-theme="light" (voir index.html et lib/theme.ts). */
+/* Refonte « Étagère », palette Sauge (handoff Claude Design, 15/09/2026). Sombre par défaut ;
+   le clair est posé par data-theme="light" (index.html, lib/theme.ts). */
+
+/* Caprasimo et Figtree (SIL Open Font License 1.1, voir OFL-*.txt), servies par le site : la CSP n'autorise que lui. */
+@font-face {
+  font-family: "Caprasimo";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/fonts/Caprasimo-normal-latin-ext.woff2) format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Caprasimo";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/fonts/Caprasimo-normal-latin.woff2) format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Figtree";
+  font-style: italic;
+  font-weight: 300 900;
+  font-display: swap;
+  src: url(/fonts/Figtree-italic-latin-ext.woff2) format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Figtree";
+  font-style: italic;
+  font-weight: 300 900;
+  font-display: swap;
+  src: url(/fonts/Figtree-italic-latin.woff2) format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Figtree";
+  font-style: normal;
+  font-weight: 300 900;
+  font-display: swap;
+  src: url(/fonts/Figtree-normal-latin-ext.woff2) format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Figtree";
+  font-style: normal;
+  font-weight: 300 900;
+  font-display: swap;
+  src: url(/fonts/Figtree-normal-latin.woff2) format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* Sombre = défaut (suit le réglage du téléphone) */
 :root {
   color-scheme: dark;
-  --background: #14161c;
-  --foreground: #eceef3;
-  --card: #1d2029;
-  --muted: #262a35;
-  --muted-foreground: #9aa0ae;
-  --primary: #e8b04a;
-  --primary-foreground: #14161c;
-  --destructive: #ef6b6b;
-  --border: #2f3441;
-  --radius: 0.75rem;
+  --background: #1b1917;
+  --foreground: #f1eadc;
+  --card: #292623;                 /* surface : cartes, tiroir, barre d'onglets, champs */
+  --muted: #1b1917;                /* sous-carte posée sur une carte (= fond) */
+  --muted-foreground: #c4bbaa;
+  --subtle-foreground: #a49b8c;    /* légendes, kickers */
+  --primary: #8fa073;              /* accent sauge : boutons, onglet actif, focus */
+  --primary-foreground: #1b1917;
+  --primary-text: #ccdbb2;         /* sauge lisible en texte sur le fond */
+  --primary-tint: #3d472b;         /* onglet actif, hover, fond de la suggestion ScanDex */
+  --primary-tint-foreground: #e1eecc;
+  --ink: #f1eadc;                  /* pilule « Je l'ai déjà ? », badge ×2, carte Total dépensé */
+  --ink-foreground: #1b1917;
+  --destructive: #ffc6a5;
+  --border: rgba(255, 255, 255, 0.14);
+  --border-strong: #5a544b;        /* bordure des champs et des silhouettes */
+  --radius: 1rem;                  /* 16 px : sous-cartes, vignettes */
+  --radius-card: 1.5rem;           /* 24 px : cartes */
+  --radius-screen: 1.75rem;        /* 28 px : tiroir, barre d'onglets, feuille basse (32) */
+  --radius-pill: 999px;
 
-  /* Données : une seule teinte (bleu du skill dataviz, pas du chrome ambre), validée par mode. */
-  --viz-bar: #3987e5;
-  --viz-muted: #5a6070;
-  --viz-grid: #2f3441;
+  /* Données : une seule teinte, la terracotta, distincte de l'accent */
+  --viz-bar: #f6a06b;
+  --viz-bar-strong: #d67f48;       /* mois courant, dernière estimation */
+  --viz-bg: #402310;               /* bloc valeur estimée */
+  --viz-fg: #fff2eb;
+  --viz-label: #ffc6a5;
+  --viz-muted: #5a544b;
+  --viz-grid: #403c35;
+
+  /* États (toujours avec le libellé) */
+  --cond-good: #aebf92;            /* Neuf, Très bon, Fonctionnel */
+  --cond-ok: #aebf92;              /* Bon, Avec défauts — même teinte, libellé distinct ; clair : 400 vs 600 */
+  --cond-fair: #f6a06b;            /* Moyen, À réparer */
+  --cond-bad: #f6a06b;             /* Mauvais, Très mauvais, Hors service — en sombre le libellé porte la nuance */
+  --cond-none: #5a544b;            /* Non défini, Absente, Non testé */
+
+  /* Tranche de la jaquette absente, par famille de console */
+  --spine-nintendo: #aebf92;
+  --spine-playstation: #ddd5c6;
+  --spine-xbox: #ccdbb2;
+  --spine-pc: #f6a06b;
+  --spine-sega: #a49b8c;
+  --spine-other: #7d7568;
+
+  /* Placeholder hachuré (image en attente) */
+  --ph-a: #403c35;
+  --ph-b: #33302b;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 3px 10px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.6);
 }
 
 :root[data-theme="light"] {
   color-scheme: light;
-  --background: #f6f5f2;
-  --foreground: #16181d;
-  --card: #ffffff;
-  --muted: #ecebe6;
-  --muted-foreground: #5c6170;
-  /* Ambre assombri : l'ambre du mode sombre ne passe pas en texte sur fond clair. */
-  --primary: #a3650f;
-  --primary-foreground: #ffffff;
-  --destructive: #c62828;
-  --border: #dcdad3;
+  --background: #f7f3ea;
+  --foreground: #201e1d;
+  --card: #ece6d8;
+  --muted: #f7f3ea;
+  --muted-foreground: #645c50;
+  --subtle-foreground: #82796a;
+  --primary: #7a8a5e;
+  --primary-foreground: #f7f3ea;
+  --primary-text: #56633f;
+  --primary-tint: #e1eecc;
+  --primary-tint-foreground: #3d472b;
+  --ink: #201e1d;
+  --ink-foreground: #f7f3ea;
+  --destructive: #8c491a;
+  --border: color-mix(in srgb, #201e1d 16%, transparent);
+  --border-strong: #c0b6a5;
 
-  --viz-bar: #2a78d6;
-  --viz-muted: #b4b2ab;
-  --viz-grid: #e4e2dc;
+  --viz-bar: #d67f48;
+  --viz-bar-strong: #8c491a;
+  --viz-bg: #fff2eb;
+  --viz-fg: #402310;
+  --viz-label: #8c491a;
+  --viz-muted: #c0b6a5;
+  --viz-grid: #dcd3c4;
+
+  --cond-good: #728157;
+  --cond-ok: #aebf92;
+  --cond-fair: #f6a06b;
+  --cond-bad: #8c491a;
+  --cond-none: #c0b6a5;
+
+  --spine-nintendo: #728157;
+  --spine-playstation: #474238;
+  --spine-xbox: #aebf92;
+  --spine-pc: #d67f48;
+  --spine-sega: #82796a;
+  --spine-other: #a19786;
+
+  --ph-a: #dcd3c4;
+  --ph-b: #eee7db;
+
+  --shadow-sm: 0 1px 2px rgba(46, 43, 37, 0.14);
+  --shadow-md: 0 3px 10px rgba(46, 43, 37, 0.16);
+  --shadow-lg: 0 12px 32px rgba(46, 43, 37, 0.22);
 }
 
 @theme inline {
@@ -44,14 +164,39 @@
   --color-card: var(--card);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
+  --color-subtle-foreground: var(--subtle-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-text: var(--primary-text);
+  --color-primary-tint: var(--primary-tint);
+  --color-primary-tint-foreground: var(--primary-tint-foreground);
+  --color-ink: var(--ink);
+  --color-ink-foreground: var(--ink-foreground);
   --color-destructive: var(--destructive);
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-viz: var(--viz-bar);
+  --color-viz-strong: var(--viz-bar-strong);
+  --color-viz-bg: var(--viz-bg);
+  --color-viz-fg: var(--viz-fg);
   --radius-lg: var(--radius);
-  --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --radius-card: var(--radius-card);
+  --radius-screen: var(--radius-screen);
+  --font-sans: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-heading: "Caprasimo", "Figtree", system-ui, serif;
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
 }
 
-body {
-  @apply bg-background text-foreground font-sans antialiased;
+/* Dans la couche base : les utilitaires Tailwind (font-sans, text-*, outline-*) passent devant. */
+@layer base {
+  body { @apply bg-background text-foreground font-sans antialiased; font-size: 14px; line-height: 1.5; }
+  h1, h2, h3 { font-family: var(--font-heading); font-weight: 400; letter-spacing: -0.015em; line-height: 1.1; }
+  :focus { outline: none; }
+  :focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  ::selection { background: color-mix(in srgb, var(--primary) 30%, transparent); }
 }
+.num { font-variant-numeric: tabular-nums; }
+.placeholder-stripes { background: repeating-linear-gradient(135deg, var(--ph-a) 0 5px, var(--ph-b) 5px 10px); }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; } }

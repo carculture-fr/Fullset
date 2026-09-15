@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
+import { useNavigate, useParams, useSearchParams } from "react-router-dom"
 
-import { CopyForm, copyToValues, newCopyValues } from "@/components/copy-form"
+import { CopyForm, GameRecap, copyToValues, newCopyValues } from "@/components/copy-form"
+import { BackBar } from "@/components/page-bits"
 import { api, errorMessage, send, type GameDetail, type Photo } from "@/lib/api"
 import { useLibrary } from "@/lib/library-data"
 import { copyPayload, uploadPhotos } from "@/lib/save-copy"
@@ -58,20 +59,19 @@ export default function CopyEditor() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <Link to={`/jeux/${game.id}`} replace className="mb-3 inline-block text-sm text-muted-foreground hover:text-foreground">
-        ← {game.title}
-      </Link>
-      <div className="mb-5 flex items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold">{copy ? t("copyEditor.editTitle") : t("copyEditor.newTitle")}</h1>
+      <BackBar to={`/jeux/${game.id}`} replace label={game.title}>
         {copy && (
-          <button onClick={remove} className="text-sm text-destructive hover:underline">
+          <button onClick={remove} className="min-h-11 shrink-0 rounded-full px-3 text-[13px] font-semibold text-destructive hover:underline">
             {t("common.delete")}
           </button>
         )}
-      </div>
+      </BackBar>
+      <GameRecap cover={game.cover} title={game.title} platform={game.platform} heading={copy ? t("copyEditor.editTitle") : t("copyEditor.newTitle")} ean={copy ? null : ean} />
       <CopyForm
         initial={copy ? copyToValues(copy) : { ...newCopyValues(game.platform), barcode: ean }}
         submitLabel={copy ? t("common.save") : t("copyEditor.submitNew")}
+        repeatAmount={!copy}
+        startExpanded={!!copy}
         existingPhotos={photos}
         onDeletePhoto={copy ? deletePhoto : undefined}
         onSubmit={async (values, newPhotos) => {

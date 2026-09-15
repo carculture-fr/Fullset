@@ -1,24 +1,35 @@
+import { BarChart3, Barcode, Heart, LayoutGrid, Plus, SlidersHorizontal, WifiOff, type LucideIcon } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { Link, NavLink, Outlet, ScrollRestoration, useLocation } from "react-router-dom"
 
-import { BarcodeIcon } from "@/components/copy-form"
+import { LanguageSwitcher } from "@/components/login"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { api, type Health } from "@/lib/api"
+import { usePreferences } from "@/lib/preferences"
 import { CLIENT_VERSION, reloadIfOutdated } from "@/lib/pwa"
 
-// À 400 px, la navigation défile plutôt que de passer sous les icônes (« Souhaits » était masqué).
-const navClass = ({ isActive }: { isActive: boolean }) =>
-  `shrink-0 whitespace-nowrap rounded-md px-1.5 py-1.5 sm:px-2.5 ${isActive ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"}`
+// Refonte « Étagère » : barre d'onglets en bas et dock d'actions jusqu'à 1023 px, tiroir de
+// navigation à gauche au-delà. Le tiroir porte un emplacement (#drawer-slot) où la bibliothèque
+// pose ses filtres.
 
-const iconClass = ({ isActive }: { isActive: boolean }) =>
-  `flex size-8 shrink-0 items-center justify-center rounded-md hover:bg-muted hover:text-foreground sm:size-9 ${isActive ? "bg-muted text-foreground" : "text-muted-foreground"}`
+const ICON = { strokeWidth: 2.75 } as const
+
+export function Logo({ size = 30 }: { size?: number }) {
+  return (
+    <span className="grid shrink-0 place-items-center rounded-[10px] bg-primary" style={{ width: size, height: size }} aria-hidden="true">
+      <span className="rounded-full bg-background" style={{ width: size * 0.4, height: size * 0.4 }} />
+    </span>
+  )
+}
 
 export function Layout() {
   const { t } = useTranslation()
   const { pathname } = useLocation()
+  const { save } = usePreferences()
   // Jeux et matériel sont les deux onglets de la même bibliothèque.
   const inLibrary = pathname === "/" || ["/jeux", "/consoles", "/ajouter", "/importer"].some((p) => pathname.startsWith(p))
+  const showDock = pathname === "/" || pathname === "/consoles"
   const [health, setHealth] = useState<Health | null>(null)
   const online = useOnline()
   useEffect(() => {
@@ -28,52 +39,127 @@ export function Layout() {
     }, () => {})
   }, [])
 
+  const tabs: Array<{ to: string; label: string; Icon: LucideIcon; active?: boolean }> = [
+    { to: "/", label: t("layout.library"), Icon: LayoutGrid, active: inLibrary },
+    { to: "/stats", label: t("layout.stats"), Icon: BarChart3 },
+    { to: "/souhaits", label: t("layout.wishlist"), Icon: Heart },
+    { to: "/reglages", label: t("layout.settings"), Icon: SlidersHorizontal },
+  ]
+
   return (
-    <div className="mx-auto flex min-h-dvh max-w-6xl flex-col px-4">
-      <header className="flex items-center gap-1 py-3 sm:gap-3">
-        <Link to="/" className="flex shrink-0 items-center gap-2 font-semibold">
-          <img src="/icon.svg" alt="" className="size-7" />
-          <span className="hidden sm:inline">Fullset</span>
+    <div className="min-h-dvh lg:grid lg:grid-cols-[280px_minmax(0,1fr)]">
+      {/* Tiroir (≥ 1024 px) */}
+      <aside className="sticky top-0 hidden h-dvh flex-col gap-6 overflow-y-auto rounded-l-[28px] bg-card p-[22px] lg:flex">
+        <Link to="/" className="flex items-center gap-2.5">
+          <Logo />
+          <span className="font-heading text-[22px]">Fullset</span>
         </Link>
-        <nav className="flex min-w-0 gap-0.5 overflow-x-auto text-sm [scrollbar-width:none] sm:gap-1">
-          <Link to="/" className={navClass({ isActive: inLibrary })}>
-            {t("layout.library")}
-          </Link>
-          <NavLink to="/stats" className={navClass}>
-            <span className="sm:hidden">{t("layout.statsShort")}</span>
-            <span className="hidden sm:inline">{t("layout.stats")}</span>
-          </NavLink>
-          <NavLink to="/souhaits" className={navClass}>
-            {t("layout.wishlist")}
-          </NavLink>
+        <nav aria-label={t("layout.navigation")} className="grid gap-1">
+          {tabs.map(({ to, label, Icon, active }) => (
+            <NavLink
+              key={to}
+              to={to}
+              end={to === "/"}
+              className={({ isActive }) =>
+                `flex items-center gap-3 rounded-full px-3.5 py-2.5 text-[14px] transition-colors duration-150 ${
+                  (active ?? isActive) ? "bg-primary-tint font-semibold text-primary-tint-foreground" : "text-muted-foreground hover:bg-background/60 hover:text-foreground"
+                }`
+              }
+            >
+              <Icon size={18} {...ICON} aria-hidden="true" />
+              {label}
+            </NavLink>
+          ))}
         </nav>
-        <div className="ml-auto flex shrink-0 items-center gap-0.5 sm:gap-1">
-          <NavLink to="/brocante" aria-label={t("layout.brocante")} title={t("layout.brocante")} className={iconClass}>
-            <BarcodeIcon />
-          </NavLink>
-          <ThemeToggle />
-          <NavLink to="/reglages" aria-label={t("layout.settings")} title={t("layout.settings")} className={iconClass}>
-            <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <circle cx="12" cy="12" r="3" />
-              <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" />
-            </svg>
-          </NavLink>
+        {/* Les filtres défilent dans le tiroir ; les deux actions restent en bas, jamais recouvertes. */}
+        <div id="drawer-slot" className="-mx-2 min-h-0 flex-1 overflow-y-auto px-2" />
+        <div className="grid shrink-0 gap-2">
+          <Link to="/brocante" className="flex h-12 items-center justify-center gap-2.5 rounded-full bg-ink font-heading text-[15px] text-ink-foreground transition-transform duration-150 active:scale-[.98]">
+            <Barcode size={20} {...ICON} aria-hidden="true" />
+            {t("brocante.scannerTitle")}
+          </Link>
+          <Link to="/ajouter" className="flex h-12 items-center justify-center gap-2.5 rounded-full bg-primary font-heading text-[15px] text-primary-foreground transition-transform duration-150 active:scale-[.98]">
+            <Plus size={20} {...ICON} aria-hidden="true" />
+            {t("library.addGame")}
+          </Link>
+          <div className="flex items-center justify-between pt-2">
+            <LanguageSwitcher onChoose={(language) => save({ language }).catch(() => {})} />
+            <ThemeToggle />
+          </div>
         </div>
-      </header>
-      {!online && (
-        <p role="status" className="mb-3 rounded-lg bg-muted px-3 py-2 text-sm">
-          {t("layout.offline")}
-        </p>
-      )}
-      <div className="flex-1">
-        <Outlet />
+      </aside>
+
+      <div className="mx-auto flex min-h-dvh w-full max-w-6xl min-w-0 flex-col px-[18px] lg:px-8">
+        {/* En-tête (≤ 1023 px) */}
+        <header className="flex items-center gap-2.5 pt-3.5 pb-2 lg:hidden">
+          <Link to="/" className="flex items-center gap-2.5">
+            <Logo />
+            <span className="font-heading text-[22px]">Fullset</span>
+          </Link>
+          <div className="ml-auto flex items-center gap-2">
+            <LanguageSwitcher onChoose={(language) => save({ language }).catch(() => {})} />
+            <ThemeToggle />
+          </div>
+        </header>
+        {!online && (
+          <p role="status" className="mt-2 flex items-center gap-2 rounded-full bg-primary-tint px-4 py-2 text-[13px] text-primary-tint-foreground">
+            <WifiOff size={16} {...ICON} aria-hidden="true" className="shrink-0" />
+            {t("layout.offline")}
+          </p>
+        )}
+        <div className="flex-1 pt-3 pb-[140px] lg:pt-[22px] lg:pb-10">
+          <Outlet />
+        </div>
+        {health && (
+          <footer className="pb-[110px] text-xs text-subtle-foreground lg:pb-6">
+            {t("layout.footerVersion", { version: CLIENT_VERSION })}
+            {health.version !== CLIENT_VERSION && CLIENT_VERSION !== "dev" && ` ${t("layout.footerUpdating", { version: health.version })}`} · {t("layout.footerSchema", { schema: health.schema })}
+          </footer>
+        )}
       </div>
-      {health && (
-        <footer className="py-4 text-xs text-muted-foreground">
-          {t("layout.footerVersion", { version: CLIENT_VERSION })}
-          {health.version !== CLIENT_VERSION && CLIENT_VERSION !== "dev" && ` ${t("layout.footerUpdating", { version: health.version })}`} · {t("layout.footerSchema", { schema: health.schema })}
-        </footer>
+
+      {/* Dock d'actions (≤ 1023 px, bibliothèque seulement), au-dessus de la barre d'onglets */}
+      {showDock && (
+        <div className="pointer-events-none fixed inset-x-0 bottom-[calc(78px+env(safe-area-inset-bottom))] z-30 flex justify-end gap-2.5 bg-gradient-to-t from-background from-70% to-transparent px-[18px] pt-10 pb-3 lg:hidden">
+          <Link
+            to="/brocante"
+            className="pointer-events-auto flex h-[52px] items-center gap-2.5 rounded-full bg-ink px-5 font-heading text-[15px] text-ink-foreground shadow-md transition-transform duration-150 active:scale-[.98]"
+          >
+            <Barcode size={20} {...ICON} aria-hidden="true" />
+            {t("brocante.scannerTitle")}
+          </Link>
+          <Link
+            to={pathname === "/consoles" ? "/consoles/ajouter" : "/ajouter"}
+            aria-label={pathname === "/consoles" ? t("hardware.addHardware") : t("library.addGame")}
+            title={pathname === "/consoles" ? t("hardware.addHardware") : t("library.addGame")}
+            className="pointer-events-auto grid size-[52px] place-items-center rounded-full bg-primary text-primary-foreground shadow-md transition-transform duration-150 active:scale-[.98]"
+          >
+            <Plus size={24} {...ICON} aria-hidden="true" />
+          </Link>
+        </div>
       )}
+
+      {/* Barre d'onglets (≤ 1023 px) */}
+      <nav
+        aria-label={t("layout.navigation")}
+        className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 rounded-t-[28px] bg-card px-2.5 pt-2 pb-[max(16px,env(safe-area-inset-bottom))] lg:hidden"
+      >
+        {tabs.map(({ to, label, Icon, active }) => (
+          <NavLink key={to} to={to} end={to === "/"} className="flex min-h-[44px] min-w-0 flex-col items-center gap-[3px] text-[11px]">
+            {({ isActive }) => {
+              const on = active ?? isActive
+              return (
+                <>
+                  <span className={`rounded-full px-4 py-1 transition-colors duration-150 ${on ? "bg-primary-tint text-primary-tint-foreground" : "text-muted-foreground"}`}>
+                    <Icon size={22} {...ICON} aria-hidden="true" />
+                  </span>
+                  <span className={`max-w-full truncate ${on ? "font-semibold text-primary-text" : "text-muted-foreground"}`}>{label}</span>
+                </>
+              )
+            }}
+          </NavLink>
+        ))}
+      </nav>
       <ScrollRestoration />
     </div>
   )
