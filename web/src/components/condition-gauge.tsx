@@ -4,7 +4,7 @@ import { valueLabel } from "@/lib/i18n"
 
 import { toneOf } from "./condition"
 
-/** Les cinq crans, du meilleur au pire. « Très mauvais » = aucun cran rempli, libellé affiché ; null = Non défini. */
+/** Les cinq crans, du meilleur au pire (affichés dans l'autre sens). « Très mauvais » = aucun cran rempli, libellé affiché ; null = Non défini. */
 const STEPS = ["Neuf", "Très bon", "Bon", "Moyen", "Mauvais"] as const
 const filledFor = (value: string | null) => {
   const i = STEPS.indexOf(value as (typeof STEPS)[number])
@@ -38,9 +38,10 @@ export function ConditionGauge({
   return (
     <div className="grid grid-cols-[52px_1fr_84px] items-center gap-x-2.5 text-[13px]">
       <span className="truncate text-muted-foreground">{label}</span>
+      {/* Du pire au meilleur : la jauge se remplit de gauche à droite (demande de Tom, 15/09/2026). */}
       <div role="radiogroup" aria-label={label} className="flex gap-1">
-        {STEPS.map((step, i) => {
-          const rank = STEPS.length - i
+        {[...STEPS].reverse().map((step, i) => {
+          const rank = i + 1
           const selected = value === step
           return (
             <button
