@@ -105,6 +105,10 @@ describe("recherche Commons", () => {
     expect(withModel("PlayStation 2", "Slimline", ["File:PS2-Fat-Console-Set.jpg", "File:PS2-Slim-Console-Set.jpg"])).toBe("File:PS2-Slim-Console-Set.jpg")
     expect(pick("PSP", ["File:PSP-Go-FL-Open.jpg", "File:Sony-PSP-1000-Body.png"])).toBe("File:Sony-PSP-1000-Body.png")
     expect(pick("Xbox 360", ["File:Xbox-360-S-Controller.jpg", "File:Xbox-s-controller.jpg"], null, "Manette")).toBe("File:Xbox-360-S-Controller.jpg")
+    // Une manette ne prend pas la photo de la console seule ; un accessoire ne reçoit rien.
+    expect(pick("PlayStation 2", ["File:Sony-PlayStation-2-30001-Console-FL.jpg"], null, "Manette")).toBeNull()
+    expect(pick("PlayStation 2", ["File:Sony-PlayStation-2-30001-Console-FL.jpg", "File:PS2-Dualshock-2.jpg"], null, "Manette")).toBe("File:PS2-Dualshock-2.jpg")
+    expect(pick("Nintendo GameCube", ["File:GameCube-Set.jpg"], null, "Accessoire")).toBeNull()
   })
 
   it("ne choisit seul qu'un fichier dont le nom contient la console", () => {

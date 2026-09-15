@@ -229,6 +229,8 @@ const OTHER_MODELS = new Set(["vita", "portable", "psp", "one", "series", "advan
 // Pas une vue de la console : carte mère, manette seule, logo, boîte, jeu.
 const NOT_CONSOLE = new Set(["motherboard", "board", "controller", "cont", "6button", "button", "remote", "nunchuk", "wiimote", "gamepad", "joycon", "camera", "eye", "move", "vr", "headset", "kinect", "tv", "adapter", "wifi", "wireless", "hdd", "harddrive", "memory", "card", "cable", "charger", "keyboard", "mouse", "battery", "microphone", "logo", "box", "boxed", "cartridge", "disc", "inside", "internals", "teardown", "screenshot"])
 
+const isControllerWord = (t: string) => t.includes("controller") || t.includes("dualshock") || t.includes("gamepad") || ["cont", "pad", "joycon", "wiimote"].includes(t)
+
 /** Note d'une proposition, ou null si elle ne désigne pas la console cherchée. */
 function score(item: Item, o: CommonsImage): number | null {
   const platform = commonsPlatform(String(item.platform ?? ""))
@@ -258,13 +260,14 @@ function score(item: Item, o: CommonsImage): number | null {
     if (t === "fat" && slimVariant) return null
     if (!manette && NOT_CONSOLE.has(t)) return null
   }
+  // Une manette prend la photo d'une manette, jamais celle de la console seule.
+  if (manette && !tokens.some(isControllerWord)) return null
   let s = 0
   // L'édition saisie (Slim, Lite…) prime : une PS3 Slim ne prend pas la photo de la PS3 d'origine.
   if (edition && (tokens.join(" ").includes(edition) || (edition.includes("slimline") && tokens.includes("slim")))) s += 3
   if (tokens.includes("set")) s += 3
   if (tokens.some((t) => ["fl", "fr", "front"].includes(t))) s += 2
   if (tokens.includes("console")) s += 1
-  if (manette && tokens.some((t) => t.includes("controller") || t === "cont")) s += 3
   if (tokens.some((t) => ["eu", "pal", "europe"].includes(t))) s += 1
   const color = COLORS[String(item.color)]
   if (color && tokens.includes(color)) s += 1
@@ -278,8 +281,10 @@ function score(item: Item, o: CommonsImage): number | null {
  * Choix automatique pour un élément sans image : la proposition la mieux notée parmi celles
  * dont le nom de fichier désigne la console (« Sony-PlayStation-2-30001-Console-FL » pour
  * « PlayStation 2 »). Sans correspondance nette, rien : mieux vaut l'icône qu'une image fausse.
+ * Un accessoire (carte mémoire, câble…) n'en reçoit jamais : la recherche ramène la console.
  */
 export function pickAutomatic(item: Item, options: CommonsImage[]) {
+  if (String(item.kind) === "Accessoire") return undefined
   let best: { o: CommonsImage; s: number } | undefined
   for (const o of options) {
     const s = score(item, o)
