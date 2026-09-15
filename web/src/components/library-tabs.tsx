@@ -1,7 +1,9 @@
-import { Check, ChevronDown, LayoutGrid, List } from "lucide-react"
-import { useEffect, useId, useRef, useState, type ReactNode } from "react"
+import { ChevronDown, LayoutGrid, List } from "lucide-react"
+import type { ReactNode } from "react"
 import { useTranslation } from "react-i18next"
 import { NavLink } from "react-router-dom"
+
+import { KeyedChips } from "@/components/fields"
 
 // Briques communes à la bibliothèque des jeux et à celle du matériel (refonte « Étagère »).
 
@@ -53,111 +55,36 @@ export function ViewToggle({ value, onChange }: { value: View; onChange: (v: Vie
   )
 }
 
-/**
- * « Trié par Par console ⌄ » : la valeur ouvre la liste des tris, dessinée comme les menus
- * (le composant `Menu` n'accepte pas de déclencheur en texte).
- */
+/** Libellé d'un champ de tri ou de filtre : petites capitales, comme sur la maquette. */
+export function FieldKicker({ children }: { children: ReactNode }) {
+  return <div className="mb-1.5 truncate text-[11px] tracking-[0.06em] text-subtle-foreground uppercase">{children}</div>
+}
+
+/** « Trié par » : un champ comme ceux des filtres (libellé + menu en pilule). */
 export function SortMenu<T extends string>({
   label,
   choices,
   value,
   onChange,
+  className = "",
 }: {
   label: string
   choices: ReadonlyArray<{ readonly key: T; readonly label: string }>
   value: T
   onChange: (key: T) => void
+  className?: string
 }) {
   const { t } = useTranslation()
-  const [open, setOpen] = useState(false)
-  const [active, setActive] = useState(0)
-  const box = useRef<HTMLDivElement>(null)
-  const listId = useId()
-  const current = choices.find((c) => c.key === value)
-
-  useEffect(() => {
-    if (!open) return
-    const outside = (e: PointerEvent) => {
-      if (!box.current?.contains(e.target as Node)) setOpen(false)
-    }
-    document.addEventListener("pointerdown", outside)
-    return () => document.removeEventListener("pointerdown", outside)
-  }, [open])
-
-  const toggle = () => {
-    setActive(Math.max(0, choices.findIndex((c) => c.key === value)))
-    setOpen((o) => !o)
-  }
-  const pick = (key: T) => {
-    onChange(key)
-    setOpen(false)
-  }
-  const keys = (e: React.KeyboardEvent) => {
-    if (e.key === "ArrowDown") {
-      e.preventDefault()
-      if (!open) toggle()
-      else setActive((i) => Math.min(i + 1, choices.length - 1))
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault()
-      setActive((i) => Math.max(i - 1, 0))
-    } else if ((e.key === "Enter" || e.key === " ") && open) {
-      e.preventDefault()
-      pick(choices[active].key)
-    } else if (e.key === "Escape") setOpen(false)
-  }
-
   return (
-    <div ref={box} className="relative flex min-w-0 items-center gap-2">
-      <span className="shrink-0">{t("library.sortedBy")}</span>
-      <button
-        type="button"
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        aria-controls={listId}
-        aria-label={`${label} : ${current?.label ?? ""}`}
-        onClick={toggle}
-        onKeyDown={keys}
-        className="-my-3 inline-flex min-w-0 items-center gap-[3px] py-3 font-semibold text-foreground"
-      >
-        <span className="truncate">{current?.label}</span>
-        <ChevronDown size={14} {...ICON} aria-hidden="true" className={`shrink-0 transition-transform duration-150 ${open ? "rotate-180" : ""}`} />
-      </button>
-      {open && (
-        <ul
-          id={listId}
-          role="listbox"
-          aria-label={label}
-          className="absolute top-full left-0 z-40 mt-3 w-64 max-w-[calc(100vw-36px)] overflow-hidden rounded-[20px] border border-border bg-background py-1 shadow-md"
-        >
-          {choices.map((c, i) => {
-            const on = c.key === value
-            return (
-              <li
-                key={c.key}
-                role="option"
-                aria-selected={on}
-                // mousedown : choisir avant que le bouton ne perde le focus.
-                onMouseDown={(e) => {
-                  e.preventDefault()
-                  pick(c.key)
-                }}
-                onMouseEnter={() => setActive(i)}
-                className={`flex min-h-11 cursor-pointer items-center gap-2.5 px-4 py-3 text-[14px] text-foreground ${i === active ? "bg-card" : ""} ${on ? "font-semibold" : ""}`}
-              >
-                <span className="min-w-0 flex-1">{c.label}</span>
-                {on && (
-                  <span aria-hidden="true" className="grid size-5 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground">
-                    <Check size={12} {...ICON} />
-                  </span>
-                )}
-              </li>
-            )
-          })}
-        </ul>
-      )}
+    <div className={`min-w-0 ${className}`}>
+      <FieldKicker>{t("library.sortedBy")}</FieldKicker>
+      <KeyedChips label={label} choices={choices} value={value} onChange={onChange} />
     </div>
   )
 }
+
+/** Champ de tri posé sur la page (téléphone, matériel) : 40 px au lieu des 48 d'un formulaire. */
+export const COMPACT_FIELD = "[&_button[aria-haspopup]]:min-h-10 [&_button[aria-haspopup]]:text-[14px]"
 
 /** En-tête d'un groupe par console, dans un `<details>` : pas de carte, la hiérarchie vient du titre. */
 export function GroupSummary({ name, meta }: { name: string; meta: string }) {

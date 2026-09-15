@@ -5,9 +5,10 @@ import { Link, useSearchParams } from "react-router-dom"
 
 import { ConditionDot } from "@/components/condition"
 import { Cover } from "@/components/cover"
-import { FilterPanel, facetValueLabel, useDesktop } from "@/components/filter-panel"
+import { FilterPanel, PageFilters, facetValueLabel, useDesktop } from "@/components/filter-panel"
 import {
   CARD_FRAME,
+  COMPACT_FIELD,
   GRID_CLASS,
   GroupSummary,
   LibraryTabs,
@@ -69,7 +70,7 @@ export default function Library() {
     setParams(writeParams(next.filters ?? filters, next.q ?? q, next.sort ?? sort, prefs.games_sort), { replace: true })
 
   const results = useMemo(() => (games ? sortResults(applyFilters(games, filters, q), sort) : []), [games, filters, q, sort])
-  // Sur grand écran les filtres sont toujours affichés dans le tiroir : leurs compteurs aussi.
+  // Sur grand écran les filtres sont toujours affichés sur la page : leurs compteurs aussi.
   const showCounts = panelOpen || desktop
   const counts = useMemo(() => (games && showCounts ? facetCounts(games, filters, q) : {}), [games, filters, q, showCounts])
   const groups = useMemo(() => (sort === "plateforme" ? groupByPlatform(results) : null), [results, sort])
@@ -143,6 +144,14 @@ export default function Library() {
     )
 
   const filtered = active.map((a) => a.shown).join(", ")
+  const sortField = (
+    <SortMenu
+      label={t("library.sortBy")}
+      choices={SORTS.map((s) => ({ key: s.key, label: t(`sorts.games.${s.key}`) }))}
+      value={sort}
+      onChange={(s) => update({ sort: s })}
+    />
+  )
 
   return (
     <div>
@@ -184,37 +193,30 @@ export default function Library() {
           </div>
         </div>
 
-        <div className="mt-3 flex items-center gap-3 text-[12px] text-muted-foreground">
-          <SortMenu
-            label={t("library.sortBy")}
-            choices={SORTS.map((s) => ({ key: s.key, label: t(`sorts.games.${s.key}`) }))}
-            value={sort}
-            onChange={(s) => update({ sort: s })}
-          />
-          {/* Filtres actifs en une ligne : un toucher rouvre le panneau (sur grand écran, il est dans le tiroir). */}
-          {active.length > 0 && (
-            <div className="ml-auto flex min-w-0 items-center gap-3">
-              {desktop ? (
-                <span className="min-w-0 truncate">
-                  <Trans i18nKey="library.filtered" values={{ values: filtered }} components={{ value: <span className="text-foreground" /> }} />
-                </span>
-              ) : (
-                <button type="button" onClick={() => setPanelOpen(true)} className="-my-3 min-w-0 truncate py-3 text-right">
-                  <Trans i18nKey="library.filtered" values={{ values: filtered }} components={{ value: <span className="text-foreground" /> }} />
-                </button>
-              )}
-              <button type="button" onClick={() => update({ filters: {} })} className="-my-3 shrink-0 py-3 underline">
-                {t("library.clearAll")}
-              </button>
-            </div>
-          )}
-        </div>
+        {/* Filtres actifs en une ligne : un toucher rouvre le panneau. */}
+        {!desktop && active.length > 0 && (
+          <div className="mt-2.5 flex min-w-0 items-center gap-3 text-[12px] text-muted-foreground">
+            <button type="button" onClick={() => setPanelOpen(true)} className="-my-3 min-w-0 flex-1 truncate py-3 text-left">
+              <Trans i18nKey="library.filtered" values={{ values: filtered }} components={{ value: <span className="text-foreground" /> }} />
+            </button>
+            <button type="button" onClick={() => update({ filters: {} })} className="-my-3 shrink-0 py-3 underline">
+              {t("library.clearAll")}
+            </button>
+          </div>
+        )}
       </div>
+
+      {/* Le tri reste hors de la zone collante : sur téléphone, elle mangerait l'écran. */}
+      {desktop ? (
+        <PageFilters sortField={sortField} counts={counts} filters={filters} onChange={(f) => update({ filters: f })} />
+      ) : (
+        <div className={`mb-3 max-w-xs ${COMPACT_FIELD}`}>{sortField}</div>
+      )}
 
       {results.length === 0 ? (
         <p className="py-16 text-center text-muted-foreground">{t("library.noMatch")}</p>
       ) : groups ? (
-        <div className="mt-1 space-y-3 lg:space-y-5">
+        <div className="mt-1 space-y-3 lg:mt-5 lg:space-y-5">
           {!forceOpen && (
             <div className="flex justify-end gap-3 text-[12px] text-muted-foreground">
               <button type="button" onClick={() => setOpenList(groups.map((g) => g.platform))} className="underline">
@@ -242,11 +244,11 @@ export default function Library() {
           ))}
         </div>
       ) : (
-        <div className="mt-1">{renderResults(results, true)}</div>
+        <div className="mt-1 lg:mt-5">{renderResults(results, true)}</div>
       )}
 
       <FilterPanel
-        open={panelOpen}
+        open={panelOpen && !desktop}
         onClose={() => setPanelOpen(false)}
         counts={counts}
         filters={filters}

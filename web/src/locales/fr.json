@@ -223,7 +223,8 @@
     "all": "Tous",
     "clearAll": "Tout effacer",
     "show_one": "Voir {{count}} jeu",
-    "show_other": "Voir {{count}} jeux"
+    "show_other": "Voir {{count}} jeux",
+    "fewer": "Moins de filtres"
   },
   "libraryTabs": {
     "games": "Jeux",

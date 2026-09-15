@@ -5,7 +5,7 @@ import { Link, useSearchParams } from "react-router-dom"
 
 import { ConditionDot } from "@/components/condition"
 import { Cover } from "@/components/cover"
-import { CARD_FRAME, GRID_CLASS, GroupSummary, LibraryTabs, ROW_CLASS, SortMenu, ViewToggle, readView, writeSession, type View } from "@/components/library-tabs"
+import { CARD_FRAME, COMPACT_FIELD, GRID_CLASS, GroupSummary, LibraryTabs, ROW_CLASS, SortMenu, ViewToggle, readView, writeSession, type View } from "@/components/library-tabs"
 import { api, errorMessage, type HardwareItem } from "@/lib/api"
 import { euros, formatDate } from "@/lib/format"
 import { valueLabel } from "@/lib/i18n"
@@ -110,13 +110,14 @@ export default function Hardware() {
       </div>
 
       {/* Le « + » du dock mène à l'ajout d'un jeu : l'ajout de matériel a son propre bouton ici. */}
-      <div className="mt-3 flex min-h-11 items-center gap-3 text-[12px] text-muted-foreground">
+      <div className="mt-3 mb-1 flex items-end gap-3 lg:mb-5">
         {items.length > 1 && (
           <SortMenu
             label={t("hardware.sortLabel")}
             choices={HARDWARE_SORTS.map((s) => ({ key: s.key, label: t(`sorts.hardware.${s.key}`) }))}
             value={sort}
             onChange={setSort}
+            className={`w-full max-w-xs lg:max-w-60 ${COMPACT_FIELD}`}
           />
         )}
         <Link

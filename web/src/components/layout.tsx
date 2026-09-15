@@ -10,8 +10,7 @@ import { usePreferences } from "@/lib/preferences"
 import { CLIENT_VERSION, reloadIfOutdated } from "@/lib/pwa"
 
 // Refonte « Étagère » : barre d'onglets en bas et dock d'actions jusqu'à 1023 px, tiroir de
-// navigation à gauche au-delà. Le tiroir porte un emplacement (#drawer-slot) où la bibliothèque
-// pose ses filtres.
+// navigation à gauche au-delà (les filtres restent sur la page, demande de Tom du 15/09/2026).
 
 const ICON = { strokeWidth: 2.75 } as const
 
@@ -71,9 +70,7 @@ export function Layout() {
             </NavLink>
           ))}
         </nav>
-        {/* Les filtres défilent dans le tiroir ; les deux actions restent en bas, jamais recouvertes. */}
-        <div id="drawer-slot" className="-mx-2 min-h-0 flex-1 overflow-y-auto px-2" />
-        <div className="grid shrink-0 gap-2">
+        <div className="mt-auto grid shrink-0 gap-2">
           <Link to="/brocante" className="flex h-12 items-center justify-center gap-2.5 rounded-full bg-ink font-heading text-[15px] text-ink-foreground transition-transform duration-150 active:scale-[.98]">
             <Barcode size={20} {...ICON} aria-hidden="true" />
             {t("brocante.scannerTitle")}
