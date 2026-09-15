@@ -90,14 +90,14 @@ export default function ImportLegacy() {
           </span>
           {t("layout.stats")}
         </Link>
-        <h1 className="mt-4 text-[36px]">{t("importLegacy.title")}</h1>
+        <h1 className="mt-4 text-[29px]">{t("importLegacy.title")}</h1>
         <p className="mt-2 text-[14px] text-muted-foreground">{t("importLegacy.intro")}</p>
       </div>
 
       <ErrorNote message={error} />
 
       {report && (
-        <div className="rounded-card bg-primary-tint p-5 text-primary-tint-foreground">
+        <div className="rounded-card bg-primary-tint p-4 text-primary-tint-foreground">
           <p className="font-semibold">
             {t("importLegacy.reportCopies", { count: report.copies })}, {t("importLegacy.reportGames", { count: report.gamesCreated })}
             {report.valuations > 0 && `, ${t("importLegacy.reportValuations", { count: report.valuations })}`}.
@@ -156,15 +156,15 @@ export default function ImportLegacy() {
           })}
 
           {/* Au-dessus de la barre d'onglets (≤ 1023 px) ; à droite du tiroir au-delà. */}
-          <div className="fixed inset-x-0 bottom-[calc(78px+env(safe-area-inset-bottom))] z-20 bg-gradient-to-t from-background from-70% to-transparent px-[18px] pt-8 pb-3 lg:bottom-0 lg:left-[280px] lg:px-8 lg:pb-[max(1rem,env(safe-area-inset-bottom))]">
+          <div className="fixed inset-x-0 bottom-[calc(78px+env(safe-area-inset-bottom))] z-20 bg-gradient-to-t from-background from-70% to-transparent px-4 pt-8 pb-3 lg:bottom-0 lg:left-[280px] lg:px-8 lg:pb-[max(1rem,env(safe-area-inset-bottom))]">
             <div className="mx-auto flex max-w-2xl gap-2.5">
-              <button onClick={() => setRows(null)} className={`${ghostButton} min-h-[54px]`}>
+              <button onClick={() => setRows(null)} className={`${ghostButton} min-h-[48px]`}>
                 {t("common.cancel")}
               </button>
               <button
                 onClick={commit}
                 disabled={busy !== null || retained.length === 0}
-                className="min-h-[54px] flex-1 rounded-full bg-primary px-5 font-heading text-[16px] text-primary-foreground shadow-md transition-[filter,transform] duration-150 hover:brightness-95 active:scale-[.98] disabled:opacity-45"
+                className="min-h-[48px] flex-1 rounded-full bg-primary px-5 font-heading text-[16px] text-primary-foreground shadow-md transition-[filter,transform] duration-150 hover:brightness-95 active:scale-[.98] disabled:opacity-45"
               >
                 {busy === "import" ? t("importLegacy.importing") : retained.length === 0 ? t("importLegacy.nothing") : t("importLegacy.importCopies", { count: retained.length })}
               </button>

@@ -16,9 +16,9 @@ type Scan = { ean: string; gameId: number | null }
 
 const ICON = { strokeWidth: 2.75 } as const
 const primaryCta =
-  "flex min-h-12 w-full items-center justify-center rounded-full bg-primary px-5 text-center font-heading text-[15px] leading-tight text-primary-foreground transition-transform duration-150 active:scale-[.98]"
+  "flex min-h-11 w-full items-center justify-center rounded-full bg-primary px-5 text-center font-heading text-[15px] leading-tight text-primary-foreground transition-transform duration-150 active:scale-[.98]"
 const surfaceButton =
-  "flex min-h-12 flex-1 items-center justify-center rounded-full bg-card px-4 text-center font-heading text-[15px] leading-tight transition-transform duration-150 active:scale-[.98]"
+  "flex min-h-11 flex-1 items-center justify-center rounded-full bg-card px-4 text-center font-heading text-[15px] leading-tight transition-transform duration-150 active:scale-[.98]"
 const tag = "inline-flex max-w-full items-center rounded-full bg-card px-2.5 py-1 text-[11px]"
 
 /**
@@ -179,7 +179,7 @@ export default function Brocante() {
   return (
     <div role="dialog" aria-modal="true" aria-labelledby="brocante-title" className={`fixed inset-0 z-40 overflow-y-auto overscroll-contain ${darkScreen}`}>
       <div className="mx-auto flex min-h-dvh max-w-[480px] flex-col">
-        <div className="px-[18px] pb-[22px]">
+        <div className="px-4 pb-[22px]">
           <ScannerHeader title={t("brocante.scannerTitle")} titleId="brocante-title" onClose={close}>
             <button
               type="button"
@@ -202,7 +202,7 @@ export default function Brocante() {
               onDetected={onScan}
               hint={chain ? t("brocante.chainTitle") : undefined}
               idle={
-                <button onClick={() => setScanning(true)} className="flex min-h-12 items-center gap-2.5 rounded-full bg-[#f7f3ea] px-5 font-heading text-[15px] text-[#201e1d] transition-transform duration-150 active:scale-[.98]">
+                <button onClick={() => setScanning(true)} className="flex min-h-11 items-center gap-2.5 rounded-full bg-[#f7f3ea] px-5 font-heading text-[15px] text-[#201e1d] transition-transform duration-150 active:scale-[.98]">
                   <Barcode size={20} {...ICON} aria-hidden="true" />
                   {t("brocante.scanAnother")}
                 </button>
@@ -226,7 +226,7 @@ export default function Brocante() {
           ref={sheet}
           aria-live="polite"
           aria-busy={identifying}
-          className="mt-auto rounded-t-[32px] bg-background px-[18px] pt-3.5 pb-[max(22px,env(safe-area-inset-bottom))] text-foreground shadow-lg ring-1 ring-border"
+          className="mt-auto rounded-t-[32px] bg-background px-4 pt-3.5 pb-[max(22px,env(safe-area-inset-bottom))] text-foreground shadow-lg ring-1 ring-border"
         >
           <div className="mx-auto mb-3.5 h-1 w-10 rounded-full bg-border-strong" aria-hidden="true" />
           <ErrorNote message={error} />
@@ -336,7 +336,7 @@ export default function Brocante() {
 function Answer({ tone, title, children }: { tone: "primary" | "none"; title: string; children?: ReactNode }) {
   return (
     <div>
-      <p className="flex items-center gap-2 font-heading text-[22px] leading-tight">
+      <p className="flex items-center gap-2 font-heading text-[19px] leading-tight">
         <span className={`size-2.5 shrink-0 rounded-full ${tone === "primary" ? "bg-primary" : "bg-[var(--cond-none)]"}`} aria-hidden="true" />
         {title}
       </p>
@@ -349,7 +349,7 @@ function Owned({ game, ean, edition }: { game: LibraryGame; ean: string; edition
   const { t } = useTranslation()
   return (
     <div>
-      <p className="flex items-center gap-2 font-heading text-[22px] leading-tight">
+      <p className="flex items-center gap-2 font-heading text-[19px] leading-tight">
         <span className="size-2.5 shrink-0 rounded-full bg-[var(--cond-good)]" aria-hidden="true" />
         {t("brocante.owned.title")}
       </p>

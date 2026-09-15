@@ -50,7 +50,7 @@ export default function Barcodes() {
     <div className="mx-auto max-w-2xl space-y-4">
       <div className="flex items-end justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-[36px]">{t("barcodes.title")}</h1>
+          <h1 className="text-[29px]">{t("barcodes.title")}</h1>
           <p className="mt-1 text-[13px] text-muted-foreground">{t("barcodes.summary", { what: rows ? t("barcodes.count", { count: rows.length }) : t("common.loading") })}</p>
         </div>
         <a href="/api/export-codes.csv" className="flex min-h-10 shrink-0 items-center gap-1.5 rounded-full bg-card px-3.5 text-[13px] font-semibold">
@@ -61,7 +61,7 @@ export default function Barcodes() {
 
       <Link
         to="/brocante?enchainer=1"
-        className="flex min-h-[52px] items-center justify-center gap-2.5 rounded-full bg-ink px-5 font-heading text-[15px] text-ink-foreground shadow-md transition-transform duration-150 active:scale-[.98]"
+        className="flex min-h-[46px] items-center justify-center gap-2.5 rounded-full bg-ink px-5 font-heading text-[15px] text-ink-foreground shadow-md transition-transform duration-150 active:scale-[.98]"
       >
         <Barcode size={20} {...ICON} aria-hidden="true" />
         {t("barcodes.scanChain")}
@@ -74,7 +74,7 @@ export default function Barcodes() {
           <input className={`${inputClass} pl-11`} aria-label={t("barcodes.search")} placeholder={t("barcodes.search")} value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
       )}
-      {rows && rows.length === 0 && <p className="rounded-card bg-card p-5 text-[13px] text-muted-foreground">{t("barcodes.empty")}</p>}
+      {rows && rows.length === 0 && <p className="rounded-card bg-card p-4 text-[13px] text-muted-foreground">{t("barcodes.empty")}</p>}
 
       <ul>
         {shown.map((r) => (

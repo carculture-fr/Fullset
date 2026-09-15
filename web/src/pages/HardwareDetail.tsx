@@ -59,7 +59,7 @@ export default function HardwareDetail() {
 
         <header className="col-start-2 row-start-1 min-w-0 self-end lg:col-start-2 lg:self-start">
           <div className="text-[11px] tracking-[0.08em] text-primary-text uppercase">{[valueLabel("hwKind", item.kind), item.platform].join(" · ")}</div>
-          <h1 className="mt-1.5 text-[26px] leading-[1.05] break-words lg:text-[40px] lg:leading-[1.02]">{title}</h1>
+          <h1 className="mt-1.5 text-[22px] leading-[1.05] break-words lg:text-[32px] lg:leading-[1.02]">{title}</h1>
           {shortMeta && <div className="mt-2 text-[12px] text-muted-foreground lg:hidden">{shortMeta}</div>}
           <dl className="mt-5 hidden grid-cols-[auto_1fr] gap-x-7 gap-y-1.5 text-[13px] lg:grid">
             {meta

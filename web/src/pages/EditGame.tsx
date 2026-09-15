@@ -88,13 +88,13 @@ export default function EditGame() {
       <BackBar to={`/jeux/${game.id}`} replace label={game.title} />
       <div>
         <div className="text-[11px] tracking-[0.08em] text-primary-text uppercase">{game.platform}</div>
-        <h1 className="mt-1 text-[26px]">{t("editGame.title")}</h1>
+        <h1 className="mt-1 text-[22px]">{t("editGame.title")}</h1>
       </div>
 
       <ErrorNote message={error} />
 
       <section className={cardClass}>
-        <h2 className="text-[20px]">{t("editGame.cover")}</h2>
+        <h2 className="text-[18px]">{t("editGame.cover")}</h2>
         <div className="flex items-start gap-4">
           <Cover src={game.cover} title={game.title} platform={game.platform} size="large" className="w-28 shrink-0 shadow-md" />
           <div className="flex flex-col items-start gap-2">
@@ -156,7 +156,7 @@ export default function EditGame() {
       </section>
 
       <section className={cardClass}>
-        <h2 className="text-[20px]">{t("editGame.igdbSection")}</h2>
+        <h2 className="text-[18px]">{t("editGame.igdbSection")}</h2>
         {game.igdb_id === null ? (
           <p className="text-sm text-primary-text">{t("editGame.notLinked")}</p>
         ) : (
@@ -172,7 +172,7 @@ export default function EditGame() {
       </section>
 
       <form onSubmit={save} className={`${cardClass} space-y-4`}>
-        <h2 className="text-[20px]">{t("editGame.info")}</h2>
+        <h2 className="text-[18px]">{t("editGame.info")}</h2>
         <Field label={t("editGame.fields.title")}>
           <input className={`${inputClass} bg-background`} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
         </Field>
@@ -189,7 +189,7 @@ export default function EditGame() {
             </Field>
           ))}
         </div>
-        <button disabled={busy} className="h-[54px] w-full rounded-full bg-primary font-heading text-[17px] text-primary-foreground transition-transform duration-150 active:scale-[.98] disabled:opacity-45">
+        <button disabled={busy} className="h-[48px] w-full rounded-full bg-primary font-heading text-[17px] text-primary-foreground transition-transform duration-150 active:scale-[.98] disabled:opacity-45">
           {t("common.save")}
         </button>
       </form>

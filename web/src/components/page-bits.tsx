@@ -88,12 +88,12 @@ export function StickyCta({ label, disabled }: { label: string; disabled?: boole
   const { t } = useTranslation()
   const online = useOnline()
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-[calc(78px+env(safe-area-inset-bottom))] z-30 bg-gradient-to-t from-background from-70% to-transparent px-[18px] pt-8 pb-3 lg:bottom-0 lg:left-[280px] lg:px-8 lg:pb-5">
+    <div className="pointer-events-none fixed inset-x-0 bottom-[calc(78px+env(safe-area-inset-bottom))] z-30 bg-gradient-to-t from-background from-70% to-transparent px-4 pt-8 pb-3 lg:bottom-0 lg:left-[280px] lg:px-8 lg:pb-5">
       <div className="pointer-events-auto mx-auto max-w-2xl space-y-2">
         {!online && <p className="rounded-[16px] bg-primary-tint px-4 py-2 text-[13px] text-primary-tint-foreground">{t("common.offlineWrite")}</p>}
         <button
           disabled={disabled || !online}
-          className="h-[54px] w-full truncate rounded-full bg-primary px-5 font-heading text-[17px] text-primary-foreground shadow-md transition-[transform,filter] duration-150 hover:brightness-95 active:scale-[.98] disabled:opacity-45 disabled:active:scale-100"
+          className="h-[48px] w-full truncate rounded-full bg-primary px-5 font-heading text-[17px] text-primary-foreground shadow-md transition-[transform,filter] duration-150 hover:brightness-95 active:scale-[.98] disabled:opacity-45 disabled:active:scale-100"
         >
           {label}
         </button>

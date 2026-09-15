@@ -97,8 +97,8 @@ export function GroupSummary({ name, meta }: { name: string; meta: string }) {
   )
 }
 
-// Grille des cartes : 3 colonnes à 400 px, 4 dès 640, 5 dès 900, 6 dès 1024.
-export const GRID_CLASS = "grid grid-cols-3 gap-x-2.5 gap-y-3 sm:grid-cols-4 min-[900px]:grid-cols-5 lg:grid-cols-6 lg:gap-4"
+// Grille des cartes : 3 colonnes à 400 px, 4 dès 520, 5 dès 700, 6 dès 900, 7 dès 1024 (tiroir), 8 dès 1280.
+export const GRID_CLASS = "grid grid-cols-3 gap-x-2 gap-y-2.5 min-[520px]:grid-cols-4 min-[700px]:grid-cols-5 min-[900px]:grid-cols-6 lg:grid-cols-7 lg:gap-3.5 xl:grid-cols-8"
 
 /** Cadre de carte (grille) : léger soulèvement au survol, enfoncement au toucher. */
 export const CARD_FRAME = "relative rounded-[12px] transition-[transform,box-shadow] duration-150 ease-out group-hover:shadow-sm motion-safe:group-hover:-translate-y-0.5 motion-safe:group-active:scale-[.98]"

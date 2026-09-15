@@ -28,7 +28,7 @@ const STATUS_TONE: Record<string, string> = {
 const toneIn = (map: Record<string, string>) => (label: string) => map[label] ?? "var(--cond-none)"
 
 const kicker = "text-[11px] tracking-[0.08em] uppercase"
-const hero = "mt-2 font-heading text-[30px] leading-[1.05] lg:text-[40px]"
+const hero = "mt-2 font-heading text-[25px] leading-[1.05] lg:text-[32px]"
 const ghostPill = "inline-flex min-h-11 items-center rounded-full border border-border-strong bg-background px-4 text-sm font-semibold transition-colors duration-150 hover:bg-foreground/[.07]"
 
 export default function Stats() {
@@ -85,7 +85,7 @@ export default function Stats() {
     <main className="space-y-4 pb-4 lg:space-y-5">
       <header className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
         <div className="flex min-w-0 flex-wrap items-baseline gap-x-4 gap-y-1">
-          <h1 className="text-[36px]">{t("layout.stats")}</h1>
+          <h1 className="text-[29px]">{t("layout.stats")}</h1>
           <p className="text-[13px] text-muted-foreground">
             {gamesAndCopies(s.games, s.copies)} · {t("stats.consoles", { count: s.byPlatform.length })}
           </p>
@@ -114,7 +114,7 @@ export default function Stats() {
       </header>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 lg:gap-5">
-        <section className="min-w-0 rounded-card bg-ink p-4 text-ink-foreground sm:p-5">
+        <section className="min-w-0 rounded-card bg-ink p-4 text-ink-foreground sm:p-4">
           <p className={`${kicker} opacity-75`}>{t("stats.totalSpent")}</p>
           <div className={`${hero} num`}>{euros(s.spentCents)}</div>
           <p className="mt-2 text-[13px] opacity-85">
@@ -122,7 +122,7 @@ export default function Stats() {
           </p>
         </section>
 
-        <section className="min-w-0 rounded-card bg-viz-bg p-4 text-viz-fg sm:p-5">
+        <section className="min-w-0 rounded-card bg-viz-bg p-4 text-viz-fg sm:p-4">
           <p className={`${kicker} text-[var(--viz-label)]`}>{t("stats.estimatedValue")}</p>
           {s.value.estimatedCopies === 0 ? (
             <p className="mt-2 text-[13px]">{t("stats.noEstimate")}</p>
@@ -137,7 +137,7 @@ export default function Stats() {
           )}
         </section>
 
-        <section className="col-span-2 min-w-0 rounded-card bg-card p-4 sm:p-5 lg:col-span-1">
+        <section className="col-span-2 min-w-0 rounded-card bg-card p-4 sm:p-4 lg:col-span-1">
           <p className={`${kicker} text-subtle-foreground`}>{t("stats.wishlist")}</p>
           <Link to="/souhaits" className={`${hero} block hover:underline`}>
             {t("stats.games", { count: s.wishlist.count })}
@@ -191,9 +191,9 @@ export default function Stats() {
 
 function Card({ title, note, className = "", children }: { title: string; note?: string; className?: string; children: ReactNode }) {
   return (
-    <section className={`min-w-0 rounded-card bg-card p-5 lg:p-6 ${className}`}>
+    <section className={`min-w-0 rounded-card bg-card p-4 lg:p-5 ${className}`}>
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h2 className="text-[20px]">{title}</h2>
+        <h2 className="text-[18px]">{title}</h2>
         {note && <p className="text-[12px] text-muted-foreground sm:text-right">{note}</p>}
       </div>
       <div className="mt-5 lg:flex-1">{children}</div>

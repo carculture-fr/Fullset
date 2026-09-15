@@ -162,7 +162,7 @@ export default function HardwareEditor() {
           </button>
         )}
       </BackBar>
-      <h1 className="mb-5 text-[26px]">{id ? t("common.edit") : t("hardwareEditor.titleAdd")}</h1>
+      <h1 className="mb-5 text-[22px]">{id ? t("common.edit") : t("hardwareEditor.titleAdd")}</h1>
 
       <form onSubmit={submit} className="space-y-3.5 pb-[90px]">
         <Segmented

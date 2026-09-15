@@ -85,8 +85,8 @@ export function FilterPanel({ open, onClose, resultCount, ...props }: Props & { 
 
   return (
     <div role="dialog" aria-modal="true" aria-label={t("filterPanel.title")} className="fixed inset-0 z-50 flex flex-col bg-background">
-      <div className="flex items-center gap-3 px-[18px] pt-3.5 pb-3">
-        <h2 className="text-[24px]">{t("filterPanel.title")}</h2>
+      <div className="flex items-center gap-3 px-4 pt-3.5 pb-3">
+        <h2 className="text-[21px]">{t("filterPanel.title")}</h2>
         {active && (
           <button type="button" onClick={() => props.onChange({})} className="ml-auto text-[13px] text-muted-foreground underline">
             {t("filterPanel.clearAll")}
@@ -103,7 +103,7 @@ export function FilterPanel({ open, onClose, resultCount, ...props }: Props & { 
       </div>
 
       {/* La marge basse laisse la place à la liste ouverte du dernier menu et au bouton fixe. */}
-      <div className="flex-1 space-y-4 overflow-y-auto px-[18px] pt-2 pb-72">
+      <div className="flex-1 space-y-4 overflow-y-auto px-4 pt-2 pb-72">
         {visible.map((f) => (
           <Field key={f.key} label={t(`facets.${f.key as FacetKey}`)}>
             <FacetMenu f={f} counts={props.counts} filters={props.filters} toggle={toggle} clear={clear} />
@@ -111,11 +111,11 @@ export function FilterPanel({ open, onClose, resultCount, ...props }: Props & { 
         ))}
       </div>
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-background from-70% to-transparent px-[18px] pt-8 pb-[max(16px,env(safe-area-inset-bottom))]">
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-background from-70% to-transparent px-4 pt-8 pb-[max(16px,env(safe-area-inset-bottom))]">
         <button
           type="button"
           onClick={onClose}
-          className="pointer-events-auto h-[54px] w-full rounded-full bg-primary font-heading text-[16px] text-primary-foreground shadow-md transition-transform duration-150 active:scale-[.98]"
+          className="pointer-events-auto h-[48px] w-full rounded-full bg-primary font-heading text-[16px] text-primary-foreground shadow-md transition-transform duration-150 active:scale-[.98]"
         >
           {t("filterPanel.show", { count: resultCount })}
         </button>
@@ -138,7 +138,7 @@ export function PageFilters({ sortField, ...props }: Props & { sortField: ReactN
   const hidden = visible.filter((f) => !shown.includes(f))
 
   return (
-    <section aria-label={t("filterPanel.title")} className="mt-3.5 rounded-card bg-card p-5">
+    <section aria-label={t("filterPanel.title")} className="mt-3.5 rounded-card bg-card p-4">
       <div className="mb-3 flex items-baseline gap-3">
         <h2 className="text-[18px]">{t("filterPanel.title")}</h2>
         {active && (

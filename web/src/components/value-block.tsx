@@ -79,7 +79,7 @@ export function ValueBlock({
             {t("valueBlock.estimated")}
             {latest && ` · ${t("valueBlock.on", { date: formatDate(latest.valued_on) })}`}
           </span>
-          <span className="num block font-heading text-[22px] leading-tight">{latest ? euros(latest.amount_cents) : "—"}</span>
+          <span className="num block font-heading text-[19px] leading-tight">{latest ? euros(latest.amount_cents) : "—"}</span>
           <span className="block text-[11px]">{latest ? sub : t("valueBlock.none")}</span>
         </span>
         {bars.length > 0 ? (
@@ -106,10 +106,10 @@ export function ValueBlock({
           <input className={inputClass} placeholder={t("valueBlock.notePlaceholder")} value={note} onChange={(e) => setNote(e.target.value)} />
           <ErrorNote message={error} />
           <div className="flex gap-2">
-            <button disabled={busy || !amount.trim()} className="h-12 flex-1 rounded-full bg-primary font-heading text-[15px] text-primary-foreground transition-transform duration-150 active:scale-[.98] disabled:opacity-45">
+            <button disabled={busy || !amount.trim()} className="h-11 flex-1 rounded-full bg-primary font-heading text-[15px] text-primary-foreground transition-transform duration-150 active:scale-[.98] disabled:opacity-45">
               {t("valueBlock.save")}
             </button>
-            <button type="button" onClick={() => setOpen(false)} className="h-12 rounded-full bg-card px-4 text-[14px] text-muted-foreground hover:text-foreground">
+            <button type="button" onClick={() => setOpen(false)} className="h-11 rounded-full bg-card px-4 text-[14px] text-muted-foreground hover:text-foreground">
               {t("valueBlock.close")}
             </button>
           </div>

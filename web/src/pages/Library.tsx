@@ -90,7 +90,7 @@ export default function Library() {
     writeSession(OPEN_KEY, JSON.stringify(list))
   }
 
-  const title = <h1 className="text-[36px] leading-[1.1]">{t("layout.library")}</h1>
+  const title = <h1 className="text-[29px] leading-[1.1]">{t("layout.library")}</h1>
 
   if (error) {
     return (
@@ -113,7 +113,7 @@ export default function Library() {
         <div className="flex flex-col items-center py-14 text-center">
           <EmptyBox />
           <p className="mt-4 text-muted-foreground">{t("library.empty")}</p>
-          <Link to="/ajouter" className="mt-5 flex h-12 items-center rounded-full bg-primary px-6 font-heading text-[15px] text-primary-foreground">
+          <Link to="/ajouter" className="mt-5 flex h-11 items-center rounded-full bg-primary px-6 font-heading text-[15px] text-primary-foreground">
             {t("library.addGame")}
           </Link>
           <Link to="/stats" className="mt-3 text-[13px] text-muted-foreground underline">
@@ -162,7 +162,7 @@ export default function Library() {
       </p>
 
       {/* Commandes gardées en haut au défilement sur téléphone. */}
-      <div className="sticky top-0 z-20 -mx-[18px] bg-background/95 px-[18px] pt-3.5 pb-3 backdrop-blur lg:static lg:mx-0 lg:bg-transparent lg:px-0 lg:backdrop-blur-none">
+      <div className="sticky top-0 z-20 -mx-4 bg-background/95 px-4 pt-3.5 pb-3 backdrop-blur lg:static lg:mx-0 lg:bg-transparent lg:px-0 lg:backdrop-blur-none">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-3 lg:flex-nowrap lg:gap-3">
           <LibraryTabs />
           <div className="order-last flex basis-full gap-2 lg:order-none lg:max-w-md lg:flex-1 lg:basis-auto">

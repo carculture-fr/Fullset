@@ -46,12 +46,12 @@ export function Layout() {
   ]
 
   return (
-    <div className="min-h-dvh lg:grid lg:grid-cols-[280px_minmax(0,1fr)]">
+    <div className="min-h-dvh lg:grid lg:grid-cols-[240px_minmax(0,1fr)]">
       {/* Tiroir (≥ 1024 px) */}
-      <aside className="sticky top-0 hidden h-dvh flex-col gap-6 overflow-y-auto rounded-l-[28px] bg-card p-[22px] lg:flex">
+      <aside className="sticky top-0 hidden h-dvh flex-col gap-5 overflow-y-auto rounded-l-[28px] bg-card p-[18px] lg:flex">
         <Link to="/" className="flex items-center gap-2.5">
           <Logo />
-          <span className="font-heading text-[22px]">Fullset</span>
+          <span className="font-heading text-[19px]">Fullset</span>
         </Link>
         <nav aria-label={t("layout.navigation")} className="grid gap-1">
           {tabs.map(({ to, label, Icon, active }) => (
@@ -60,7 +60,7 @@ export function Layout() {
               to={to}
               end={to === "/"}
               className={({ isActive }) =>
-                `flex items-center gap-3 rounded-full px-3.5 py-2.5 text-[14px] transition-colors duration-150 ${
+                `flex items-center gap-3 rounded-full px-3.5 py-2 text-[14px] transition-colors duration-150 ${
                   (active ?? isActive) ? "bg-primary-tint font-semibold text-primary-tint-foreground" : "text-muted-foreground hover:bg-background/60 hover:text-foreground"
                 }`
               }
@@ -71,11 +71,11 @@ export function Layout() {
           ))}
         </nav>
         <div className="mt-auto grid shrink-0 gap-2">
-          <Link to="/brocante" className="flex h-12 items-center justify-center gap-2.5 rounded-full bg-ink font-heading text-[15px] text-ink-foreground transition-transform duration-150 active:scale-[.98]">
+          <Link to="/brocante" className="flex h-11 items-center justify-center gap-2.5 rounded-full bg-ink font-heading text-[15px] text-ink-foreground transition-transform duration-150 active:scale-[.98]">
             <Barcode size={20} {...ICON} aria-hidden="true" />
             {t("brocante.scannerTitle")}
           </Link>
-          <Link to="/ajouter" className="flex h-12 items-center justify-center gap-2.5 rounded-full bg-primary font-heading text-[15px] text-primary-foreground transition-transform duration-150 active:scale-[.98]">
+          <Link to="/ajouter" className="flex h-11 items-center justify-center gap-2.5 rounded-full bg-primary font-heading text-[15px] text-primary-foreground transition-transform duration-150 active:scale-[.98]">
             <Plus size={20} {...ICON} aria-hidden="true" />
             {t("library.addGame")}
           </Link>
@@ -86,12 +86,12 @@ export function Layout() {
         </div>
       </aside>
 
-      <div className="mx-auto flex min-h-dvh w-full max-w-6xl min-w-0 flex-col px-[18px] lg:px-8">
+      <div className="mx-auto flex min-h-dvh w-full max-w-6xl min-w-0 flex-col px-4 lg:px-8">
         {/* En-tête (≤ 1023 px) */}
         <header className="flex items-center gap-2.5 pt-3.5 pb-2 lg:hidden">
           <Link to="/" className="flex items-center gap-2.5">
             <Logo />
-            <span className="font-heading text-[22px]">Fullset</span>
+            <span className="font-heading text-[19px]">Fullset</span>
           </Link>
           <div className="ml-auto flex items-center gap-2">
             <LanguageSwitcher onChoose={(language) => save({ language }).catch(() => {})} />
@@ -104,11 +104,11 @@ export function Layout() {
             {t("layout.offline")}
           </p>
         )}
-        <div className="flex-1 pt-3 pb-[140px] lg:pt-[22px] lg:pb-10">
+        <div className="flex-1 pt-3 pb-[120px] lg:pt-[18px] lg:pb-10">
           <Outlet />
         </div>
         {health && (
-          <footer className="pb-[110px] text-xs text-subtle-foreground lg:pb-6">
+          <footer className="pb-[92px] text-xs text-subtle-foreground lg:pb-6">
             {t("layout.footerVersion", { version: CLIENT_VERSION })}
             {health.version !== CLIENT_VERSION && CLIENT_VERSION !== "dev" && ` ${t("layout.footerUpdating", { version: health.version })}`} · {t("layout.footerSchema", { schema: health.schema })}
           </footer>
@@ -117,10 +117,10 @@ export function Layout() {
 
       {/* Dock d'actions (≤ 1023 px, bibliothèque seulement), au-dessus de la barre d'onglets */}
       {showDock && (
-        <div className="pointer-events-none fixed inset-x-0 bottom-[calc(78px+env(safe-area-inset-bottom))] z-30 flex justify-end gap-2.5 bg-gradient-to-t from-background from-70% to-transparent px-[18px] pt-10 pb-3 lg:hidden">
+        <div className="pointer-events-none fixed inset-x-0 bottom-[calc(62px+env(safe-area-inset-bottom))] z-30 flex justify-end gap-2.5 bg-gradient-to-t from-background from-70% to-transparent px-4 pt-8 pb-2.5 lg:hidden">
           <Link
             to="/brocante"
-            className="pointer-events-auto flex h-[52px] items-center gap-2.5 rounded-full bg-ink px-5 font-heading text-[15px] text-ink-foreground shadow-md transition-transform duration-150 active:scale-[.98]"
+            className="pointer-events-auto flex h-[46px] items-center gap-2.5 rounded-full bg-ink px-5 font-heading text-[15px] text-ink-foreground shadow-md transition-transform duration-150 active:scale-[.98]"
           >
             <Barcode size={20} {...ICON} aria-hidden="true" />
             {t("brocante.scannerTitle")}
@@ -129,7 +129,7 @@ export function Layout() {
             to={pathname === "/consoles" ? "/consoles/ajouter" : "/ajouter"}
             aria-label={pathname === "/consoles" ? t("hardware.addHardware") : t("library.addGame")}
             title={pathname === "/consoles" ? t("hardware.addHardware") : t("library.addGame")}
-            className="pointer-events-auto grid size-[52px] place-items-center rounded-full bg-primary text-primary-foreground shadow-md transition-transform duration-150 active:scale-[.98]"
+            className="pointer-events-auto grid size-[46px] place-items-center rounded-full bg-primary text-primary-foreground shadow-md transition-transform duration-150 active:scale-[.98]"
           >
             <Plus size={24} {...ICON} aria-hidden="true" />
           </Link>
@@ -139,16 +139,16 @@ export function Layout() {
       {/* Barre d'onglets (≤ 1023 px) */}
       <nav
         aria-label={t("layout.navigation")}
-        className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 rounded-t-[28px] bg-card px-2.5 pt-2 pb-[max(16px,env(safe-area-inset-bottom))] lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 rounded-t-[24px] bg-card px-2.5 pt-1.5 pb-[max(10px,env(safe-area-inset-bottom))] lg:hidden"
       >
         {tabs.map(({ to, label, Icon, active }) => (
-          <NavLink key={to} to={to} end={to === "/"} className="flex min-h-[44px] min-w-0 flex-col items-center gap-[3px] text-[11px]">
+          <NavLink key={to} to={to} end={to === "/"} className="flex min-h-[44px] min-w-0 flex-col items-center gap-0.5 text-[11px]">
             {({ isActive }) => {
               const on = active ?? isActive
               return (
                 <>
-                  <span className={`rounded-full px-4 py-1 transition-colors duration-150 ${on ? "bg-primary-tint text-primary-tint-foreground" : "text-muted-foreground"}`}>
-                    <Icon size={22} {...ICON} aria-hidden="true" />
+                  <span className={`rounded-full px-3.5 py-0.5 transition-colors duration-150 ${on ? "bg-primary-tint text-primary-tint-foreground" : "text-muted-foreground"}`}>
+                    <Icon size={20} {...ICON} aria-hidden="true" />
                   </span>
                   <span className={`max-w-full truncate ${on ? "font-semibold text-primary-text" : "text-muted-foreground"}`}>{label}</span>
                 </>

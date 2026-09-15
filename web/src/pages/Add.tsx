@@ -173,7 +173,7 @@ export default function Add() {
         <BackBar onBack={() => setManual(false)} label={t("add.backToIgdbLabel")}>
           <Step n={2} />
         </BackBar>
-        <h1 className="text-[26px]">{t("add.manualHeading")}</h1>
+        <h1 className="text-[22px]">{t("add.manualHeading")}</h1>
         <Field label={t("add.title")}>
           <input className={inputClass} autoFocus value={manualTitle} onChange={(e) => setManualTitle(e.target.value)} />
         </Field>
@@ -184,7 +184,7 @@ export default function Add() {
         <button
           disabled={!manualTitle.trim() || !otherPlatform.trim()}
           onClick={() => setChoice({ candidate: null, title: manualTitle.trim(), platform: otherPlatform.trim() })}
-          className="h-[54px] w-full rounded-full bg-primary font-heading text-[17px] text-primary-foreground shadow-md transition-transform duration-150 active:scale-[.98] disabled:opacity-45"
+          className="h-[48px] w-full rounded-full bg-primary font-heading text-[17px] text-primary-foreground shadow-md transition-transform duration-150 active:scale-[.98] disabled:opacity-45"
         >
           {t("add.continue")}
         </button>
@@ -195,13 +195,13 @@ export default function Add() {
   return (
     <div className="mx-auto max-w-2xl space-y-4">
       <div className="flex items-baseline justify-between gap-3">
-        <h1 className="text-[36px]">{t("add.heading")}</h1>
+        <h1 className="text-[29px]">{t("add.heading")}</h1>
         <Step n={1} />
       </div>
       {scanning && <Scanner title={t("add.scanTitle")} onDetected={onScan} onClose={() => setScanning(false)} />}
       <button
         onClick={() => setScanning(true)}
-        className="flex h-[52px] w-full items-center justify-center gap-2.5 rounded-full bg-ink px-5 font-heading text-[15px] text-ink-foreground shadow-md transition-transform duration-150 active:scale-[.98]"
+        className="flex h-[46px] w-full items-center justify-center gap-2.5 rounded-full bg-ink px-5 font-heading text-[15px] text-ink-foreground shadow-md transition-transform duration-150 active:scale-[.98]"
       >
         <Barcode size={20} {...ICON} aria-hidden="true" />
         {t("add.scanButton")}

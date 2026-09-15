@@ -70,7 +70,7 @@ export default function Steam() {
         {t("layout.settings")}
       </Link>
       <div>
-        <h1 className="text-[36px]">{t("steam.title")}</h1>
+        <h1 className="text-[29px]">{t("steam.title")}</h1>
         <p className="mt-1 text-[13px] text-muted-foreground">
           {t("steam.intro", { missing: items ? t("steam.missing", { count: items.length }) : t("steam.loading") })}
         </p>
@@ -85,13 +85,13 @@ export default function Steam() {
           <button
             type="button"
             onClick={() => setPicked((p) => (allShownPicked ? new Set([...p].filter((a) => !shown.some((i) => i.appid === a))) : new Set([...p, ...shown.map((i) => i.appid)])))}
-            className="min-h-12 shrink-0 rounded-full bg-card px-4 text-[13px] font-semibold"
+            className="min-h-11 shrink-0 rounded-full bg-card px-4 text-[13px] font-semibold"
           >
             {allShownPicked ? t("steam.uncheckAll") : t("steam.checkAll")}
           </button>
         </div>
       )}
-      {items && items.length === 0 && <p className="rounded-card bg-card p-5 text-[13px] text-muted-foreground">{t("steam.allThere")}</p>}
+      {items && items.length === 0 && <p className="rounded-card bg-card p-4 text-[13px] text-muted-foreground">{t("steam.allThere")}</p>}
 
       <ul>
         {shown.map((i) => {
@@ -125,12 +125,12 @@ export default function Steam() {
       </ul>
 
       {picked.size > 0 && (
-        <div className="fixed inset-x-0 bottom-[calc(78px+env(safe-area-inset-bottom))] z-20 bg-gradient-to-t from-background from-70% to-transparent px-[18px] pt-8 pb-3 lg:bottom-0 lg:left-[280px] lg:px-8 lg:pb-6">
+        <div className="fixed inset-x-0 bottom-[calc(78px+env(safe-area-inset-bottom))] z-20 bg-gradient-to-t from-background from-70% to-transparent px-4 pt-8 pb-3 lg:bottom-0 lg:left-[280px] lg:px-8 lg:pb-6">
           <div className="mx-auto max-w-2xl">
             <button
               onClick={add}
               disabled={busy}
-              className="min-h-[54px] w-full rounded-full bg-primary px-5 font-heading text-[16px] text-primary-foreground shadow-md transition-transform duration-150 active:scale-[.98] disabled:opacity-45"
+              className="min-h-[48px] w-full rounded-full bg-primary px-5 font-heading text-[16px] text-primary-foreground shadow-md transition-transform duration-150 active:scale-[.98] disabled:opacity-45"
             >
               {busy ? t("steam.adding") : t("steam.addGames", { count: picked.size })}
             </button>

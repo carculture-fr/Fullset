@@ -24,7 +24,7 @@ export default function Settings() {
   const { t } = useTranslation()
   return (
     <div className="mx-auto max-w-2xl space-y-4 pb-4 lg:space-y-5">
-      <h1 className="text-[36px]">{t("settings.title")}</h1>
+      <h1 className="text-[29px]">{t("settings.title")}</h1>
       <Profile />
       <DisplaySection />
       <Section title={t("settings.services.title")} note={t("settings.services.note")}>
@@ -45,8 +45,8 @@ export default function Settings() {
 /** Une section = une carte 24 px, titre en Caprasimo 20 px. */
 function Section({ title, note, children }: { title: string; note?: string; children: ReactNode }) {
   return (
-    <section className="rounded-card bg-card p-5 sm:p-6">
-      <h2 className="text-[20px]">{title}</h2>
+    <section className="rounded-card bg-card p-4 sm:p-5">
+      <h2 className="text-[18px]">{title}</h2>
       {note && <p className="mt-1 text-[13px] text-muted-foreground">{note}</p>}
       <div className="mt-5">{children}</div>
     </section>
@@ -336,7 +336,7 @@ function ListsManager() {
         className="mt-4 flex gap-2"
       >
         <input className={`${inputClass} min-w-0 flex-1`} placeholder={t("settings.lists.newValue")} value={draft} onChange={(e) => setDraft(e.target.value)} />
-        <button disabled={!draft.trim()} className={`${primaryButton} min-h-12`}>
+        <button disabled={!draft.trim()} className={`${primaryButton} min-h-11`}>
           {t("common.add")}
         </button>
       </form>

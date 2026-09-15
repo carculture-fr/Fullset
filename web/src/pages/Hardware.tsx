@@ -53,7 +53,7 @@ export default function Hardware() {
   }, [items])
   const flat = useMemo(() => (items && sort !== "plateforme" ? sortHardware(items, sort) : []), [items, sort])
 
-  const title = <h1 className="text-[36px] leading-[1.1]">{t("layout.library")}</h1>
+  const title = <h1 className="text-[29px] leading-[1.1]">{t("layout.library")}</h1>
   if (error) {
     return (
       <div>
@@ -132,7 +132,7 @@ export default function Hardware() {
       {items.length === 0 ? (
         <div className="py-12 text-center text-muted-foreground">
           <p>{t("hardware.empty")}</p>
-          <Link to="/consoles/ajouter" className="mt-5 inline-flex h-12 items-center rounded-full bg-primary px-6 font-heading text-[15px] text-primary-foreground">
+          <Link to="/consoles/ajouter" className="mt-5 inline-flex h-11 items-center rounded-full bg-primary px-6 font-heading text-[15px] text-primary-foreground">
             {t("hardware.addConsole")}
           </Link>
         </div>

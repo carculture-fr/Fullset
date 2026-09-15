@@ -38,7 +38,7 @@ export default function Wishlist() {
     <div className="mx-auto max-w-2xl space-y-5 pb-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-[36px]">{t("wishlist.title")}</h1>
+          <h1 className="text-[29px]">{t("wishlist.title")}</h1>
           <p className="mt-1 text-[13px] text-muted-foreground">
             {t("wishlist.games", { count: items.length })}
             {budget > 0 && (
@@ -177,9 +177,9 @@ function AddWish({ onCancel, onSaved }: { onCancel: () => void; onSaved: () => v
   }
 
   return (
-    <section className="space-y-4 rounded-card bg-card p-5">
+    <section className="space-y-4 rounded-card bg-card p-4">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-[20px]">{t("wishlist.newWish")}</h2>
+        <h2 className="text-[18px]">{t("wishlist.newWish")}</h2>
         <button onClick={onCancel} className={ghostButton}>
           {t("common.cancel")}
         </button>
@@ -223,7 +223,7 @@ function AddWish({ onCancel, onSaved }: { onCancel: () => void; onSaved: () => v
             </Field>
           </div>
           <ErrorNote message={error} />
-          <button className={`${primaryButton} min-h-[54px] w-full text-[16px]`}>{t("wishlist.addToList")}</button>
+          <button className={`${primaryButton} min-h-[48px] w-full text-[16px]`}>{t("wishlist.addToList")}</button>
         </form>
       )}
     </section>

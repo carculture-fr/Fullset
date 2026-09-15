@@ -91,10 +91,10 @@ export default function App() {
   if (!me && unreachable) {
     return (
       <main className="flex min-h-dvh items-center justify-center px-4 py-8">
-        <div className="flex w-full max-w-[440px] flex-col items-center gap-5 rounded-[28px] bg-card p-6 text-center shadow-sm sm:p-8">
+        <div className="flex w-full max-w-[440px] flex-col items-center gap-5 rounded-[28px] bg-card p-5 text-center shadow-sm sm:p-8">
           <Logo size={48} />
           <p className="text-[15px] text-muted-foreground">{t("app.unreachable")}</p>
-          <button onClick={refresh} className="inline-flex min-h-12 items-center rounded-full bg-primary px-6 font-heading text-[16px] text-primary-foreground transition-[filter,transform] duration-150 hover:brightness-95 active:scale-[.98]">
+          <button onClick={refresh} className="inline-flex min-h-11 items-center rounded-full bg-primary px-6 font-heading text-[16px] text-primary-foreground transition-[filter,transform] duration-150 hover:brightness-95 active:scale-[.98]">
             {t("common.retry")}
           </button>
         </div>
@@ -123,10 +123,10 @@ function NotFound() {
   return (
     <div className="flex flex-col items-center py-16 text-center">
       <div aria-hidden="true" className="aspect-[3/4] w-[96px] rounded-[12px] border-[1.5px] border-dashed border-border-strong bg-card" />
-      <h1 className="mt-6 text-[26px]">{t("app.notFound")}</h1>
+      <h1 className="mt-6 text-[22px]">{t("app.notFound")}</h1>
       <Link
         to="/"
-        className="mt-5 inline-flex min-h-12 items-center rounded-full bg-primary px-6 font-heading text-[16px] text-primary-foreground transition-[filter,transform] duration-150 hover:brightness-95 active:scale-[.98]"
+        className="mt-5 inline-flex min-h-11 items-center rounded-full bg-primary px-6 font-heading text-[16px] text-primary-foreground transition-[filter,transform] duration-150 hover:brightness-95 active:scale-[.98]"
       >
         {t("app.backToLibrary")}
       </Link>

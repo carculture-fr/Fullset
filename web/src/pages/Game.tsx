@@ -111,7 +111,7 @@ export default function Game() {
         <div className="contents lg:col-start-2 lg:row-start-1 lg:block">
           <header className="col-start-2 row-start-1 min-w-0 self-end">
             <div className="text-[11px] tracking-[0.08em] text-primary-text uppercase">{[game.platform, year].filter(Boolean).join(" · ")}</div>
-            <h1 className="mt-1.5 text-[26px] leading-[1.05] break-words lg:text-[40px] lg:leading-[1.02]">{game.title}</h1>
+            <h1 className="mt-1.5 text-[22px] leading-[1.05] break-words lg:text-[32px] lg:leading-[1.02]">{game.title}</h1>
             {shortMeta.length > 0 && (
               <div className="mt-2 text-[12px] text-muted-foreground lg:hidden">
                 {shortMeta.map((line) => (
@@ -126,7 +126,7 @@ export default function Game() {
 
         <section className="col-span-2 row-start-4 lg:col-span-1 lg:col-start-3 lg:row-start-1">
           <div className="mb-3 flex items-center gap-2.5">
-            <h2 className="text-[20px]">{t("game.copiesHeading", { count: game.copies.length })}</h2>
+            <h2 className="text-[18px]">{t("game.copiesHeading", { count: game.copies.length })}</h2>
             <span className="num rounded-full bg-card px-2.5 py-0.5 text-[12px] text-muted-foreground">{game.copies.length}</span>
             <Link to={`/jeux/${game.id}/ajouter`} className="ml-auto flex min-h-11 items-center text-[14px] font-semibold text-primary-text hover:underline">
               {t("game.addCopy")}

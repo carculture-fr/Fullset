@@ -9,7 +9,7 @@ import { LANGUAGES, chooseLanguage, currentLanguage } from "@/lib/i18n"
 
 export const authField = inputClass
 export const authButton =
-  "inline-flex min-h-12 w-full items-center justify-center rounded-full bg-primary px-5 font-heading text-[16px] text-primary-foreground transition-[filter,transform] duration-150 hover:brightness-95 active:scale-[.98] disabled:opacity-45"
+  "inline-flex min-h-11 w-full items-center justify-center rounded-full bg-primary px-5 font-heading text-[16px] text-primary-foreground transition-[filter,transform] duration-150 hover:brightness-95 active:scale-[.98] disabled:opacity-45"
 
 /**
  * Cadre commun à la connexion et à l'assistant de premier lancement : carte 28 px centrée,
@@ -22,10 +22,10 @@ export function AuthFrame({ title, children }: { title: string; children: ReactN
         <LanguageSwitcher />
         <ThemeToggle />
       </div>
-      <div className="w-full max-w-[440px] space-y-5 rounded-[28px] bg-card p-6 shadow-sm sm:p-8">
+      <div className="w-full max-w-[440px] space-y-5 rounded-[28px] bg-card p-5 shadow-sm sm:p-8">
         <div className="space-y-4">
           <Logo size={48} />
-          <h1 className="text-[32px]">{title}</h1>
+          <h1 className="text-[27px]">{title}</h1>
         </div>
         {children}
       </div>

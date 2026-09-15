@@ -143,7 +143,7 @@ export function Viewfinder({
           </>
         )}
         {error && <p className="absolute inset-0 grid place-items-center px-8 text-center text-[14px] leading-snug text-[#f7f3ea]/85">{error}</p>}
-        {!active && !error && idle && <div className="absolute inset-0 grid place-items-center bg-[rgba(32,30,29,0.55)] p-6">{idle}</div>}
+        {!active && !error && idle && <div className="absolute inset-0 grid place-items-center bg-[rgba(32,30,29,0.55)] p-5">{idle}</div>}
         {overlay && <div className="absolute inset-x-3 top-3 flex justify-center">{overlay}</div>}
       </div>
       <p className="mt-[18px] text-center text-[15px] text-[#f7f3ea]/75">{hint ?? t("scanner.frame")}</p>
@@ -169,7 +169,7 @@ export function ManualEntry({ onDetected }: { onDetected: (ean: string) => void 
     <form onSubmit={submit} className="mt-[18px]">
       <div className="flex gap-2">
         <input
-          className="min-h-[52px] min-w-0 flex-1 rounded-full bg-white/10 px-5 font-mono text-base tracking-[0.08em] text-[#f7f3ea] outline-none transition-shadow duration-150 placeholder:text-[#f7f3ea]/45 focus:shadow-[0_0_0_3px_#aebf92]"
+          className="min-h-[46px] min-w-0 flex-1 rounded-full bg-white/10 px-5 font-mono text-base tracking-[0.08em] text-[#f7f3ea] outline-none transition-shadow duration-150 placeholder:text-[#f7f3ea]/45 focus:shadow-[0_0_0_3px_#aebf92]"
           inputMode="numeric"
           autoComplete="off"
           aria-label={t("scanner.manualPlaceholder")}
@@ -185,7 +185,7 @@ export function ManualEntry({ onDetected }: { onDetected: (ean: string) => void 
           disabled={!manual.trim()}
           aria-label={t("scanner.ok")}
           title={t("scanner.ok")}
-          className="grid size-[52px] shrink-0 place-items-center rounded-full bg-[#f7f3ea] text-[#201e1d] transition-[opacity,transform] duration-150 active:scale-[.98] disabled:opacity-45"
+          className="grid size-[46px] shrink-0 place-items-center rounded-full bg-[#f7f3ea] text-[#201e1d] transition-[opacity,transform] duration-150 active:scale-[.98] disabled:opacity-45"
         >
           <Check size={22} {...ICON} aria-hidden="true" />
         </button>
@@ -213,7 +213,7 @@ export function ScannerHeader({ title, titleId, onClose, children }: { title: st
       >
         <X size={18} {...ICON} aria-hidden="true" />
       </button>
-      <h2 id={titleId} className="min-w-0 truncate font-heading text-[20px]">
+      <h2 id={titleId} className="min-w-0 truncate font-heading text-[18px]">
         {title}
       </h2>
       {children && <div className="ml-auto shrink-0">{children}</div>}
@@ -229,7 +229,7 @@ export function Scanner({ onDetected, onClose, title: titleProp }: Props) {
   const title = titleProp ?? t("scanner.defaultTitle")
   return (
     <div role="dialog" aria-modal="true" aria-label={title} className={`fixed inset-0 z-50 overflow-y-auto overscroll-contain ${darkScreen}`}>
-      <div className="mx-auto flex min-h-dvh max-w-[480px] flex-col px-[18px] pb-[max(22px,env(safe-area-inset-bottom))]">
+      <div className="mx-auto flex min-h-dvh max-w-[480px] flex-col px-4 pb-[max(22px,env(safe-area-inset-bottom))]">
         <ScannerHeader title={title} onClose={onClose} />
         <div className="mt-[22px]">
           <Viewfinder active onDetected={onDetected} />
