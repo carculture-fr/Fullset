@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs"
 import path from "node:path"
 import { defineConfig } from "vite"
 import react from "@vitejs/plugin-react"
@@ -10,7 +11,14 @@ const offlineApi = ({ url }: { url: URL }) =>
   ["/api/library", "/api/hardware", "/api/lists", "/api/barcodes", "/api/wishlist", "/api/stats", "/api/stats/summary", "/api/auth/me", "/api/health", "/api/preferences"].includes(url.pathname) ||
   /^\/api\/(games|hardware)\/\d+$/.test(url.pathname)
 
+// Même version que le serveur : celle du tag, sinon celle du package.json racine.
+const version =
+  process.env.VITE_APP_VERSION && process.env.VITE_APP_VERSION !== "dev"
+    ? process.env.VITE_APP_VERSION
+    : (JSON.parse(readFileSync(path.resolve(import.meta.dirname, "../package.json"), "utf8")) as { version?: string }).version ?? "dev"
+
 export default defineConfig({
+  define: { "import.meta.env.VITE_APP_VERSION": JSON.stringify(version) },
   plugins: [
     react(),
     tailwindcss(),

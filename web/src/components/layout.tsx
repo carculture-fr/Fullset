@@ -7,11 +7,12 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { api, type Health } from "@/lib/api"
 import { CLIENT_VERSION, reloadIfOutdated } from "@/lib/pwa"
 
+// À 400 px, la navigation défile plutôt que de passer sous les icônes (« Souhaits » était masqué).
 const navClass = ({ isActive }: { isActive: boolean }) =>
-  `rounded-md px-2.5 py-1.5 ${isActive ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"}`
+  `shrink-0 whitespace-nowrap rounded-md px-2 py-1.5 sm:px-2.5 ${isActive ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground"}`
 
 const iconClass = ({ isActive }: { isActive: boolean }) =>
-  `flex size-9 items-center justify-center rounded-md hover:bg-muted hover:text-foreground ${isActive ? "bg-muted text-foreground" : "text-muted-foreground"}`
+  `flex size-8 shrink-0 items-center justify-center rounded-md hover:bg-muted hover:text-foreground sm:size-9 ${isActive ? "bg-muted text-foreground" : "text-muted-foreground"}`
 
 export function Layout() {
   const { t } = useTranslation()
@@ -34,7 +35,7 @@ export function Layout() {
           <img src="/icon.svg" alt="" className="size-7" />
           <span className="hidden sm:inline">Fullset</span>
         </Link>
-        <nav className="flex min-w-0 gap-1 text-sm">
+        <nav className="flex min-w-0 gap-0.5 overflow-x-auto text-sm [scrollbar-width:none] sm:gap-1">
           <Link to="/" className={navClass({ isActive: inLibrary })}>
             {t("layout.library")}
           </Link>
@@ -46,7 +47,7 @@ export function Layout() {
             {t("layout.wishlist")}
           </NavLink>
         </nav>
-        <div className="ml-auto flex items-center gap-1">
+        <div className="ml-auto flex shrink-0 items-center gap-0.5 sm:gap-1">
           <NavLink to="/brocante" aria-label={t("layout.brocante")} title={t("layout.brocante")} className={iconClass}>
             <BarcodeIcon />
           </NavLink>

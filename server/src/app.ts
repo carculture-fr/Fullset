@@ -1,6 +1,6 @@
 import express, { type NextFunction, type Request, type Response } from "express"
 import multer from "multer"
-import { existsSync } from "node:fs"
+import { existsSync, readFileSync } from "node:fs"
 import path from "node:path"
 
 import { checkCredentials, deleteOtherSessions, getAccount, setPassword, updateProfile, validatePassword, validateProfile } from "./account.js"
@@ -45,7 +45,16 @@ import { addWish, deleteWish, listWishlist, updateWish } from "./wishlist.js"
 import { getPreferences, setPreferences } from "./preferences.js"
 import { keepLanguage, languageMiddleware, msg } from "./i18n.js"
 
-export const APP_VERSION = process.env.APP_VERSION ?? "dev"
+// Version : celle du tag (APP_VERSION, posée par la CI), sinon celle du package.json racine
+// (image construite par `docker compose up --build`, développement).
+const packageVersion = () => {
+  try {
+    return (JSON.parse(readFileSync(path.resolve(import.meta.dirname, "../../package.json"), "utf8")) as { version?: string }).version ?? "dev"
+  } catch {
+    return "dev"
+  }
+}
+export const APP_VERSION = process.env.APP_VERSION && process.env.APP_VERSION !== "dev" ? process.env.APP_VERSION : packageVersion()
 
 export type AppDeps = {
   igdb?: IgdbClient | null
