@@ -1,4 +1,4 @@
-import { BarChart3, Barcode, Heart, LayoutGrid, Plus, SlidersHorizontal, WifiOff, type LucideIcon } from "lucide-react"
+import { BarChart3, Barcode, Heart, LayoutGrid, Plus, SlidersHorizontal, Target, WifiOff, type LucideIcon } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { Link, NavLink, Outlet, ScrollRestoration, useLocation } from "react-router-dom"
@@ -40,6 +40,7 @@ export function Layout() {
 
   const tabs: Array<{ to: string; label: string; Icon: LucideIcon; active?: boolean }> = [
     { to: "/", label: t("layout.library"), Icon: LayoutGrid, active: inLibrary },
+    { to: "/fullset", label: t("sets.title"), Icon: Target, active: pathname.startsWith("/fullset") },
     { to: "/stats", label: t("layout.stats"), Icon: BarChart3 },
     { to: "/souhaits", label: t("layout.wishlist"), Icon: Heart },
     { to: "/reglages", label: t("layout.settings"), Icon: SlidersHorizontal },
@@ -139,7 +140,7 @@ export function Layout() {
       {/* Barre d'onglets (≤ 1023 px) */}
       <nav
         aria-label={t("layout.navigation")}
-        className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 rounded-t-[24px] bg-card px-2.5 pt-1.5 pb-[max(10px,env(safe-area-inset-bottom))] lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 rounded-t-[24px] bg-card px-1.5 pt-1.5 pb-[max(10px,env(safe-area-inset-bottom))] lg:hidden"
       >
         {tabs.map(({ to, label, Icon, active }) => (
           <NavLink key={to} to={to} end={to === "/"} className="flex min-h-[44px] min-w-0 flex-col items-center gap-0.5 text-[11px]">

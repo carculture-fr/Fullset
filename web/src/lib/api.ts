@@ -62,6 +62,31 @@ export type BarcodeIdentify = {
   owned: Array<{ id: number; platform: string }>
 }
 
+/** Mode Fullset : une liste de référence par console, et ce qu'il en reste à trouver. */
+export type SetSummary = {
+  slug: string
+  source: string
+  name: string
+  platform: string
+  region: string | null
+  fetched_at: string
+  source_url: string | null
+  count: number
+  owned: number
+  missing_cents: number
+  total_cents: number
+}
+export type SetList = { slug: string; name: string; platform: string; region: string | null; source: string; saved: SetSummary | null }
+export type SetItem = {
+  position: number
+  title: string
+  url: string | null
+  price_cents: number | null
+  igdb_id: number | null
+  cover_url: string | null
+  owned_game_id: number | null
+}
+
 export type Summary = {
   games: number
   copies: number

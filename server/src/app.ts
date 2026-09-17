@@ -42,6 +42,8 @@ import { addValuation, deleteValuation } from "./valuations.js"
 import { canonicalPlatform, listPlatforms } from "./catalog.js"
 import { COMMONS_UA, CommonsError, commonsFile, imageOptions, isCommonsMedia, pickAutomatic, type CommonsImage } from "./commons.js"
 import { addWish, deleteWish, listWishlist, updateWish } from "./wishlist.js"
+import { CatalogSourceError, fetchSourceList, sourceList } from "./fullsetnet.js"
+import { availableSets, deleteSet, getSet, linkSetCovers, saveSet } from "./sets.js"
 import { getPreferences, setPreferences } from "./preferences.js"
 import { keepLanguage, languageMiddleware, msg } from "./i18n.js"
 
@@ -138,6 +140,36 @@ export function createApp(db: Db, dataDir: string, deps: AppDeps = {}) {
   app.get("/api/steam/candidates", (_req, res) => res.json({ items: steamCandidates(db) }))
   app.post("/api/steam/import", async (req, res) => {
     res.status(201).json(await importSteam(db, dataDir, services.igdb(), req.body?.appids, fetchImpl))
+  })
+
+  // --- Mode Fullset : listes de référence par console ---
+  app.get("/api/sets", (_req, res) => res.json({ lists: availableSets(db) }))
+  app.get("/api/sets/:slug", (req, res) => {
+    const found = getSet(db, String(req.params.slug))
+    if (!found) throw new NotFoundError(msg("sets.unknownList"))
+    res.json(found)
+  })
+  // Récupération chez la source, sur demande seulement : jamais de tâche de fond.
+  app.post("/api/sets/:slug/refresh", async (req, res) => {
+    const list = sourceList(req.params.slug)
+    if (!list) throw new NotFoundError(msg("sets.unknownList"))
+    try {
+      res.json({ set: saveSet(db, list, await fetchSourceList(list, fetchImpl)) })
+    } catch (err) {
+      if (!(err instanceof CatalogSourceError)) throw err
+      res.status(502).json({ error: err.message })
+    }
+  })
+  app.post("/api/sets/:slug/covers", async (req, res) => {
+    const igdb = services.igdb()
+    if (!igdb) throw new IgdbError(msg("sets.igdbNotConfigured"))
+    const result = await linkSetCovers(db, String(req.params.slug), igdb)
+    if (!result) throw new NotFoundError(msg("sets.unknownList"))
+    res.json(result)
+  })
+  app.delete("/api/sets/:slug", (req, res) => {
+    if (!deleteSet(db, String(req.params.slug))) throw new NotFoundError(msg("sets.unknownList"))
+    res.json({ ok: true })
   })
 
   // --- Codes-barres ---

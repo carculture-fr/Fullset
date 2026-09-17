@@ -20,6 +20,8 @@ import HardwareDetail from "@/pages/HardwareDetail"
 import HardwareEditor from "@/pages/HardwareEditor"
 import ImportLegacy from "@/pages/ImportLegacy"
 import Library from "@/pages/Library"
+import SetDetail from "@/pages/SetDetail"
+import Sets from "@/pages/Sets"
 import Settings from "@/pages/Settings"
 import Stats from "@/pages/Stats"
 import Steam from "@/pages/Steam"
@@ -39,6 +41,8 @@ const router = createBrowserRouter([
       { path: "jeux/:id/modifier", element: <EditGame /> },
       { path: "jeux/:id/ajouter", element: <CopyEditor /> },
       { path: "jeux/:id/exemplaires/:copyId", element: <CopyEditor /> },
+      { path: "fullset", element: <Sets /> },
+      { path: "fullset/:slug", element: <SetDetail /> },
       { path: "stats", element: <Stats /> },
       { path: "souhaits", element: <Wishlist /> },
       { path: "reglages", element: <Settings /> },

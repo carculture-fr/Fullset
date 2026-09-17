@@ -347,6 +347,32 @@ const MIGRATIONS: string[] = [
      value TEXT NOT NULL,
      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
    );`,
+
+  // Mode Fullset : une liste de référence par console (ce qui existe à collectionner), récupérée
+  // sur demande chez une source, et gardée ici. Le lien avec la collection se calcule à la lecture.
+  `CREATE TABLE sets (
+     slug TEXT PRIMARY KEY,
+     source TEXT NOT NULL,
+     name TEXT NOT NULL,
+     platform TEXT NOT NULL,
+     region TEXT,
+     fetched_at TEXT NOT NULL
+   );
+
+   CREATE TABLE set_items (
+     id INTEGER PRIMARY KEY,
+     set_slug TEXT NOT NULL REFERENCES sets(slug) ON DELETE CASCADE,
+     position INTEGER NOT NULL,
+     title TEXT NOT NULL,
+     norm_title TEXT NOT NULL,
+     url TEXT,
+     price_cents INTEGER,
+     igdb_id INTEGER,
+     cover_url TEXT,
+     UNIQUE (set_slug, position)
+   );
+
+   CREATE INDEX set_items_set ON set_items(set_slug);`,
 ]
 
 function sql(v: string | null) {

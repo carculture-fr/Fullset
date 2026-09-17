@@ -180,5 +180,13 @@
       "noAccount": "Aucun compte : ouvre Fullset dans le navigateur pour le créer.",
       "done": "Identifiant : {{username}}\nNouveau mot de passe : {{password}}\nChange-le dans Réglages → Sécurité après t'être connecté."
     }
+  },
+  "sets": {
+    "noRows": "Aucun jeu lu sur cette page : la source a changé de présentation.",
+    "unreachable": "Source injoignable : {{error}}",
+    "http": "La source a répondu {{status}}.",
+    "tooBig": "Page trop lourde pour être lue.",
+    "unknownList": "Liste inconnue.",
+    "igdbNotConfigured": "IGDB n'est pas configuré : les jaquettes ne peuvent pas être cherchées."
   }
 }

@@ -180,5 +180,13 @@
       "noAccount": "No account: open Fullset in the browser to create it.",
       "done": "Username: {{username}}\nNew password: {{password}}\nChange it in Settings → Security after signing in."
     }
+  },
+  "sets": {
+    "noRows": "No game found on that page: the source changed its layout.",
+    "unreachable": "Source unreachable: {{error}}",
+    "http": "The source answered {{status}}.",
+    "tooBig": "Page too large to read.",
+    "unknownList": "Unknown list.",
+    "igdbNotConfigured": "IGDB is not configured: covers cannot be looked up."
   }
 }
