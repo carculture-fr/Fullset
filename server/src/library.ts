@@ -98,7 +98,9 @@ export function listLibrary(db: Db): LibraryGame[] {
     if (list) list.push(copy)
     else byGame.set(game_id, [copy])
   }
-  return games.map(({ cover_file, ...g }) => ({ ...g, cover: coverPath(cover_file), copies: byGame.get(g.id) ?? [] }))
+  // Un jeu dont tous les exemplaires sont sortis quitte la bibliothèque ; sa fiche et son
+  // journal restent accessibles (depuis le journal, ou par son adresse).
+  return games.filter((g) => byGame.has(g.id)).map(({ cover_file, ...g }) => ({ ...g, cover: coverPath(cover_file), copies: byGame.get(g.id)! }))
 }
 
 export function getGame(db: Db, id: number): GameDetail | null {
