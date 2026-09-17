@@ -1,4 +1,5 @@
 import type { Db } from "./db.js"
+import { eventsByCopy, type CopyEvent } from "./events.js"
 import { LATEST_VALUE_SQL } from "./valuations.js"
 
 export type LibraryCopy = {
@@ -18,6 +19,9 @@ export type LibraryCopy = {
   purchase_date: string | null
   purchase_place: string | null
   tags: string | null
+  /** Sortie de la collection : « Vendu », « Prêté »… ; null tant que l'exemplaire est là. */
+  status: string | null
+  left_on: string | null
   /** Dernière estimation (la plus récente fait foi), ou null si jamais estimé. */
   value_cents: number | null
   valued_on: string | null
@@ -49,6 +53,8 @@ export type CopyDetail = LibraryCopy & {
   comment: string | null
   photos: Array<{ id: number; url: string }>
   valuations: Valuation[]
+  /** Sa vie : vente, don, prêt, panne… du plus récent au plus ancien. */
+  events: CopyEvent[]
 }
 
 export type GameDetail = Omit<LibraryGame, "copies"> & {
@@ -69,7 +75,7 @@ export type GameDetail = Omit<LibraryGame, "copies"> & {
 const coverPath = (file: string | null) => (file ? `/covers/${file}` : null)
 
 const COPY_COLUMNS = `id, title_as_entered, support, region, edition, content, condition_game, condition_box,
-  condition_manual, play_status, goal, quantity, price_cents, purchase_date, purchase_place, tags, ${LATEST_VALUE_SQL}`
+  condition_manual, play_status, goal, quantity, price_cents, purchase_date, purchase_place, tags, status, left_on, ${LATEST_VALUE_SQL}`
 
 /**
  * Toute la bibliothèque en une réponse : quelques centaines de jeux au plus, filtrés et
@@ -82,7 +88,9 @@ export function listLibrary(db: Db): LibraryGame[] {
        FROM games ORDER BY id`,
     )
     .all() as Array<Omit<LibraryGame, "cover" | "copies"> & { cover_file: string | null }>
-  const copies = db.prepare(`SELECT game_id, ${COPY_COLUMNS} FROM copies ORDER BY id`).all() as Array<LibraryCopy & { game_id: number }>
+  // Un exemplaire sorti de la collection (vendu, donné, prêté…) ne compte plus dans la
+  // bibliothèque : il reste sur la fiche du jeu, avec son journal.
+  const copies = db.prepare(`SELECT game_id, ${COPY_COLUMNS} FROM copies WHERE status IS NULL ORDER BY id`).all() as Array<LibraryCopy & { game_id: number }>
 
   const byGame = new Map<number, LibraryCopy[]>()
   for (const { game_id, ...copy } of copies) {
@@ -113,6 +121,7 @@ export function getGame(db: Db, id: number): GameDetail | null {
   const valuations = db.prepare(
     "SELECT id, amount_cents, valued_on, source, note FROM valuations WHERE copy_id = ? ORDER BY valued_on DESC, id DESC",
   )
+  const events = eventsByCopy(db, id)
 
   const { cover_file, ...rest } = game
   return {
@@ -122,6 +131,7 @@ export function getGame(db: Db, id: number): GameDetail | null {
       ...c,
       photos: (photos.all(c.id) as Array<{ id: number; file: string }>).map((p) => ({ id: p.id, url: `/photos/${p.file}` })),
       valuations: valuations.all(c.id) as Valuation[],
+      events: events.get(c.id) ?? [],
     })),
   }
 }

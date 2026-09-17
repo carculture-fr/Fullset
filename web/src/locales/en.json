@@ -139,6 +139,19 @@
       "Textuel": "Text",
       "Audio": "Auditory",
       "Réalité virtuelle": "Virtual reality"
+    },
+    "eventKind": {
+      "Vendu": "Sold",
+      "Donné": "Given away",
+      "Échangé": "Traded",
+      "Prêté": "Lent",
+      "Perdu": "Lost",
+      "Volé": "Stolen",
+      "Hors service": "Out of order",
+      "Jeté": "Thrown away",
+      "Retour": "Back",
+      "Réparation": "Repair",
+      "Note": "Note"
     }
   },
   "sorts": {
@@ -937,5 +950,36 @@
     "importSubmit": "Import",
     "importDone": "{{count}} games imported, {{skipped}} lines skipped.",
     "importHint": "One title per line. Headers of ROM pack files are ignored."
+  },
+  "events": {
+    "title": "Copy history",
+    "add": "Exit or event",
+    "kind": "Reason",
+    "date": "Date",
+    "amount": "Amount (€)",
+    "person": "Who",
+    "personHint": "For a loan, a gift or a sale.",
+    "comment": "Comment",
+    "save": "Save",
+    "delete": "Delete the event",
+    "deleteConfirm": "Delete this entry from the history?",
+    "out": "Out of the collection: {{kind}} on {{date}}",
+    "lent": "Lent to {{person}} since {{date}}",
+    "back": "Back in the collection",
+    "empty": "Nothing yet.",
+    "soldFor": "sold {{amount}}",
+    "boughtFor": "bought {{amount}}",
+    "gain": "Gain {{amount}}",
+    "loss": "Loss {{amount}}"
+  },
+  "journal": {
+    "title": "History",
+    "subtitle": "What happened to your games: sales, gifts, loans, faults.",
+    "loading": "Loading…",
+    "empty": "Nothing yet. From a game page you can record a sale, a gift, a loan or a fault.",
+    "sold": "{{count}} sold",
+    "soldTotal": "{{amount}} received",
+    "result": "Difference with the purchase price: {{amount}}",
+    "open": "Open the game"
   }
 }

@@ -27,6 +27,8 @@ const copy = (id: number, over: Partial<LibraryCopy> = {}): LibraryCopy => ({
   play_status: "Pas commencé",
   goal: "À garder",
   quantity: 1,
+  status: null,
+  left_on: null,
   price_cents: 500,
   purchase_date: "2026-03-01",
   purchase_place: "Vinted",

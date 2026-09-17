@@ -17,6 +17,9 @@ export type LibraryCopy = {
   purchase_date: string | null
   purchase_place: string | null
   tags: string | null
+  /** Sortie de la collection (« Vendu », « Prêté »…) ; null tant que l'exemplaire est là. */
+  status: string | null
+  left_on: string | null
   value_cents: number | null
   valued_on: string | null
 }

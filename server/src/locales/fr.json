@@ -18,7 +18,8 @@
     "notAnAmount": "{{field}} : « {{value}} » n'est pas un montant.",
     "notADate": "{{field}} : « {{value}} » n'est pas une date.",
     "notProposed": "{{field}} : « {{value}} » n'est pas une valeur proposée.",
-    "notValid": "{{field}} : « {{value}} » n'est pas valide."
+    "notValid": "{{field}} : « {{value}} » n'est pas valide.",
+    "eventNotFound": "Événement introuvable."
   },
   "fields": {
     "support": "Support",
@@ -42,7 +43,9 @@
     "releaseDate": "Date de sortie",
     "targetPrice": "Prix cible",
     "amount": "Montant",
-    "date": "Date"
+    "date": "Date",
+    "eventKind": "Motif",
+    "eventDate": "Date de l'événement"
   },
   "app": {
     "noAccount": "Aucun compte.",

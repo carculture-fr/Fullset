@@ -39,6 +39,7 @@ import {
   updateHardware,
 } from "./hardware.js"
 import { addValuation, deleteValuation } from "./valuations.js"
+import { addEvent, deleteEvent, journal } from "./events.js"
 import { canonicalPlatform, listPlatforms } from "./catalog.js"
 import { COMMONS_UA, CommonsError, commonsFile, imageOptions, isCommonsMedia, pickAutomatic, type CommonsImage } from "./commons.js"
 import { addWish, deleteWish, listWishlist, updateWish } from "./wishlist.js"
@@ -410,6 +411,13 @@ export function createApp(db: Db, dataDir: string, deps: AppDeps = {}) {
   app.delete("/api/copies/:id", (req, res) => {
     res.json(deleteCopy(db, dataDir, id(req)))
   })
+
+  // --- Vie d'un exemplaire : vendu, donné, prêté, en panne… Une sortie le retire de la bibliothèque ---
+  app.post("/api/copies/:id/events", (req, res) => {
+    res.status(201).json({ event: addEvent(db, id(req), req.body ?? {}) })
+  })
+  app.delete("/api/events/:id", (req, res) => res.json(deleteEvent(db, id(req))))
+  app.get("/api/journal", (req, res) => res.json({ entries: journal(db, Number(req.query.limit) || 200) }))
 
   app.post("/api/copies/:id/photos", upload.single("file"), (req, res) => {
     if (!req.file) throw new ValidationError(msg("common.noImage"))

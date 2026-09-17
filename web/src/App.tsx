@@ -19,6 +19,7 @@ import Hardware from "@/pages/Hardware"
 import HardwareDetail from "@/pages/HardwareDetail"
 import HardwareEditor from "@/pages/HardwareEditor"
 import ImportLegacy from "@/pages/ImportLegacy"
+import Journal from "@/pages/Journal"
 import Library from "@/pages/Library"
 import SetDetail from "@/pages/SetDetail"
 import Sets from "@/pages/Sets"
@@ -41,6 +42,7 @@ const router = createBrowserRouter([
       { path: "jeux/:id/modifier", element: <EditGame /> },
       { path: "jeux/:id/ajouter", element: <CopyEditor /> },
       { path: "jeux/:id/exemplaires/:copyId", element: <CopyEditor /> },
+      { path: "journal", element: <Journal /> },
       { path: "fullset", element: <Sets /> },
       { path: "fullset/:slug", element: <SetDetail /> },
       { path: "stats", element: <Stats /> },

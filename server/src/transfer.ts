@@ -57,6 +57,8 @@ const COPY_COLUMNS = [
   "tags",
   "barcode",
   "comment",
+  "status",
+  "left_on",
 ] as const
 
 const WISH_COLUMNS = ["igdb_id", "platform", "title", "cover_url", "target_price_cents", "note", "created_at"] as const
@@ -64,8 +66,9 @@ const WISH_COLUMNS = ["igdb_id", "platform", "title", "cover_url", "target_price
 type GameRow = Record<(typeof GAME_COLUMNS)[number], string | number | null>
 type CopyRow = Record<(typeof COPY_COLUMNS)[number], string | number | null>
 type ValuationRow = { amount_cents: number; valued_on: string; source: string; note: string | null }
+type EventRow = { kind: string; happened_on: string; amount_cents: number | null; person: string | null; comment: string | null }
 type WishRow = Record<(typeof WISH_COLUMNS)[number], string | number | null>
-type Item = { game: GameRow; copies: Array<{ row: CopyRow; valuations: ValuationRow[] }> }
+type Item = { game: GameRow; copies: Array<{ row: CopyRow; valuations: ValuationRow[]; events: EventRow[] }> }
 
 // En-têtes du CSV, dans l'ordre. id_jeu regroupe les exemplaires d'un même jeu au réimport.
 const CSV_HEADERS: Array<[string, string]> = [
@@ -108,12 +111,16 @@ const CSV_HEADERS: Array<[string, string]> = [
   ["tags", "tags"],
   ["code_barres", "barcode"],
   ["commentaire", "comment"],
+  // Sortie de la collection (vendu, donné, prêté…) : le journal complet voyage dans le JSON.
+  // « date_sortie » est déjà pris par la date de sortie du jeu : les colonnes disent « sortie_… ».
+  ["sortie_motif", "status"],
+  ["sortie_date", "left_on"],
   // Seule la dernière estimation voyage dans le CSV ; l'historique complet est dans le JSON.
   ["valeur_estimée", "value"],
   ["date_estimation", "valued_on"],
 ]
 
-type ExportCopy = CopyRow & { id: number; valuations: ValuationRow[] }
+type ExportCopy = CopyRow & { id: number; valuations: ValuationRow[]; events: EventRow[] }
 type ExportGame = GameRow & { id: number; copies: ExportCopy[] }
 
 function readAll(db: Db): ExportGame[] {
@@ -122,9 +129,13 @@ function readAll(db: Db): ExportGame[] {
     CopyRow & { id: number; game_id: number }
   >
   const valuations = db.prepare("SELECT amount_cents, valued_on, source, note FROM valuations WHERE copy_id = ? ORDER BY valued_on, id")
+  const events = db.prepare("SELECT kind, happened_on, amount_cents, person, comment FROM copy_events WHERE copy_id = ? ORDER BY happened_on, id")
   const byGame = new Map<number, ExportCopy[]>()
   for (const { game_id, ...c } of copies) {
-    byGame.set(game_id, [...(byGame.get(game_id) ?? []), { ...c, valuations: valuations.all(c.id) as ValuationRow[] }])
+    byGame.set(game_id, [
+      ...(byGame.get(game_id) ?? []),
+      { ...c, valuations: valuations.all(c.id) as ValuationRow[], events: events.all(c.id) as EventRow[] },
+    ])
   }
   // Une jaquette photographiée n'a pas d'adresse : elle ne voyage pas dans l'export.
   return games.map((g) => ({ ...g, cover_source: g.cover_url ? g.cover_source : null, copies: byGame.get(g.id) ?? [] }))
@@ -239,6 +250,8 @@ function copyFrom(r: Record<string, unknown>, priceCents: number | null): CopyRo
     play_status: text(r.play_status),
     goal: text(r.goal),
     quantity: num(r.quantity) ?? 1,
+    status: text(r.status),
+    left_on: isoDate(r.left_on),
     price_cents: priceCents,
     purchase_date: isoDate(r.purchase_date),
     purchase_place: text(r.purchase_place),
@@ -270,6 +283,8 @@ function itemsFromCsv(content: string): Item[] {
     item.copies.push({
       row: copyFrom(r, toCents(text(r.price))),
       valuations: value === null ? [] : [{ amount_cents: value, valued_on: isoDate(r.valued_on) ?? todayIso(), source: "manuel", note: null }],
+      // Le CSV porte l'état de sortie, pas le journal : lui seul voyage dans le JSON.
+      events: [],
     })
     items.set(key, item)
   })
@@ -278,7 +293,11 @@ function itemsFromCsv(content: string): Item[] {
 
 type JsonExport = {
   format?: string
-  games?: Array<Record<string, unknown> & { copies?: Array<Record<string, unknown> & { valuations?: Array<Record<string, unknown>> }> }>
+  games?: Array<
+    Record<string, unknown> & {
+      copies?: Array<Record<string, unknown> & { valuations?: Array<Record<string, unknown>>; events?: Array<Record<string, unknown>> }>
+    }
+  >
   wishlist?: Array<Record<string, unknown>>
   hardware?: Array<Record<string, unknown> & { valuations?: Array<Record<string, unknown>> }>
 }
@@ -294,6 +313,9 @@ function itemsFromJson(data: JsonExport): { items: Item[]; wishlist: WishRow[]; 
       valuations: (c.valuations ?? [])
         .filter((v) => typeof v.amount_cents === "number" && isoDate(v.valued_on))
         .map((v) => ({ amount_cents: v.amount_cents as number, valued_on: isoDate(v.valued_on)!, source: text(v.source) ?? "manuel", note: text(v.note) })),
+      events: (c.events ?? [])
+        .filter((e) => text(e.kind) && isoDate(e.happened_on))
+        .map((e) => ({ kind: text(e.kind)!, happened_on: isoDate(e.happened_on)!, amount_cents: num(e.amount_cents), person: text(e.person), comment: text(e.comment) })),
     })),
   }))
   const wishlist = (data.wishlist ?? [])
@@ -338,15 +360,19 @@ function insertAll(db: Db, items: Item[], wishlist: WishRow[] = [], hardware: Hw
   const insertValuation = db.prepare(
     "INSERT INTO valuations (copy_id, amount_cents, valued_on, source, note) VALUES (@copy_id, @amount_cents, @valued_on, @source, @note)",
   )
+  const insertEvent = db.prepare(
+    "INSERT INTO copy_events (copy_id, kind, happened_on, amount_cents, person, comment) VALUES (@copy_id, @kind, @happened_on, @amount_cents, @person, @comment)",
+  )
   const insertWish = db.prepare(`INSERT INTO wishlist (${WISH_COLUMNS.join(", ")}) VALUES (${WISH_COLUMNS.map((c) => `@${c}`).join(", ")})`)
   const report: TransferReport = { games: 0, copies: 0, totalCents: 0 }
   db.transaction(() => {
     for (const item of items) {
       const gameId = Number(insertGame.run(item.game).lastInsertRowid)
       report.games++
-      for (const { row, valuations } of item.copies) {
+      for (const { row, valuations, events } of item.copies) {
         const copyId = Number(insertCopy.run({ ...row, game_id: gameId }).lastInsertRowid)
         for (const v of valuations) insertValuation.run({ ...v, copy_id: copyId })
+        for (const e of events) insertEvent.run({ ...e, copy_id: copyId })
         report.copies++
         report.totalCents += (row.price_cents as number | null) ?? 0
       }

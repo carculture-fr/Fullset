@@ -1,5 +1,6 @@
 import type { Db } from "./db.js"
 import { CONDITIONS, CONTENTS, DIGITAL, MANUAL_CONDITIONS, PLAY_STATUSES } from "./domain.js"
+import { exitStats, type ExitStats } from "./events.js"
 import { hardwareStats, type HardwareStats } from "./hardware.js"
 
 export type Summary = {
@@ -19,7 +20,7 @@ export function summary(db: Db): Summary {
       `SELECT count(DISTINCT game_id) AS games, count(*) AS copies,
               sum(support <> ?) AS physical, sum(support = ?) AS digital,
               coalesce(sum(price_cents), 0) AS spentCents
-       FROM copies`,
+       FROM copies WHERE status IS NULL`,
     )
     .get(DIGITAL, DIGITAL) as Omit<Summary, "byPlatform">
   const byPlatform = db
@@ -27,6 +28,7 @@ export function summary(db: Db): Summary {
       `SELECT g.platform, count(DISTINCT g.id) AS games, count(c.id) AS copies,
               coalesce(sum(c.price_cents), 0) AS spentCents
        FROM copies c JOIN games g ON g.id = c.game_id
+       WHERE c.status IS NULL
        GROUP BY g.platform ORDER BY spentCents DESC, copies DESC, g.platform`,
     )
     .all() as Summary["byPlatform"]
@@ -49,6 +51,8 @@ export type Stats = Summary & {
   /** Dernière estimation de chaque exemplaire estimé, et ce que ces exemplaires ont coûté. */
   value: { estimatedCents: number; estimatedCopies: number; costOfEstimatedCents: number }
   wishlist: { count: number; targetCents: number }
+  /** Ce qui est sorti de la collection : vendu, donné, prêté… et ce que les ventes ont rapporté. */
+  exits: ExitStats
   /** Consoles et matériel, comptés à part : le total dépensé des jeux reste celui des jeux. */
   hardware: HardwareStats
 }
@@ -60,7 +64,7 @@ function breakdown(db: Db, column: string, where: string, params: unknown[], ord
   const rows = db
     .prepare(
       `SELECT ${column} AS label, count(*) AS count, coalesce(sum(price_cents), 0) AS spentCents
-       FROM copies ${where} GROUP BY ${column}`,
+       FROM copies ${where ? `${where} AND` : "WHERE"} status IS NULL GROUP BY ${column}`,
     )
     .all(...params) as Row[]
   const rank = (label: string | null) => {
@@ -78,7 +82,7 @@ function months(db: Db) {
   const rows = db
     .prepare(
       `SELECT substr(purchase_date, 1, 7) AS month, count(*) AS count, coalesce(sum(price_cents), 0) AS spentCents
-       FROM copies WHERE purchase_date IS NOT NULL GROUP BY month ORDER BY month`,
+       FROM copies WHERE purchase_date IS NOT NULL AND status IS NULL GROUP BY month ORDER BY month`,
     )
     .all() as Array<{ month: string; count: number; spentCents: number }>
   if (!rows.length) return []
@@ -105,11 +109,11 @@ export function stats(db: Db): Stats {
     .prepare(
       `SELECT coalesce(sum(CASE WHEN support = ? THEN 0 ELSE price_cents END), 0) AS physical,
               coalesce(sum(CASE WHEN support = ? THEN price_cents ELSE 0 END), 0) AS digital
-       FROM copies`,
+       FROM copies WHERE status IS NULL`,
     )
     .get(DIGITAL, DIGITAL) as { physical: number; digital: number }
   const undated = db
-    .prepare("SELECT count(*) AS count, coalesce(sum(price_cents), 0) AS spentCents FROM copies WHERE purchase_date IS NULL")
+    .prepare("SELECT count(*) AS count, coalesce(sum(price_cents), 0) AS spentCents FROM copies WHERE purchase_date IS NULL AND status IS NULL")
     .get() as { count: number; spentCents: number }
   const physical = ["WHERE support <> ?", [DIGITAL]] as const
   const value = db
@@ -117,7 +121,8 @@ export function stats(db: Db): Stats {
       `SELECT count(*) AS estimatedCopies, coalesce(sum(v.amount_cents), 0) AS estimatedCents,
               coalesce(sum(c.price_cents), 0) AS costOfEstimatedCents
        FROM copies c
-       JOIN valuations v ON v.id = (SELECT id FROM valuations WHERE copy_id = c.id ORDER BY valued_on DESC, id DESC LIMIT 1)`,
+       JOIN valuations v ON v.id = (SELECT id FROM valuations WHERE copy_id = c.id ORDER BY valued_on DESC, id DESC LIMIT 1)
+       WHERE c.status IS NULL`,
     )
     .get() as Stats["value"]
   const wishlist = db
@@ -126,6 +131,7 @@ export function stats(db: Db): Stats {
   return {
     value,
     wishlist,
+    exits: exitStats(db),
     hardware: hardwareStats(db),
     ...base,
     spentPhysicalCents: split.physical,

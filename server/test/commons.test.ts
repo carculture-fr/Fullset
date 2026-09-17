@@ -120,7 +120,7 @@ describe("recherche Commons", () => {
 })
 
 describe("image par défaut du matériel", () => {
-  it("migre le schéma", () => expect(schemaVersion(db)).toBe(14))
+  it("migre le schéma", () => expect(schemaVersion(db)).toBe(15))
 
   it("est posée seule à la création quand une image correspond", async () => {
     const { id } = await (await send("POST", "/api/hardware", { kind: "Console", platform: "PlayStation 2", color: "Noir" })).json()

@@ -122,6 +122,18 @@ export default function Stats() {
           </p>
         </section>
 
+        {/* Ce qui est sorti de la collection : le détail est dans le journal. */}
+        {s.exits.count > 0 && (
+          <Link to="/journal" className="min-w-0 rounded-card bg-card p-4 transition-colors duration-150 hover:bg-foreground/[.04]">
+            <p className={kicker}>{t("journal.title")}</p>
+            <div className={`${hero} num`}>{euros(s.exits.soldCents)}</div>
+            <p className="mt-2 text-[13px] text-muted-foreground">
+              {t("journal.sold", { count: s.exits.byKind.find((k) => k.label === "Vendu")?.count ?? 0 })} ·{" "}
+              {t("journal.result", { amount: euros(s.exits.soldCents - s.exits.costOfSoldCents) })}
+            </p>
+          </Link>
+        )}
+
         <section className="min-w-0 rounded-card bg-viz-bg p-4 text-viz-fg sm:p-4">
           <p className={`${kicker} text-[var(--viz-label)]`}>{t("stats.estimatedValue")}</p>
           {s.value.estimatedCopies === 0 ? (

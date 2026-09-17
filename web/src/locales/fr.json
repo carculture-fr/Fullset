@@ -139,6 +139,19 @@
       "Textuel": "Textuel",
       "Audio": "Audio",
       "Réalité virtuelle": "Réalité virtuelle"
+    },
+    "eventKind": {
+      "Vendu": "Vendu",
+      "Donné": "Donné",
+      "Échangé": "Échangé",
+      "Prêté": "Prêté",
+      "Perdu": "Perdu",
+      "Volé": "Volé",
+      "Hors service": "Hors service",
+      "Jeté": "Jeté",
+      "Retour": "Retour",
+      "Réparation": "Réparation",
+      "Note": "Note"
     }
   },
   "sorts": {
@@ -937,5 +950,36 @@
     "importSubmit": "Importer",
     "importDone": "{{count}} jeux importés, {{skipped}} lignes ignorées.",
     "importHint": "Un titre par ligne. Les en-têtes des fichiers de packs de ROM sont ignorés."
+  },
+  "events": {
+    "title": "Vie de l'exemplaire",
+    "add": "Sortie ou événement",
+    "kind": "Motif",
+    "date": "Date",
+    "amount": "Montant (€)",
+    "person": "À qui",
+    "personHint": "Pour un prêt, un don ou une vente.",
+    "comment": "Commentaire",
+    "save": "Enregistrer",
+    "delete": "Supprimer l'événement",
+    "deleteConfirm": "Supprimer cet événement du journal ?",
+    "out": "Sorti de la collection : {{kind}} le {{date}}",
+    "lent": "Prêté à {{person}} depuis le {{date}}",
+    "back": "Revenu dans la collection",
+    "empty": "Rien pour l'instant.",
+    "soldFor": "vendu {{amount}}",
+    "boughtFor": "acheté {{amount}}",
+    "gain": "Plus-value {{amount}}",
+    "loss": "Moins-value {{amount}}"
+  },
+  "journal": {
+    "title": "Journal",
+    "subtitle": "Ce qui est arrivé à tes jeux : ventes, dons, prêts, pannes.",
+    "loading": "Chargement…",
+    "empty": "Aucun événement pour l'instant. Depuis la fiche d'un jeu, tu peux noter une vente, un don, un prêt ou une panne.",
+    "sold": "{{count}} vendus",
+    "soldTotal": "{{amount}} encaissés",
+    "result": "Différence avec le prix d'achat : {{amount}}",
+    "open": "Voir le jeu"
   }
 }

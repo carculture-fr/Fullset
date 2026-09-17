@@ -18,7 +18,8 @@
     "notAnAmount": "{{field}}: “{{value}}” is not an amount.",
     "notADate": "{{field}}: “{{value}}” is not a date.",
     "notProposed": "{{field}}: “{{value}}” is not one of the proposed values.",
-    "notValid": "{{field}}: “{{value}}” is not valid."
+    "notValid": "{{field}}: “{{value}}” is not valid.",
+    "eventNotFound": "Event not found."
   },
   "fields": {
     "support": "Format",
@@ -42,7 +43,9 @@
     "releaseDate": "Release date",
     "targetPrice": "Target price",
     "amount": "Amount",
-    "date": "Date"
+    "date": "Date",
+    "eventKind": "Reason",
+    "eventDate": "Event date"
   },
   "app": {
     "noAccount": "No account.",

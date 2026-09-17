@@ -8,6 +8,13 @@ export const PLAY_STATUSES = ["Pas commencé", "En cours", "Terminé", "Abandonn
 export const REGIONS = ["PAL (Europe)", "NTSC-U", "NTSC-J"] as const
 export const GOALS = ["À garder", "À vendre", "À échanger"] as const
 
+// La vie d'un exemplaire après l'achat. Une sortie le retire de la collection (il reste dans son
+// journal) ; « Retour » le fait revenir, par exemple à la fin d'un prêt.
+export const EXIT_KINDS = ["Vendu", "Donné", "Échangé", "Prêté", "Perdu", "Volé", "Hors service", "Jeté"] as const
+export const RETURN_KIND = "Retour"
+export const EVENT_KINDS = [...EXIT_KINDS, RETURN_KIND, "Réparation", "Note"] as const
+export const isExitKind = (kind: string): boolean => (EXIT_KINDS as readonly string[]).includes(kind)
+
 // Matériel : consoles, manettes et accessoires, décrits comme les exemplaires de jeux.
 export const HW_KINDS = ["Console", "Manette", "Accessoire"] as const
 export const HW_CONTENTS = ["Complet (boîte + notice)", "Avec boîte", "Sans boîte", "Non défini"] as const

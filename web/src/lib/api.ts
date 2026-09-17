@@ -120,6 +120,7 @@ export type Stats = Summary & {
   conditions: { game: Breakdown; box: Breakdown; manual: Breakdown }
   value: { estimatedCents: number; estimatedCopies: number; costOfEstimatedCents: number }
   wishlist: { count: number; targetCents: number }
+  exits: { byKind: Array<{ label: string; count: number; amountCents: number }>; count: number; soldCents: number; costOfSoldCents: number }
   hardware: {
     count: number
     spentCents: number
@@ -189,7 +190,22 @@ export type CopyDetail = LibraryCopy & {
   comment: string | null
   photos: Photo[]
   valuations: Valuation[]
+  /** Vie de l'exemplaire : vente, don, prêt, panne… du plus récent au plus ancien. */
+  events: CopyEvent[]
 }
+
+export type CopyEvent = {
+  id: number
+  copy_id: number
+  kind: string
+  happened_on: string
+  amount_cents: number | null
+  person: string | null
+  comment: string | null
+  created_at: string
+}
+
+export type JournalEntry = CopyEvent & { game_id: number; title: string; platform: string; cover: string | null; price_cents: number | null }
 
 export type GameDetail = {
   id: number

@@ -376,6 +376,24 @@ const MIGRATIONS: string[] = [
 
   // Mode Fullset : « je l'ai en ROM », d'après RomM, mis à jour au bouton console par console.
   `ALTER TABLE set_items ADD COLUMN in_romm INTEGER NOT NULL DEFAULT 0;`,
+
+  // La vie d'un exemplaire : vente, don, prêt, panne… Une sortie le retire de la collection
+  // (`copies.status`) sans rien effacer : son journal reste, et un retour le fait revenir.
+  `ALTER TABLE copies ADD COLUMN status TEXT;
+   ALTER TABLE copies ADD COLUMN left_on TEXT;
+
+   CREATE TABLE copy_events (
+     id INTEGER PRIMARY KEY,
+     copy_id INTEGER NOT NULL REFERENCES copies(id) ON DELETE CASCADE,
+     kind TEXT NOT NULL,
+     happened_on TEXT NOT NULL,
+     amount_cents INTEGER,
+     person TEXT,
+     comment TEXT,
+     created_at TEXT NOT NULL DEFAULT (datetime('now'))
+   );
+
+   CREATE INDEX copy_events_copy ON copy_events(copy_id);`,
 ]
 
 function sql(v: string | null) {
