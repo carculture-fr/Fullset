@@ -30,7 +30,8 @@ describe("vie d'un exemplaire", () => {
     expect(listLibrary(db)[0].copies).toHaveLength(1)
     addEvent(db, copyId, { kind: "Vendu", happened_on: "2026-03-02", amount: "20,00", person: "Léa", comment: "Vendu sur Vinted" })
 
-    expect(listLibrary(db)[0].copies).toHaveLength(0)
+    // Plus aucun exemplaire possédé : le jeu quitte la bibliothèque, mais sa fiche reste.
+    expect(listLibrary(db)).toHaveLength(0)
     const game = getGame(db, gameId)!
     expect(game.copies).toHaveLength(1)
     expect(game.copies[0]).toMatchObject({ status: "Vendu", left_on: "2026-03-02" })
@@ -53,7 +54,7 @@ describe("vie d'un exemplaire", () => {
   it("un prêt sort l'exemplaire, un retour le fait revenir", () => {
     const back = createCopy(db, gameId, { support: "Physique", price: "9,00" })
     addEvent(db, back, { kind: "Prêté", happened_on: "2026-04-01", person: "Sam" })
-    expect(listLibrary(db)[0].copies).toHaveLength(0)
+    expect(listLibrary(db)).toHaveLength(0)
 
     addEvent(db, back, { kind: "Retour", happened_on: "2026-05-01" })
     expect(listLibrary(db)[0].copies).toHaveLength(1)
