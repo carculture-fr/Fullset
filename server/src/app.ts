@@ -43,7 +43,8 @@ import { canonicalPlatform, listPlatforms } from "./catalog.js"
 import { COMMONS_UA, CommonsError, commonsFile, imageOptions, isCommonsMedia, pickAutomatic, type CommonsImage } from "./commons.js"
 import { addWish, deleteWish, listWishlist, updateWish } from "./wishlist.js"
 import { CatalogSourceError, fetchSourceList, sourceList } from "./fullsetnet.js"
-import { availableSets, deleteSet, getSet, linkSetCovers, saveSet } from "./sets.js"
+import { availableSets, deleteSet, getSet, linkSetCovers, markRomm, saveSet } from "./sets.js"
+import { fileSlug, parseRomsetList } from "./romset.js"
 import { getPreferences, setPreferences } from "./preferences.js"
 import { keepLanguage, languageMiddleware, msg } from "./i18n.js"
 
@@ -166,6 +167,26 @@ export function createApp(db: Db, dataDir: string, deps: AppDeps = {}) {
     const result = await linkSetCovers(db, String(req.params.slug), igdb)
     if (!result) throw new NotFoundError(msg("sets.unknownList"))
     res.json(result)
+  })
+  app.post("/api/sets/:slug/romm", async (req, res) => {
+    const romm = services.romm()
+    if (!romm) throw new ValidationError(msg("sets.rommNotConfigured"))
+    const result = await markRomm(db, String(req.params.slug), romm)
+    if (!result) throw new NotFoundError(msg("sets.unknownList"))
+    res.json(result)
+  })
+  // Liste venue d'un fichier (un `.nfo` de pack de ROM, ou un titre par ligne).
+  app.post("/api/sets/import", upload.single("file"), (req, res) => {
+    if (!req.file) throw new ValidationError(msg("sets.needFile"))
+    const name = String(req.body?.name ?? "").trim()
+    const platform = String(req.body?.platform ?? "").trim()
+    if (!name) throw new ValidationError(msg("sets.needName"))
+    if (!platform) throw new ValidationError(msg("sets.needPlatform"))
+    const { titles, skipped } = parseRomsetList(req.file.buffer.toString("utf8"))
+    if (!titles.length) throw new ValidationError(msg("sets.noTitles"))
+    const list = { slug: fileSlug(name), name, platform: canonicalPlatform(platform), region: null }
+    const items = titles.map((title, i) => ({ position: i + 1, title, url: null, price_cents: null }))
+    res.status(201).json({ set: saveSet(db, list, items, msg("sets.fileSource")), skipped })
   })
   app.delete("/api/sets/:slug", (req, res) => {
     if (!deleteSet(db, String(req.params.slug))) throw new NotFoundError(msg("sets.unknownList"))

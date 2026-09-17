@@ -187,6 +187,12 @@
     "http": "The source answered {{status}}.",
     "tooBig": "Page too large to read.",
     "unknownList": "Unknown list.",
-    "igdbNotConfigured": "IGDB is not configured: covers cannot be looked up."
+    "igdbNotConfigured": "IGDB is not configured: covers cannot be looked up.",
+    "rommNotConfigured": "RomM is not configured: your ROMs cannot be checked.",
+    "needFile": "No file received.",
+    "needName": "Give the list a name.",
+    "needPlatform": "Pick a console.",
+    "noTitles": "No title found in that file.",
+    "fileSource": "imported file"
   }
 }

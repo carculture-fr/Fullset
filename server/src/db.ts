@@ -373,6 +373,9 @@ const MIGRATIONS: string[] = [
    );
 
    CREATE INDEX set_items_set ON set_items(set_slug);`,
+
+  // Mode Fullset : « je l'ai en ROM », d'après RomM, mis à jour au bouton console par console.
+  `ALTER TABLE set_items ADD COLUMN in_romm INTEGER NOT NULL DEFAULT 0;`,
 ]
 
 function sql(v: string | null) {

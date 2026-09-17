@@ -1,4 +1,4 @@
-import { Heart, ImageDown, Plus } from "lucide-react"
+import { HardDrive, Heart, ImageDown, Plus } from "lucide-react"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { Link, useParams } from "react-router-dom"
@@ -71,6 +71,20 @@ export default function SetDetail() {
     }
   }
 
+  const checkRomm = async () => {
+    setBusy(true)
+    setError(null)
+    try {
+      const r = await send<{ matched: number; roms: number; platform: string | null }>("POST", `/api/sets/${slug}/romm`)
+      setNote(r.platform ? t("sets.rommDone", { matched: r.matched, roms: r.roms, platform: r.platform }) : t("sets.rommNone"))
+      await load()
+    } catch (err) {
+      setError(errorMessage(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const wish = async (item: SetItem) => {
     try {
       await send("POST", "/api/wishlist", { title: item.title, platform: set.platform, igdb_id: item.igdb_id, cover_url: item.cover_url })
@@ -126,6 +140,10 @@ export default function SetDetail() {
             {busy ? t("sets.coversRunning") : t("sets.covers")}
           </button>
         )}
+        <button type="button" onClick={checkRomm} disabled={busy} className="flex h-10 items-center gap-2 rounded-full bg-card px-4 text-[13px] font-semibold transition-colors duration-150 hover:bg-foreground/7 disabled:opacity-45">
+          <HardDrive size={16} {...ICON} aria-hidden="true" />
+          {busy ? t("sets.rommRunning") : t("sets.romm")}
+        </button>
       </div>
       {(error || note) && <div className="mt-2.5">{error ? <ErrorNote message={error} /> : <p className="text-[12px] text-muted-foreground">{note}</p>}</div>}
 
@@ -156,7 +174,12 @@ function SetCard({ item, platform, wished, onWish }: { item: SetItem; platform: 
         </div>
       </Link>
       <div className={`mt-1.5 line-clamp-2 text-[12px] leading-[1.25] ${owned ? "" : "text-muted-foreground"}`}>{item.title}</div>
-      {item.price_cents !== null && !owned && <div className="num text-[11px] text-subtle-foreground">{euros(item.price_cents)}</div>}
+      {item.price_cents !== null && !owned && (
+        <div className="num text-[11px] text-subtle-foreground">
+          {euros(item.price_cents)}
+          {item.in_romm && <span className="ml-1.5 rounded-full bg-primary-tint px-1.5 py-px font-sans text-[10px] font-semibold text-primary-tint-foreground">{t("sets.inRomm")}</span>}
+        </div>
+      )}
       {!owned && (
         <div className="mt-1 flex gap-1">
           <Link to={add} className="flex min-h-8 flex-1 items-center justify-center gap-1 rounded-full bg-card text-[11px] font-semibold transition-colors duration-150 hover:bg-foreground/7">

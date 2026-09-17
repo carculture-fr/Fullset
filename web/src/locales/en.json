@@ -924,6 +924,18 @@
     "sortName": "Name",
     "sortPrice": "Highest value",
     "others": "Other consoles",
-    "consoles": "Pick a console"
+    "consoles": "Pick a console",
+    "romm": "Check my ROMs",
+    "rommRunning": "Checking…",
+    "rommDone": "{{matched}} games of the list are in RomM ({{roms}} ROMs for {{platform}}).",
+    "rommNone": "That console is not in your RomM.",
+    "inRomm": "As ROM",
+    "importTitle": "Import a list",
+    "importFile": "File (.nfo, .txt, .csv)",
+    "importName": "List name",
+    "importPlatform": "Console",
+    "importSubmit": "Import",
+    "importDone": "{{count}} games imported, {{skipped}} lines skipped.",
+    "importHint": "One title per line. Headers of ROM pack files are ignored."
   }
 }

@@ -2,6 +2,7 @@ import { canonicalPlatform } from "./catalog.js"
 import type { Db } from "./db.js"
 import { FULLSETNET, SOURCE_LISTS, sourceUrl, type SourceItem, type SourceList } from "./fullsetnet.js"
 import type { IgdbClient } from "./igdb.js"
+import type { RommClient } from "./romm.js"
 
 /**
  * Le « mode Fullset » : pour une console, la liste complète des jeux à avoir (une liste de
@@ -44,6 +45,8 @@ export type SetItem = SourceItem & {
   owned_game_id: number | null
   /** Sa jaquette : celle de la collection passe devant celle trouvée pour la liste. */
   owned_cover: string | null
+  /** Une ROM de ce jeu est dans RomM (d'après le dernier « Vérifier mes ROM »). */
+  in_romm: boolean
 }
 
 type SetRow = { slug: string; source: string; name: string; platform: string; region: string | null; fetched_at: string }
@@ -95,24 +98,31 @@ export function listSets(db: Db): SetSummary[] {
   return rows.map((row) => summarize(db, row)).sort((a, b) => a.name.localeCompare(b.name, "fr"))
 }
 
-/** Les listes proposées par la source, enregistrées ou non (écran d'accueil du mode Fullset). */
+/**
+ * Les listes proposées par la source, enregistrées ou non, plus celles importées d'un fichier
+ * (écran d'accueil du mode Fullset).
+ */
 export function availableSets(db: Db) {
   const saved = new Map(listSets(db).map((s) => [s.slug, s]))
-  return SOURCE_LISTS.map((list) => ({ ...list, source: FULLSETNET, saved: saved.get(list.slug) ?? null }))
+  const fromSource = SOURCE_LISTS.map((list) => ({ ...list, source: FULLSETNET, saved: saved.get(list.slug) ?? null }))
+  const imported = [...saved.values()]
+    .filter((s) => !SOURCE_LISTS.some((l) => l.slug === s.slug))
+    .map((s) => ({ slug: s.slug, name: s.name, platform: s.platform, region: s.region, source: s.source, saved: s }))
+  return [...fromSource, ...imported]
 }
 
 export function getSet(db: Db, slug: string): { set: SetSummary; items: SetItem[] } | null {
   const row = setRow(db, slug)
   if (!row) return null
   const items = db
-    .prepare("SELECT position, title, url, price_cents, igdb_id, cover_url FROM set_items WHERE set_slug = ? ORDER BY position")
-    .all(slug) as Array<Omit<SetItem, "owned_game_id">>
+    .prepare("SELECT position, title, url, price_cents, igdb_id, cover_url, in_romm FROM set_items WHERE set_slug = ? ORDER BY position")
+    .all(slug) as Array<Omit<SetItem, "owned_game_id" | "owned_cover" | "in_romm"> & { in_romm: number }>
   const index = ownedIndex(db, row.platform)
   return {
     set: summarize(db, row),
     items: items.map((item) => {
       const owned = ownedFor(index, item)
-      return { ...item, owned_game_id: owned, owned_cover: owned === null ? null : (index.covers.get(owned) ?? null) }
+      return { ...item, in_romm: item.in_romm === 1, owned_game_id: owned, owned_cover: owned === null ? null : (index.covers.get(owned) ?? null) }
     }),
   }
 }
@@ -162,6 +172,29 @@ export function linkItem(db: Db, slug: string, position: number, igdbId: number 
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
 /**
+ * Marque les jeux d'une liste dont on a la ROM dans RomM (bouton « Vérifier mes ROM »). Le
+ * rapprochement passe par la fiche IGDB : un jeu de la liste sans fiche ne peut pas être marqué.
+ */
+export async function markRomm(db: Db, slug: string, romm: RommClient) {
+  const row = setRow(db, slug)
+  if (!row) return null
+  const found = await romm.igdbIdsForPlatform?.(row.platform)
+  db.prepare("UPDATE set_items SET in_romm = 0 WHERE set_slug = ?").run(slug)
+  if (!found) return { matched: 0, roms: 0, platform: null, set: summarize(db, row) }
+  const items = db.prepare("SELECT position, igdb_id FROM set_items WHERE set_slug = ? AND igdb_id IS NOT NULL").all(slug) as Array<{ position: number; igdb_id: number }>
+  const mark = db.prepare("UPDATE set_items SET in_romm = 1 WHERE set_slug = ? AND position = ?")
+  let matched = 0
+  db.transaction(() => {
+    for (const item of items) {
+      if (!found.ids.has(item.igdb_id)) continue
+      mark.run(slug, item.position)
+      matched += 1
+    }
+  })()
+  return { matched, roms: found.ids.size, platform: found.platform, set: summarize(db, row) }
+}
+
+/**
  * Cherche la fiche IGDB des jeux d'une liste, par paquets (bouton « Chercher les jaquettes ») :
  * IGDB limite le débit, et une liste de 231 jeux ne se rapproche pas pendant l'affichage d'une
  * page. Un titre sans correspondance sur la bonne console est laissé tel quel, il sera retenté.
@@ -171,9 +204,28 @@ export async function linkSetCovers(db: Db, slug: string, igdb: IgdbClient, limi
   if (!row) return null
   const todo = itemsWithoutIgdb(db, slug, limit)
   let linked = 0
+  let stopped: string | null = null
   for (const [i, item] of todo.entries()) {
-    if (i) await wait(250)
-    const candidates = await igdb.search(item.title)
+    if (i) await wait(350)
+    // IGDB accepte quatre recherches par seconde : au-delà elle répond 429. On souffle et on
+    // réessaie ; si ça insiste, on rend ce qui a été trouvé plutôt que de tout perdre.
+    let candidates: Awaited<ReturnType<IgdbClient["search"]>> | null = null
+    for (let attempt = 0; attempt < 3 && candidates === null; attempt++) {
+      try {
+        candidates = await igdb.search(item.title)
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err)
+        if (!message.includes("429") || attempt === 2) {
+          stopped = message
+          break
+        }
+        await wait(2000 * (attempt + 1))
+      }
+    }
+    if (candidates === null) {
+      if (stopped) break
+      continue
+    }
     const onPlatform = candidates.filter((c) => c.platforms.includes(row.platform))
     const match = onPlatform.find((c) => normTitle(c.name) === normTitle(item.title)) ?? onPlatform[0]
     if (!match) continue
@@ -181,5 +233,5 @@ export async function linkSetCovers(db: Db, slug: string, igdb: IgdbClient, limi
     linked += 1
   }
   const remaining = (db.prepare("SELECT count(*) AS n FROM set_items WHERE set_slug = ? AND igdb_id IS NULL").get(slug) as { n: number }).n
-  return { looked: todo.length, linked, remaining, set: summarize(db, row) }
+  return { looked: todo.length, linked, remaining, stopped, set: summarize(db, row) }
 }

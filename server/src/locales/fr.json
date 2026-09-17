@@ -187,6 +187,12 @@
     "http": "La source a répondu {{status}}.",
     "tooBig": "Page trop lourde pour être lue.",
     "unknownList": "Liste inconnue.",
-    "igdbNotConfigured": "IGDB n'est pas configuré : les jaquettes ne peuvent pas être cherchées."
+    "igdbNotConfigured": "IGDB n'est pas configuré : les jaquettes ne peuvent pas être cherchées.",
+    "rommNotConfigured": "RomM n'est pas configuré : impossible de vérifier tes ROM.",
+    "needFile": "Aucun fichier reçu.",
+    "needName": "Donne un nom à la liste.",
+    "needPlatform": "Choisis une console.",
+    "noTitles": "Aucun titre lu dans ce fichier.",
+    "fileSource": "fichier importé"
   }
 }

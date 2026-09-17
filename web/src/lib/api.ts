@@ -42,6 +42,15 @@ export async function upload<T>(path: string, blob: Blob, filename = "image.jpg"
   return handle<T>(path, await fetch(path, { method: "POST", body: form, headers: { "Accept-Language": currentLanguage() } }))
 }
 
+/** Envoi d'un fichier accompagné de champs (import d'une liste de référence). */
+export async function uploadWith<T>(path: string, file: File, fields: Record<string, string>): Promise<T> {
+  offlineGuard("POST")
+  const form = new FormData()
+  form.append("file", file, file.name)
+  for (const [key, value] of Object.entries(fields)) form.append(key, value)
+  return handle<T>(path, await fetch(path, { method: "POST", body: form, headers: { "Accept-Language": currentLanguage() } }))
+}
+
 export const errorMessage = (err: unknown) => (err instanceof Error ? err.message : i18n.t("common.unknownError"))
 
 export type Health = { ok: boolean; version: string; schema: number; igdb: boolean; time: string }
@@ -86,6 +95,7 @@ export type SetItem = {
   cover_url: string | null
   owned_game_id: number | null
   owned_cover: string | null
+  in_romm: boolean
 }
 
 export type Summary = {
