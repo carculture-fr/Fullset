@@ -8,7 +8,8 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest"
 import { createApp } from "../src/app.js"
 import { openDb, type Db } from "../src/db.js"
 import { parseSourcePage, sourceList, type SourceItem } from "../src/fullsetnet.js"
-import { getSet, listSets, normTitle, saveSet } from "../src/sets.js"
+import type { IgdbClient } from "../src/igdb.js"
+import { getSet, linkSetCovers, listSets, normTitle, saveSet } from "../src/sets.js"
 
 const page = readFileSync(path.join(import.meta.dirname, "fixtures/fullsetnet-psvita.html"), "utf8")
 const vita = sourceList("psvita_eu")!
@@ -79,6 +80,29 @@ describe("rapprochement avec la collection", () => {
   it("normalise les titres pour la comparaison", () => {
     expect(normTitle("The Legend of Zelda: Skyward Sword")).toBe("legend of zelda skyward sword")
     expect(normTitle("Ratchet & Clank")).toBe("ratchet and clank")
+  })
+})
+
+describe("recherche des jaquettes", () => {
+  const list = { slug: "test-progression", name: "Test", platform: "PlayStation Vita", region: null }
+  const item = (position: number, title: string): SourceItem => ({ position, title, url: null, price_cents: null })
+  // IGDB simulé : un seul titre est connu, les autres ne donnent rien.
+  const igdb = {
+    search: async (q: string) =>
+      q === "7'sCarlet" ? [{ igdb_id: 111, name: q, original_name: null, year: null, platforms: ["PlayStation Vita"], cover: "https://images.igdb.com/x.jpg" }] : [],
+    game: async () => {
+      throw new Error("non utilisé")
+    },
+  } as unknown as IgdbClient
+
+  it("ne repasse pas sur les titres déjà cherchés : la liste avance paquet par paquet", async () => {
+    saveSet(db, list, [item(1, "Jeu introuvable A"), item(2, "Jeu introuvable B"), item(3, "7'sCarlet")])
+    expect(await linkSetCovers(db, list.slug, igdb, 2)).toMatchObject({ looked: 2, linked: 0, untried: 1 })
+    expect(await linkSetCovers(db, list.slug, igdb, 2)).toMatchObject({ looked: 1, linked: 1, remaining: 2, untried: 0 })
+    // Plus rien à chercher : le bouton ne tourne pas dans le vide.
+    expect(await linkSetCovers(db, list.slug, igdb, 2)).toMatchObject({ looked: 0 })
+    // « Tout retenter » redonne leur chance aux titres sans fiche.
+    expect(await linkSetCovers(db, list.slug, igdb, 5, true)).toMatchObject({ looked: 2, linked: 0 })
   })
 })
 

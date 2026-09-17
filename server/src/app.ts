@@ -162,10 +162,11 @@ export function createApp(db: Db, dataDir: string, deps: AppDeps = {}) {
       res.status(502).json({ error: err.message })
     }
   })
+  // ?retry=1 : les titres restés sans fiche repassent une fois.
   app.post("/api/sets/:slug/covers", async (req, res) => {
     const igdb = services.igdb()
     if (!igdb) throw new IgdbError(msg("sets.igdbNotConfigured"))
-    const result = await linkSetCovers(db, String(req.params.slug), igdb)
+    const result = await linkSetCovers(db, String(req.params.slug), igdb, 40, Boolean(req.query.retry))
     if (!result) throw new NotFoundError(msg("sets.unknownList"))
     res.json(result)
   })

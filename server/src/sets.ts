@@ -160,9 +160,11 @@ export function deleteSet(db: Db, slug: string) {
   return db.prepare("DELETE FROM sets WHERE slug = ?").run(slug).changes > 0
 }
 
-/** Les jeux d'une liste qui n'ont pas encore de fiche IGDB (donc pas de jaquette). */
+/** Les jeux d'une liste encore à chercher chez IGDB : sans fiche, et pas encore tentés. */
 export function itemsWithoutIgdb(db: Db, slug: string, limit: number) {
-  return db.prepare("SELECT position, title FROM set_items WHERE set_slug = ? AND igdb_id IS NULL ORDER BY position LIMIT ?").all(slug, limit) as Array<{ position: number; title: string }>
+  return db
+    .prepare("SELECT position, title FROM set_items WHERE set_slug = ? AND igdb_id IS NULL AND igdb_tried = 0 ORDER BY position LIMIT ?")
+    .all(slug, limit) as Array<{ position: number; title: string }>
 }
 
 export function linkItem(db: Db, slug: string, position: number, igdbId: number | null, coverUrl: string | null) {
@@ -199,9 +201,12 @@ export async function markRomm(db: Db, slug: string, romm: RommClient) {
  * IGDB limite le débit, et une liste de 231 jeux ne se rapproche pas pendant l'affichage d'une
  * page. Un titre sans correspondance sur la bonne console est laissé tel quel, il sera retenté.
  */
-export async function linkSetCovers(db: Db, slug: string, igdb: IgdbClient, limit = 40) {
+export async function linkSetCovers(db: Db, slug: string, igdb: IgdbClient, limit = 40, retryAll = false) {
   const row = setRow(db, slug)
   if (!row) return null
+  // « Tout retenter » : les titres restés sans fiche repassent une fois (la liste a pu changer).
+  if (retryAll) db.prepare("UPDATE set_items SET igdb_tried = 0 WHERE set_slug = ? AND igdb_id IS NULL").run(slug)
+  const tried = db.prepare("UPDATE set_items SET igdb_tried = 1 WHERE set_slug = ? AND position = ?")
   const todo = itemsWithoutIgdb(db, slug, limit)
   let linked = 0
   let stopped: string | null = null
@@ -226,12 +231,16 @@ export async function linkSetCovers(db: Db, slug: string, igdb: IgdbClient, limi
       if (stopped) break
       continue
     }
+    // Cherché : trouvé ou non, ce titre ne repassera pas dans le paquet suivant.
+    tried.run(slug, item.position)
     const onPlatform = candidates.filter((c) => c.platforms.includes(row.platform))
     const match = onPlatform.find((c) => normTitle(c.name) === normTitle(item.title)) ?? onPlatform[0]
     if (!match) continue
     linkItem(db, slug, item.position, match.igdb_id, match.cover)
     linked += 1
   }
-  const remaining = (db.prepare("SELECT count(*) AS n FROM set_items WHERE set_slug = ? AND igdb_id IS NULL").get(slug) as { n: number }).n
-  return { looked: todo.length, linked, remaining, stopped, set: summarize(db, row) }
+  const counts = db
+    .prepare("SELECT count(*) AS remaining, coalesce(sum(igdb_tried = 0), 0) AS untried FROM set_items WHERE set_slug = ? AND igdb_id IS NULL")
+    .get(slug) as { remaining: number; untried: number }
+  return { looked: todo.length, linked, ...counts, stopped, set: summarize(db, row) }
 }

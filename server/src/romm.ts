@@ -7,7 +7,16 @@ export interface RommClient {
   igdbIdsForPlatform?(platform: string): Promise<{ platform: string; ids: Set<number> } | null>
 }
 
-type RawRom = { id: number; name: string; igdb_id?: number | null; platform_display_name?: string; platform_slug?: string; fs_size_bytes?: number; missing_from_fs?: boolean }
+type RawRom = {
+  id: number
+  name: string
+  igdb_id?: number | null
+  platform_id?: number
+  platform_display_name?: string
+  platform_slug?: string
+  fs_size_bytes?: number
+  missing_from_fs?: boolean
+}
 type RawPlatform = { id: number; name?: string; display_name?: string; custom_name?: string | null; slug?: string; igdb_id?: number | null }
 
 const squash = (s: string) =>
@@ -72,10 +81,15 @@ export class Romm implements RommClient {
       if (!page.ok) throw new Error(msg("romm.http", { status: page.status }))
       const body = (await page.json()) as { items?: RawRom[] }
       const items = body.items ?? []
-      for (const rom of items) if (rom.igdb_id && (rom.fs_size_bytes ?? 1) > 0 && !rom.missing_from_fs) ids.add(rom.igdb_id)
+      // RomM ne filtre pas toujours sur `platform_id` : on refait le tri ici, sinon la ROM
+      // PlayStation 2 d'un jeu ferait croire qu'on a sa version GameCube.
+      for (const rom of items) {
+        if (rom.platform_id !== undefined && rom.platform_id !== found.id) continue
+        if (rom.igdb_id && (rom.fs_size_bytes ?? 1) > 0 && !rom.missing_from_fs) ids.add(rom.igdb_id)
+      }
       if (items.length < size) break
     }
-    return { platform: found.custom_name ?? found.display_name ?? found.name ?? platform, ids }
+    return { platform: found.custom_name || found.display_name || found.name || platform, ids }
   }
 
   /** Vérifie l'adresse et le jeton (bouton « Tester » des réglages). */

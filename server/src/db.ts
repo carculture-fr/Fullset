@@ -394,6 +394,10 @@ const MIGRATIONS: string[] = [
    );
 
    CREATE INDEX copy_events_copy ON copy_events(copy_id);`,
+
+  // Mode Fullset : jeu déjà cherché chez IGDB (trouvé ou non). Sans cette marque, la recherche
+  // par paquets repasse indéfiniment sur les mêmes titres introuvables et n'avance plus.
+  `ALTER TABLE set_items ADD COLUMN igdb_tried INTEGER NOT NULL DEFAULT 0;`,
 ]
 
 function sql(v: string | null) {
