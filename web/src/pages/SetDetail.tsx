@@ -152,7 +152,7 @@ function SetCard({ item, platform, wished, onWish }: { item: SetItem; platform: 
     <div className="group">
       <Link to={owned ? `/jeux/${item.owned_game_id}` : add} className="block rounded-[12px]" title={owned ? item.title : t("sets.iHaveIt")}>
         <div className={`${CARD_FRAME} ${owned ? "" : "opacity-45 grayscale"}`}>
-          <Cover src={item.cover_url} title={item.title} platform={platform} className="w-full" />
+          <Cover src={item.owned_cover ?? item.cover_url} title={item.title} platform={platform} className="w-full" />
         </div>
       </Link>
       <div className={`mt-1.5 line-clamp-2 text-[12px] leading-[1.25] ${owned ? "" : "text-muted-foreground"}`}>{item.title}</div>

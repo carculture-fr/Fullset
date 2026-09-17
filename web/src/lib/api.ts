@@ -85,6 +85,7 @@ export type SetItem = {
   igdb_id: number | null
   cover_url: string | null
   owned_game_id: number | null
+  owned_cover: string | null
 }
 
 export type Summary = {

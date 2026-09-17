@@ -42,6 +42,8 @@ export type SetItem = SourceItem & {
   cover_url: string | null
   /** Le jeu de la collection qui correspond, s'il y en a un. */
   owned_game_id: number | null
+  /** Sa jaquette : celle de la collection passe devant celle trouvée pour la liste. */
+  owned_cover: string | null
 }
 
 type SetRow = { slug: string; source: string; name: string; platform: string; region: string | null; fetched_at: string }
@@ -52,20 +54,22 @@ const setRow = (db: Db, slug: string) => db.prepare("SELECT slug, source, name, 
 function ownedIndex(db: Db, platform: string) {
   const rows = db
     .prepare(
-      `SELECT g.id, g.igdb_id, g.title, (SELECT group_concat(c.title_as_entered, char(10)) FROM copies c WHERE c.game_id = g.id) AS entered
+      `SELECT g.id, g.igdb_id, g.title, g.cover_file, g.cover_url, (SELECT group_concat(c.title_as_entered, char(10)) FROM copies c WHERE c.game_id = g.id) AS entered
        FROM games g WHERE g.platform = ?`,
     )
-    .all(platform) as Array<{ id: number; igdb_id: number | null; title: string; entered: string | null }>
+    .all(platform) as Array<{ id: number; igdb_id: number | null; title: string; cover_file: string | null; cover_url: string | null; entered: string | null }>
   const byIgdb = new Map<number, number>()
   const byTitle = new Map<string, number>()
+  const covers = new Map<number, string | null>()
   for (const g of rows) {
     if (g.igdb_id !== null) byIgdb.set(g.igdb_id, g.id)
+    covers.set(g.id, g.cover_file ? `/covers/${g.cover_file}` : g.cover_url)
     for (const title of [g.title, ...(g.entered?.split("\n") ?? [])]) {
       const key = normTitle(title)
       if (key && !byTitle.has(key)) byTitle.set(key, g.id)
     }
   }
-  return { byIgdb, byTitle }
+  return { byIgdb, byTitle, covers }
 }
 
 const ownedFor = (index: ReturnType<typeof ownedIndex>, item: { igdb_id: number | null; title: string }) =>
@@ -104,7 +108,13 @@ export function getSet(db: Db, slug: string): { set: SetSummary; items: SetItem[
     .prepare("SELECT position, title, url, price_cents, igdb_id, cover_url FROM set_items WHERE set_slug = ? ORDER BY position")
     .all(slug) as Array<Omit<SetItem, "owned_game_id">>
   const index = ownedIndex(db, row.platform)
-  return { set: summarize(db, row), items: items.map((item) => ({ ...item, owned_game_id: ownedFor(index, item) })) }
+  return {
+    set: summarize(db, row),
+    items: items.map((item) => {
+      const owned = ownedFor(index, item)
+      return { ...item, owned_game_id: owned, owned_cover: owned === null ? null : (index.covers.get(owned) ?? null) }
+    }),
+  }
 }
 
 /**
