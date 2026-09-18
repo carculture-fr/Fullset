@@ -322,7 +322,8 @@
     "searchButton": "Chercher",
     "searchHint": "Recherche en anglais sur Wikimedia Commons (photos libres de droits).",
     "searching": "Recherche…",
-    "noResults": "Aucune photo trouvée : essaie d'autres mots."
+    "noResults": "Aucune photo trouvée : essaie d'autres mots.",
+    "otherSources": "Autres sources branchées"
   },
   "game": {
     "loading": "Chargement…",
@@ -376,6 +377,7 @@
     "title": "Modifier le jeu",
     "cover": "Jaquette",
     "igdbCovers": "Jaquettes proposées par IGDB",
+    "findCovers": "Chercher des jaquettes",
     "usePhoto": "Utiliser une photo",
     "currentSource": "Source actuelle : {{source}}",
     "sourceNone": "aucune",

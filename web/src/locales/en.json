@@ -322,7 +322,8 @@
     "searchButton": "Search",
     "searchHint": "Search in English on Wikimedia Commons (freely licensed photos).",
     "searching": "Searching…",
-    "noResults": "No photos found: try other words."
+    "noResults": "No photos found: try other words.",
+    "otherSources": "Other connected sources"
   },
   "game": {
     "loading": "Loading…",
@@ -376,6 +377,7 @@
     "title": "Edit game",
     "cover": "Cover",
     "igdbCovers": "Covers suggested by IGDB",
+    "findCovers": "Look for covers",
     "usePhoto": "Use a photo",
     "currentSource": "Current source: {{source}}",
     "sourceNone": "none",

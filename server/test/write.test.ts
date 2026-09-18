@@ -161,7 +161,8 @@ describe("photos et jaquettes", () => {
     expect((await game(body.gameId)).cover_source).toBe("photo")
     expect((await send("POST", `/api/games/${body.gameId}/cover/url`, { url: "http://169.254.169.254/secret" })).status).toBe(400)
     const opts = await json(await fetch(`${base}/api/games/${body.gameId}/cover-options`))
-    expect(opts.body.covers[0].label).toBe("Europe")
+    // Le libellé dit d'où vient l'image : plusieurs sources peuvent en proposer.
+    expect(opts.body.covers[0]).toMatchObject({ source: "igdb", label: "IGDB · Europe" })
     expect((await send("POST", `/api/games/${body.gameId}/cover/url`, { url: opts.body.covers[0].url })).status).toBe(200)
   })
 })

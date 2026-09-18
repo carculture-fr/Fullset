@@ -19,7 +19,9 @@
     "notADate": "{{field}} : « {{value}} » n'est pas une date.",
     "notProposed": "{{field}} : « {{value}} » n'est pas une valeur proposée.",
     "notValid": "{{field}} : « {{value}} » n'est pas valide.",
-    "eventNotFound": "Événement introuvable."
+    "eventNotFound": "Événement introuvable.",
+    "steamgridCoversOnly": "Seules les images servies par SteamGridDB sont acceptées.",
+    "unknownCoverSource": "Source de jaquette inconnue."
   },
   "fields": {
     "support": "Support",
@@ -209,7 +211,8 @@
     "refused": "ScreenScraper refuse l'appel : {{reason}}",
     "unreadable": "Réponse illisible de ScreenScraper.",
     "badKey": "Repère de jaquette invalide.",
-    "noMedia": "ScreenScraper n'a pas cette image."
+    "noMedia": "ScreenScraper n'a pas cette image.",
+    "notConfigured": "ScreenScraper n'est pas configuré."
   },
   "steamgriddb": {
     "unreachable": "SteamGridDB injoignable : {{error}}",

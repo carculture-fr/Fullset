@@ -20,6 +20,8 @@ const TIMEOUT = 20_000
 
 /** Types de médias qui sont des jaquettes, du plus utile au moins. */
 const COVER_TYPES = ["box-2D", "box-3D", "box-texture", "box-2D-side", "box-2D-back", "support-2D"] as const
+/** Images d'une console : la photo d'abord, puis l'illustration et la boîte. */
+const SYSTEM_TYPES = ["photo", "illustration", "box3D", "support2D", "icon"] as const
 /** Régions préférées pour une collection européenne. */
 const REGION_RANK: Record<string, number> = { eu: 0, fr: 1, wor: 2, ss: 3, us: 4, jp: 5 }
 
@@ -46,6 +48,8 @@ export interface ScreenscraperClient {
   /** Nom de console normalisé -> identifiant de système chez ScreenScraper. */
   systems(): Promise<Map<string, number>>
   search(title: string, platform?: string): Promise<ScreenscraperGame[]>
+  /** Images d'une console elle-même (photo, illustration, boîte) pour la fiche d'un matériel. */
+  systemImages(platform: string): Promise<ScreenscraperCover[]>
   media(key: string, maxWidth?: number): Promise<{ bytes: Buffer; mime: string }>
 }
 
@@ -179,11 +183,35 @@ export class Screenscraper implements ScreenscraperClient {
     return { id, systemId, name, system: String(jeu.systeme?.text ?? ""), covers }
   }
 
+  /**
+   * Images de la console elle-même. Le repère porte « 0 » à la place du jeu : c'est ce qui
+   * distingue un média de système d'un média de jeu au moment d'aller le chercher.
+   */
+  async systemImages(platform: string) {
+    const systemId = await this.systemIdFor(platform)
+    if (systemId === null) return []
+    const body = await this.call("systemesListe.php", {})
+    const list = (body.response?.systemes ?? []) as Array<{ id?: number | string; medias?: RawMedia[] }>
+    const found = list.find((s) => Number(s.id) === systemId)
+    const images: ScreenscraperCover[] = []
+    for (const media of found?.medias ?? []) {
+      const type = String(media.type ?? "")
+      if (!SYSTEM_TYPES.includes(type as (typeof SYSTEM_TYPES)[number])) continue
+      const region = media.region ? String(media.region) : null
+      images.push({ key: `${systemId}/0/${type}${region ? `(${region})` : ""}`, type, region, format: String(media.format ?? "png") })
+    }
+    return images.sort(
+      (a, b) => SYSTEM_TYPES.indexOf(a.type as (typeof SYSTEM_TYPES)[number]) - SYSTEM_TYPES.indexOf(b.type as (typeof SYSTEM_TYPES)[number]),
+    )
+  }
+
   /** Va chercher l'image derrière un repère. Le repère est vérifié : il vient du navigateur. */
   async media(key: string, maxWidth = 600) {
     const parts = KEY.exec(key)
     if (!parts) throw new ScreenscraperError(msg("screenscraper.badKey"))
     const [, systemId, gameId, media] = parts
+    // « 0 » comme jeu : c'est l'image de la console, servie par une autre page de leur API.
+    if (gameId === "0") return this.systemMedia(systemId, media, maxWidth)
     const query = new URLSearchParams({ ...this.credentials(), systemeid: systemId, jeuid: gameId, media, maxwidth: String(maxWidth) })
     let res: Response
     try {
@@ -195,6 +223,21 @@ export class Screenscraper implements ScreenscraperClient {
     const mime = (res.headers.get("content-type") ?? "").split(";")[0].trim().toLowerCase()
     const bytes = Buffer.from(await res.arrayBuffer())
     // Média absent : l'API répond « NOMEDIA » en texte, avec un code 200.
+    if (!mime.startsWith("image/") || bytes.length < 100) throw new ScreenscraperError(msg("screenscraper.noMedia"))
+    return { bytes, mime }
+  }
+
+  private async systemMedia(systemId: string, media: string, maxWidth: number) {
+    const query = new URLSearchParams({ ...this.credentials(), systemeid: systemId, media, maxwidth: String(maxWidth) })
+    let res: Response
+    try {
+      res = await this.fetchImpl(`${API}/mediaSysteme.php?${query}`, { signal: AbortSignal.timeout(TIMEOUT) })
+    } catch (err) {
+      throw new ScreenscraperError(msg("screenscraper.unreachable", { error: (err as Error).message }))
+    }
+    if (!res.ok) throw new ScreenscraperError(msg("screenscraper.http", { status: res.status }))
+    const mime = (res.headers.get("content-type") ?? "").split(";")[0].trim().toLowerCase()
+    const bytes = Buffer.from(await res.arrayBuffer())
     if (!mime.startsWith("image/") || bytes.length < 100) throw new ScreenscraperError(msg("screenscraper.noMedia"))
     return { bytes, mime }
   }

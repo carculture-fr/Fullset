@@ -260,7 +260,12 @@ export type IgdbCandidate = {
   cover: string | null
 }
 
-export type CoverOption = { label: string; url: string }
+/**
+ * Une jaquette proposée par une source branchée. `url` quand l'adresse peut voyager (IGDB,
+ * SteamGridDB), `key` quand elle porte des identifiants et que le serveur doit s'en charger
+ * (ScreenScraper) ; `thumb` est ce que l'écran affiche dans les deux cas.
+ */
+export type CoverOption = { source: "igdb" | "screenscraper" | "steamgriddb"; label: string; url?: string; key?: string; thumb: string }
 
 export type LegacyRow = {
   index: number

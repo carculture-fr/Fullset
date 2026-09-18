@@ -19,7 +19,9 @@
     "notADate": "{{field}}: “{{value}}” is not a date.",
     "notProposed": "{{field}}: “{{value}}” is not one of the proposed values.",
     "notValid": "{{field}}: “{{value}}” is not valid.",
-    "eventNotFound": "Event not found."
+    "eventNotFound": "Event not found.",
+    "steamgridCoversOnly": "Only images served by SteamGridDB are accepted.",
+    "unknownCoverSource": "Unknown cover source."
   },
   "fields": {
     "support": "Format",
@@ -209,7 +211,8 @@
     "refused": "ScreenScraper refused the call: {{reason}}",
     "unreadable": "Unreadable answer from ScreenScraper.",
     "badKey": "Invalid cover reference.",
-    "noMedia": "ScreenScraper does not have this image."
+    "noMedia": "ScreenScraper does not have this image.",
+    "notConfigured": "ScreenScraper is not set up."
   },
   "steamgriddb": {
     "unreachable": "SteamGridDB unreachable: {{error}}",

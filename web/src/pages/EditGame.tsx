@@ -98,15 +98,14 @@ export default function EditGame() {
         <div className="flex items-start gap-4">
           <Cover src={game.cover} title={game.title} platform={game.platform} size="large" className="w-28 shrink-0 shadow-md" />
           <div className="flex flex-col items-start gap-2">
-            {game.igdb_id !== null && (
-              <button
-                disabled={busy}
-                onClick={() => run(async () => setCovers((await api<{ covers: CoverOption[] }>(`/api/games/${game.id}/cover-options`)).covers))}
-                className={`${tagClass.outline} disabled:opacity-45`}
-              >
-                {t("editGame.igdbCovers")}
-              </button>
-            )}
+            {/* Toutes les sources branchées : IGDB par sa fiche, les autres par le titre. */}
+            <button
+              disabled={busy}
+              onClick={() => run(async () => setCovers((await api<{ covers: CoverOption[] }>(`/api/games/${game.id}/cover-options`)).covers))}
+              className={`${tagClass.outline} disabled:opacity-45`}
+            >
+              {t("editGame.findCovers")}
+            </button>
             <label className={`${tagClass.outline} cursor-pointer`}>
               {t("editGame.usePhoto")}
               <input
@@ -137,16 +136,16 @@ export default function EditGame() {
             <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
               {covers.map((c) => (
                 <button
-                  key={c.url}
+                  key={c.key ?? c.url}
                   disabled={busy}
                   onClick={() => run(async () => {
-                    await send("POST", `/api/games/${game.id}/cover/url`, { url: c.url })
+                    await send("POST", `/api/games/${game.id}/cover/source`, { source: c.source, url: c.url, key: c.key })
                     setCovers(null)
                     await refreshCover()
                   })}
                   className="text-left transition-transform duration-150 hover:-translate-y-0.5 disabled:opacity-45"
                 >
-                  <img src={c.url} alt="" loading="lazy" className="aspect-[3/4] w-full rounded-[12px] bg-background object-cover p-1" />
+                  <img src={c.thumb} alt="" loading="lazy" className="aspect-[3/4] w-full rounded-[12px] bg-background object-cover p-1" />
                   <span className="text-xs text-muted-foreground">{c.label}</span>
                 </button>
               ))}

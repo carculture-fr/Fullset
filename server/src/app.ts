@@ -41,6 +41,7 @@ import {
 import { addValuation, deleteValuation } from "./valuations.js"
 import { addEvent, addHardwareEvent, currentExits, deleteEvent, deleteHardwareEvent, journal } from "./events.js"
 import { canonicalPlatform, listPlatforms, rememberPlatform } from "./catalog.js"
+import { gameCoverOptions, hardwareCoverOptions } from "./cover-sources.js"
 import { COMMONS_UA, CommonsError, commonsFile, imageOptions, isCommonsMedia, pickAutomatic, type CommonsImage } from "./commons.js"
 import { addWish, deleteWish, listWishlist, updateWish } from "./wishlist.js"
 import { CatalogSourceError, fetchSourceList, sourceList } from "./fullsetnet.js"
@@ -75,6 +76,8 @@ export type AppDeps = {
 }
 
 const IGDB_IMAGES = "https://images.igdb.com/"
+/** Hôtes des images SteamGridDB : le serveur ne télécharge que depuis leur CDN. */
+const STEAMGRID_IMAGES = ["https://cdn2.steamgriddb.com/", "https://cdn.steamgriddb.com/"]
 
 export function createApp(db: Db, dataDir: string, deps: AppDeps = {}) {
   const fetchImpl = deps.fetchImpl ?? fetch
@@ -432,10 +435,22 @@ export function createApp(db: Db, dataDir: string, deps: AppDeps = {}) {
     res.json(getGame(db, gameId))
   })
 
+  // Les jaquettes proposées par toutes les sources branchées : à toi de choisir.
   app.get("/api/games/:id/cover-options", async (req, res) => {
     const game = getGame(db, id(req))
     if (!game) throw new NotFoundError(msg("common.gameNotFound"))
-    res.json({ covers: game.igdb_id === null ? [] : (await needIgdb().game(game.igdb_id, game.platform)).covers })
+    res.json({ covers: await gameCoverOptions(services, game) })
+  })
+
+  // Vignette ScreenScraper : son adresse porte des identifiants, le serveur va la chercher.
+  app.get("/api/screenscraper/media", async (req, res) => {
+    const client = services.screenscraper()
+    if (!client) throw new ValidationError(msg("screenscraper.notConfigured"))
+    const width = Math.min(Math.max(Number(req.query.w) || 300, 40), 1000)
+    const { bytes, mime } = await client.media(String(req.query.key ?? ""), width)
+    res.setHeader("Content-Type", mime)
+    res.setHeader("Cache-Control", "private, max-age=86400")
+    res.send(bytes)
   })
 
   app.post("/api/games/:id/cover", upload.single("file"), (req, res) => {
@@ -448,6 +463,28 @@ export function createApp(db: Db, dataDir: string, deps: AppDeps = {}) {
     // Seules les images IGDB : le serveur ne va pas chercher n'importe quelle adresse pour le compte du client.
     if (!url.startsWith(IGDB_IMAGES)) throw new ValidationError(msg("common.igdbCoversOnly"))
     res.json({ cover: await setCoverFromUrl(db, dataDir, id(req), url, "igdb", fetchImpl) })
+  })
+
+  /**
+   * Pose une jaquette choisie parmi les propositions. Chaque source a sa façon : une adresse
+   * pour IGDB et SteamGridDB (dont l'hôte est vérifié, le serveur ne va pas chercher n'importe
+   * quelle adresse), un repère pour ScreenScraper, dont les adresses portent des mots de passe.
+   */
+  app.post("/api/games/:id/cover/source", async (req, res) => {
+    const gameId = id(req)
+    const source = String(req.body?.source ?? "")
+    if (source === "screenscraper") {
+      const client = services.screenscraper()
+      if (!client) throw new ValidationError(msg("screenscraper.notConfigured"))
+      const { bytes, mime } = await client.media(String(req.body?.key ?? ""), 800)
+      res.json({ cover: setCover(db, dataDir, gameId, bytes, mime, "screenscraper") })
+      return
+    }
+    const url = String(req.body?.url ?? "")
+    if (source === "igdb" && !url.startsWith(IGDB_IMAGES)) throw new ValidationError(msg("common.igdbCoversOnly"))
+    if (source === "steamgriddb" && !STEAMGRID_IMAGES.some((host) => url.startsWith(host))) throw new ValidationError(msg("common.steamgridCoversOnly"))
+    if (source !== "igdb" && source !== "steamgriddb") throw new ValidationError(msg("common.unknownCoverSource"))
+    res.json({ cover: await setCoverFromUrl(db, dataDir, gameId, url, source, fetchImpl) })
   })
 
   // --- Exemplaires ---
@@ -530,11 +567,23 @@ export function createApp(db: Db, dataDir: string, deps: AppDeps = {}) {
   })
   app.get("/api/hardware/:id/image-options", async (req, res) => {
     const q = typeof req.query.q === "string" && req.query.q.trim() ? req.query.q.trim().slice(0, 120) : undefined
-    res.json(await imageOptions(getHardware(db, id(req)), fetchImpl, q))
+    const item = getHardware(db, id(req))
+    const commons = await imageOptions(item, fetchImpl, q)
+    // Commons d'abord (libre, avec son crédit), puis ce que les autres sources ont de cette console.
+    res.json({ ...commons, others: await hardwareCoverOptions(services, String(item.platform ?? "")) })
   })
   app.post("/api/hardware/:id/image", async (req, res) => {
     const hwId = id(req)
     getHardware(db, hwId)
+    // Image choisie chez ScreenScraper : elle arrive par son repère, jamais par son adresse.
+    const key = typeof req.body?.key === "string" ? req.body.key : null
+    if (key) {
+      const client = services.screenscraper()
+      if (!client) throw new ValidationError(msg("screenscraper.notConfigured"))
+      const { bytes, mime } = await client.media(key, 800)
+      res.json({ image: setHardwareImage(db, dataDir, hwId, bytes, mime, "ScreenScraper", null) })
+      return
+    }
     res.json({ image: await applyImage(hwId, await commonsFile(String(req.body?.title ?? ""), fetchImpl)) })
   })
   app.delete("/api/hardware/:id/image", (req, res) => {
