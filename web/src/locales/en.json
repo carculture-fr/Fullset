@@ -234,7 +234,9 @@
     "selected": "{{count}} selected",
     "deleteSelected": "Delete",
     "deleteSelectedConfirm": "Delete {{count}} games from the collection? Their copies, photos and valuations go with them. For a sale or a loan, use “Exit or event” on the game page instead.",
-    "deleted": "{{count}} games deleted."
+    "deleted": "{{count}} games deleted.",
+    "selectAll": "Select all",
+    "selectNone": "Clear selection"
   },
   "filterPanel": {
     "title": "Filters",

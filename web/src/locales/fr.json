@@ -234,7 +234,9 @@
     "selected": "{{count}} sélectionnés",
     "deleteSelected": "Supprimer",
     "deleteSelectedConfirm": "Supprimer {{count}} jeux de la collection ? Leurs exemplaires, photos et estimations partent avec. Pour une vente ou un prêt, utilise plutôt « Sortie ou événement » sur la fiche.",
-    "deleted": "{{count}} jeux supprimés."
+    "deleted": "{{count}} jeux supprimés.",
+    "selectAll": "Tout sélectionner",
+    "selectNone": "Tout désélectionner"
   },
   "filterPanel": {
     "title": "Filtres",

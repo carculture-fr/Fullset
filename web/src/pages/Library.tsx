@@ -252,40 +252,51 @@ export default function Library() {
         )}
       </div>
 
-      {/* Sélection multiple : choisir plusieurs jeux, puis les supprimer d'un coup. */}
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          onClick={() => {
-            setSelecting((s) => !s)
-            setPicked(new Set())
-            setNote(null)
-          }}
-          className="min-h-10 rounded-full bg-card px-4 text-[13px] font-semibold transition-colors duration-150 hover:bg-foreground/7"
-        >
-          {selecting ? t("library.selectDone") : t("library.select")}
-        </button>
-        {selecting && (
-          <>
-            <span className="num text-[13px] text-muted-foreground">{t("library.selected", { count: picked.size })}</span>
-            <button
-              type="button"
-              onClick={deletePicked}
-              disabled={busy || picked.size === 0}
-              className="min-h-10 rounded-full bg-destructive px-4 text-[13px] font-semibold text-background transition-opacity duration-150 disabled:opacity-40"
-            >
-              {t("library.deleteSelected")}
-            </button>
-          </>
-        )}
-        {note && <span className="text-[13px] text-muted-foreground">{note}</span>}
-      </div>
-
       {/* Le tri reste hors de la zone collante : sur téléphone, elle mangerait l'écran. */}
       {desktop ? (
         <PageFilters sortField={sortField} counts={counts} filters={filters} onChange={(f) => update({ filters: f })} />
       ) : (
         <div className={`mb-3 max-w-xs ${COMPACT_FIELD}`}>{sortField}</div>
+      )}
+
+      {/* Sélection multiple : cocher plusieurs jeux, puis les supprimer d'un coup. */}
+      {results.length > 0 && (
+        <div className="mt-2 mb-1 flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              // Les groupes repliés cachent les vignettes : on les ouvre en entrant en sélection.
+              if (!selecting && groups) setOpenList(groups.map((g) => g.platform))
+              setSelecting((s) => !s)
+              setPicked(new Set())
+              setNote(null)
+            }}
+            className="min-h-10 rounded-full bg-card px-4 text-[13px] font-semibold transition-colors duration-150 hover:bg-foreground/7"
+          >
+            {selecting ? t("library.selectDone") : t("library.select")}
+          </button>
+          {selecting && (
+            <>
+              <button
+                type="button"
+                onClick={() => setPicked(picked.size === results.length ? new Set() : new Set(results.map((r) => r.game.id)))}
+                className="min-h-10 rounded-full bg-card px-4 text-[13px] font-semibold transition-colors duration-150 hover:bg-foreground/7"
+              >
+                {picked.size === results.length ? t("library.selectNone") : t("library.selectAll")}
+              </button>
+              <span className="num text-[13px] text-muted-foreground">{t("library.selected", { count: picked.size })}</span>
+              <button
+                type="button"
+                onClick={deletePicked}
+                disabled={busy || picked.size === 0}
+                className="min-h-10 rounded-full bg-destructive px-4 text-[13px] font-semibold text-background transition-opacity duration-150 disabled:opacity-40"
+              >
+                {t("library.deleteSelected")}
+              </button>
+            </>
+          )}
+          {note && <span className="text-[13px] text-muted-foreground">{note}</span>}
+        </div>
       )}
 
       {results.length === 0 ? (
