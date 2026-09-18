@@ -969,7 +969,11 @@
     "importPlatform": "Console",
     "importSubmit": "Importer",
     "importDone": "{{count}} jeux importés, {{skipped}} lignes ignorées.",
-    "importHint": "Un titre par ligne. Les en-têtes des fichiers de packs de ROM sont ignorés."
+    "importHint": "Un titre par ligne. Les en-têtes des fichiers de packs de ROM sont ignorés.",
+    "wishAll": "Tout aux souhaits",
+    "wishAllDone": "{{count}} jeux ajoutés à tes souhaits.",
+    "wishAllNone": "Tes souhaits contiennent déjà ces jeux.",
+    "exportMissing": "Exporter les manquants"
   },
   "events": {
     "title": "Vie de l'exemplaire",

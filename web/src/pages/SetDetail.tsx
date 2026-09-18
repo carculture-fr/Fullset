@@ -1,4 +1,4 @@
-import { HardDrive, Heart, ImageDown, Plus } from "lucide-react"
+import { Download, HardDrive, Heart, ImageDown, Plus } from "lucide-react"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { Link, useParams } from "react-router-dom"
@@ -85,6 +85,19 @@ export default function SetDetail() {
     }
   }
 
+  const wishAll = async () => {
+    setBusy(true)
+    setError(null)
+    try {
+      const r = await send<{ added: number; missing: number }>("POST", `/api/sets/${slug}/wishlist`)
+      setNote(r.added ? t("sets.wishAllDone", { count: r.added }) : t("sets.wishAllNone"))
+    } catch (err) {
+      setError(errorMessage(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const wish = async (item: SetItem) => {
     try {
       await send("POST", "/api/wishlist", { title: item.title, platform: set.platform, igdb_id: item.igdb_id, cover_url: item.cover_url })
@@ -144,6 +157,22 @@ export default function SetDetail() {
           <HardDrive size={16} {...ICON} aria-hidden="true" />
           {busy ? t("sets.rommRunning") : t("sets.romm")}
         </button>
+        {set.count > set.owned && (
+          <>
+            <button type="button" onClick={wishAll} disabled={busy} className="flex h-10 items-center gap-2 rounded-full bg-card px-4 text-[13px] font-semibold transition-colors duration-150 hover:bg-foreground/7 disabled:opacity-45">
+              <Heart size={16} {...ICON} aria-hidden="true" />
+              {t("sets.wishAll")}
+            </button>
+            <a
+              href={`/api/sets/${slug}/manquants.csv`}
+              download
+              className="flex h-10 items-center gap-2 rounded-full bg-card px-4 text-[13px] font-semibold transition-colors duration-150 hover:bg-foreground/7"
+            >
+              <Download size={16} {...ICON} aria-hidden="true" />
+              {t("sets.exportMissing")}
+            </a>
+          </>
+        )}
       </div>
       {(error || note) && <div className="mt-2.5">{error ? <ErrorNote message={error} /> : <p className="text-[12px] text-muted-foreground">{note}</p>}</div>}
 

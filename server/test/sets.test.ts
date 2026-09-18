@@ -9,7 +9,7 @@ import { createApp } from "../src/app.js"
 import { openDb, type Db } from "../src/db.js"
 import { parseSourcePage, sourceList, type SourceItem } from "../src/fullsetnet.js"
 import type { IgdbClient } from "../src/igdb.js"
-import { getSet, linkSetCovers, listSets, normTitle, saveSet, setsForGame } from "../src/sets.js"
+import { getSet, linkSetCovers, listSets, missingCsv, normTitle, saveSet, setsForGame, wishMissing } from "../src/sets.js"
 
 const page = readFileSync(path.join(import.meta.dirname, "fixtures/fullsetnet-psvita.html"), "utf8")
 const vita = sourceList("psvita_eu")!
@@ -80,6 +80,30 @@ describe("rapprochement avec la collection", () => {
   it("normalise les titres pour la comparaison", () => {
     expect(normTitle("The Legend of Zelda: Skyward Sword")).toBe("legend of zelda skyward sword")
     expect(normTitle("Ratchet & Clank")).toBe("ratchet and clank")
+  })
+})
+
+describe("les manquants d'un coup", () => {
+  const list = { slug: "test-manquants", name: "Full set de test", platform: "PlayStation Vita", region: null }
+  const item = (position: number, title: string, price: number | null): SourceItem => ({ position, title, url: null, price_cents: price })
+
+  it("ajoute les manquants aux souhaits, sans doublon, et les exporte en CSV", () => {
+    db.prepare("INSERT INTO games (platform, title) VALUES (?, ?)").run("PlayStation Vita", "Tearaway")
+    saveSet(db, list, [item(1, "Tearaway", 2500), item(2, "Gravity Rush", 3000), item(3, "Persona 4 Golden", 4500)])
+
+    // Tearaway est possédé : seuls les deux autres partent dans les souhaits, cote en prix cible.
+    expect(wishMissing(db, list.slug)).toEqual({ added: 2, missing: 2 })
+    const wished = db.prepare("SELECT title, target_price_cents FROM wishlist ORDER BY title").all() as Array<{ title: string; target_price_cents: number | null }>
+    expect(wished.map((w) => w.title)).toEqual(["Gravity Rush", "Persona 4 Golden"])
+    expect(wished[0].target_price_cents).toBe(3000)
+
+    // Deuxième passage : rien à ajouter.
+    expect(wishMissing(db, list.slug)).toEqual({ added: 0, missing: 2 })
+
+    const csv = missingCsv(db, list.slug)!
+    expect(csv.startsWith("﻿numéro;titre;cote;fiche")).toBe(true)
+    expect(csv).toContain("2;Gravity Rush;30,00;")
+    expect(csv).not.toContain("Tearaway")
   })
 })
 

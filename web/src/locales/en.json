@@ -969,7 +969,11 @@
     "importPlatform": "Console",
     "importSubmit": "Import",
     "importDone": "{{count}} games imported, {{skipped}} lines skipped.",
-    "importHint": "One title per line. Headers of ROM pack files are ignored."
+    "importHint": "One title per line. Headers of ROM pack files are ignored.",
+    "wishAll": "All to wishlist",
+    "wishAllDone": "{{count}} games added to your wishlist.",
+    "wishAllNone": "Your wishlist already holds these games.",
+    "exportMissing": "Export the missing ones"
   },
   "events": {
     "title": "Copy history",

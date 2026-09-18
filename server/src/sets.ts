@@ -1,8 +1,10 @@
 import { canonicalPlatform } from "./catalog.js"
+import { csvCell } from "./csv.js"
 import type { Db } from "./db.js"
 import { FULLSETNET, SOURCE_LISTS, sourceUrl, type SourceItem, type SourceList } from "./fullsetnet.js"
 import type { IgdbClient } from "./igdb.js"
 import type { RommClient } from "./romm.js"
+import { addWish } from "./wishlist.js"
 
 /**
  * Le « mode Fullset » : pour une console, la liste complète des jeux à avoir (une liste de
@@ -154,6 +156,47 @@ export function saveSet(db: Db, list: SourceList, items: SourceItem[], source = 
     }
   })()
   return summarize(db, setRow(db, list.slug)!)
+}
+
+/** Ajoute aux souhaits tous les manquants d'une liste, avec leur cote comme prix cible. */
+export function wishMissing(db: Db, slug: string) {
+  const found = getSet(db, slug)
+  if (!found) return null
+  const existing = db.prepare("SELECT igdb_id, platform, title FROM wishlist").all() as Array<{ igdb_id: number | null; platform: string | null; title: string }>
+  const already = (item: { igdb_id: number | null; title: string }) =>
+    existing.some(
+      (w) =>
+        (w.platform ?? "") === found.set.platform &&
+        ((item.igdb_id !== null && w.igdb_id === item.igdb_id) || normTitle(w.title) === normTitle(item.title)),
+    )
+  const missing = found.items.filter((i) => i.owned_game_id === null)
+  let added = 0
+  for (const item of missing) {
+    if (already(item)) continue
+    addWish(db, {
+      igdb_id: item.igdb_id,
+      platform: found.set.platform,
+      title: item.title,
+      cover_url: item.cover_url,
+      target_price: item.price_cents === null ? null : (item.price_cents / 100).toFixed(2),
+    })
+    existing.push({ igdb_id: item.igdb_id, platform: found.set.platform, title: item.title })
+    added += 1
+  }
+  return { added, missing: missing.length }
+}
+
+/** La liste des manquants à emporter en bourse : un CSV pour Excel français. */
+export function missingCsv(db: Db, slug: string) {
+  const found = getSet(db, slug)
+  if (!found) return null
+  const lines = ["numéro;titre;cote;fiche"]
+  for (const item of found.items) {
+    if (item.owned_game_id !== null) continue
+    const price = item.price_cents === null ? "" : (item.price_cents / 100).toFixed(2).replace(".", ",")
+    lines.push([item.position, item.title, price, item.url ?? ""].map(csvCell).join(";"))
+  }
+  return `﻿${lines.join("\r\n")}\r\n`
 }
 
 export type SetMembership = {

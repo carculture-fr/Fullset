@@ -44,7 +44,7 @@ import { canonicalPlatform, listPlatforms } from "./catalog.js"
 import { COMMONS_UA, CommonsError, commonsFile, imageOptions, isCommonsMedia, pickAutomatic, type CommonsImage } from "./commons.js"
 import { addWish, deleteWish, listWishlist, updateWish } from "./wishlist.js"
 import { CatalogSourceError, fetchSourceList, sourceList } from "./fullsetnet.js"
-import { availableSets, deleteSet, getSet, linkSetCovers, markRomm, saveSet, setsForGame } from "./sets.js"
+import { availableSets, deleteSet, getSet, linkSetCovers, markRomm, missingCsv, saveSet, setsForGame, wishMissing } from "./sets.js"
 import { fileSlug, parseRomsetList } from "./romset.js"
 import { refreshMissingCovers } from "./cover-refresh.js"
 import { buildBackup, restoreBackup } from "./backup.js"
@@ -201,6 +201,20 @@ export function createApp(db: Db, dataDir: string, deps: AppDeps = {}) {
     const list = { slug: fileSlug(name), name, platform: canonicalPlatform(platform), region: null }
     const items = titles.map((title, i) => ({ position: i + 1, title, url: null, price_cents: null }))
     res.status(201).json({ set: saveSet(db, list, items, msg("sets.fileSource")), skipped })
+  })
+  // Tous les manquants d'un coup : dans les souhaits, ou dans un CSV à emporter en bourse.
+  app.post("/api/sets/:slug/wishlist", (req, res) => {
+    const result = wishMissing(db, String(req.params.slug))
+    if (!result) throw new NotFoundError(msg("sets.unknownList"))
+    res.status(201).json(result)
+  })
+  app.get("/api/sets/:slug/manquants.csv", (req, res) => {
+    const slug = String(req.params.slug)
+    const csv = missingCsv(db, slug)
+    if (csv === null) throw new NotFoundError(msg("sets.unknownList"))
+    res.setHeader("Content-Type", "text/csv; charset=utf-8")
+    res.setHeader("Content-Disposition", `attachment; filename="manquants-${slug}.csv"`)
+    res.send(csv)
   })
   app.delete("/api/sets/:slug", (req, res) => {
     if (!deleteSet(db, String(req.params.slug))) throw new NotFoundError(msg("sets.unknownList"))
