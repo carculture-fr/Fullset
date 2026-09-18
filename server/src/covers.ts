@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync } from "node:fs"
+import { mkdirSync, renameSync, writeFileSync } from "node:fs"
 import path from "node:path"
 
 import type { Db } from "./db.js"
@@ -17,8 +17,45 @@ const EXTENSIONS: Record<string, string> = { "image/jpeg": ".jpg", "image/png": 
 export const isIgdbImage = (url: string) => url.startsWith(IGDB_IMAGES)
 
 /**
+ * Nom de fichier d'une jaquette : l'id du jeu, puis un suffixe qui change à chaque image. Une
+ * adresse ne doit jamais servir deux images différentes : les jaquettes sont gardées sept jours
+ * par le navigateur et trois mois par l'application installée, et deux collections successives
+ * sur la même adresse ne donnent pas le même id au même jeu.
+ */
+export const coverFileName = (gameId: number, ext: string) => `${gameId}-${Date.now().toString(36)}${ext}`
+
+/** Jaquettes des versions d'avant : le nom ne portait que l'id du jeu. */
+const LEGACY_NAME = /^(\d+)\.(jpg|png|webp)$/
+
+/**
+ * Donne un nom unique aux jaquettes nommées d'après le seul id du jeu. Sans cela, une collection
+ * remplacée (import dans une installation neuve) réutilise « /covers/1.jpg » pour un autre jeu :
+ * un navigateur qui a gardé l'image d'avant affiche alors la jaquette d'un jeu qui n'est plus là.
+ * Passage unique, au démarrage.
+ */
+export function renameLegacyCovers(db: Db, dataDir: string) {
+  const dir = path.join(dataDir, COVERS_DIR)
+  const rows = db.prepare("SELECT id, cover_file FROM games WHERE cover_file IS NOT NULL").all() as Array<{ id: number; cover_file: string }>
+  const update = db.prepare("UPDATE games SET cover_file = ? WHERE id = ?")
+  let renamed = 0
+  for (const row of rows) {
+    const match = LEGACY_NAME.exec(row.cover_file)
+    if (!match) continue
+    const file = coverFileName(row.id, `.${match[2]}`)
+    try {
+      renameSync(path.join(dir, row.cover_file), path.join(dir, file))
+    } catch {
+      // Fichier absent : on laisse la base tranquille, le rattrapage des jaquettes s'en chargera.
+      continue
+    }
+    update.run(file, row.id)
+    renamed += 1
+  }
+  return renamed
+}
+
+/**
  * Télécharge dans <data>/covers/ les jaquettes connues par URL mais pas encore sur disque.
- * Le fichier porte l'id du jeu : une jaquette remplacée plus tard écrase la précédente.
  */
 export async function downloadMissingCovers(db: Db, dataDir: string, fetchImpl: typeof fetch = fetch): Promise<CoversReport> {
   const dir = path.join(dataDir, COVERS_DIR)
@@ -39,7 +76,7 @@ export async function downloadMissingCovers(db: Db, dataDir: string, fetchImpl: 
       if (Number(res.headers.get("content-length") ?? 0) > MAX_COVER_BYTES) throw new Error("image trop lourde")
       const body = Buffer.from(await res.arrayBuffer())
       if (body.length > MAX_COVER_BYTES) throw new Error("image trop lourde")
-      const file = `${game.id}${ext}`
+      const file = coverFileName(game.id, ext)
       writeFileSync(path.join(dir, file), body)
       setFile.run(file, game.id)
       report.downloaded++

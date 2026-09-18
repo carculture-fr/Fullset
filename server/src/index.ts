@@ -2,10 +2,14 @@ import path from "node:path"
 
 import { getAccount } from "./account.js"
 import { createApp, APP_VERSION } from "./app.js"
+import { renameLegacyCovers } from "./covers.js"
 import { openDb } from "./db.js"
 
 const dataDir = process.env.DATA_DIR ?? path.resolve(import.meta.dirname, "../../data")
 const db = openDb(dataDir)
+
+const renamed = renameLegacyCovers(db, dataDir)
+if (renamed) console.log(`${renamed} jaquettes renommées : leur adresse ne dépend plus du seul id du jeu.`)
 
 const port = Number(process.env.PORT ?? 3110)
 const server = createApp(db, dataDir).listen(port, () => {

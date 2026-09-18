@@ -3,7 +3,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import path from "node:path"
 
 import { NotFoundError, PHOTOS_DIR, ValidationError, removeFile } from "./copies.js"
-import { COVERS_DIR } from "./covers.js"
+import { COVERS_DIR, coverFileName } from "./covers.js"
 import type { Db } from "./db.js"
 import { msg } from "./i18n.js"
 
@@ -40,7 +40,7 @@ export function deletePhoto(db: Db, dataDir: string, id: number) {
 export function setCover(db: Db, dataDir: string, gameId: number, bytes: Buffer, mime: string, source: string, url: string | null = null) {
   const game = db.prepare("SELECT cover_file FROM games WHERE id = ?").get(gameId) as { cover_file: string | null } | undefined
   if (!game) throw new NotFoundError(msg("common.gameNotFound"))
-  const file = `${gameId}-${Date.now().toString(36)}${extensionOf(mime)}`
+  const file = coverFileName(gameId, extensionOf(mime))
   const dir = path.join(dataDir, COVERS_DIR)
   mkdirSync(dir, { recursive: true })
   writeFileSync(path.join(dir, file), bytes)
