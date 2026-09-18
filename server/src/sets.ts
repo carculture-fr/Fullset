@@ -1,7 +1,11 @@
+import { mkdirSync, writeFileSync } from "node:fs"
+import path from "node:path"
+
 import { canonicalPlatform } from "./catalog.js"
 import { csvCell } from "./csv.js"
 import type { Db } from "./db.js"
-import { FULLSETNET, SOURCE_LISTS, sourceUrl, type SourceItem, type SourceList } from "./fullsetnet.js"
+import { COVERS_DIR } from "./covers.js"
+import { FULLSETNET, SOURCE_LISTS, UA, coverUrl, sourceUrl, type SourceItem, type SourceList } from "./fullsetnet.js"
 import type { IgdbClient } from "./igdb.js"
 import type { RommClient } from "./romm.js"
 import { addWish } from "./wishlist.js"
@@ -43,6 +47,8 @@ export type SetSummary = {
 export type SetItem = SourceItem & {
   igdb_id: number | null
   cover_url: string | null
+  /** Jaquette de la liste, copiée depuis la source et servie par Fullset. */
+  cover: string | null
   /** Le jeu de la collection qui correspond, s'il y en a un. */
   owned_game_id: number | null
   /** Sa jaquette : celle de la collection passe devant celle trouvée pour la liste. */
@@ -117,14 +123,20 @@ export function getSet(db: Db, slug: string): { set: SetSummary; items: SetItem[
   const row = setRow(db, slug)
   if (!row) return null
   const items = db
-    .prepare("SELECT position, title, url, price_cents, igdb_id, cover_url, in_romm FROM set_items WHERE set_slug = ? ORDER BY position")
-    .all(slug) as Array<Omit<SetItem, "owned_game_id" | "owned_cover" | "in_romm"> & { in_romm: number }>
+    .prepare("SELECT position, title, url, price_cents, igdb_id, cover_url, cover_file, cover_pos, in_romm FROM set_items WHERE set_slug = ? ORDER BY position")
+    .all(slug) as Array<Omit<SetItem, "owned_game_id" | "owned_cover" | "in_romm" | "cover"> & { in_romm: number; cover_file: string | null }>
   const index = ownedIndex(db, row.platform)
   return {
     set: summarize(db, row),
-    items: items.map((item) => {
+    items: items.map(({ cover_file, ...item }) => {
       const owned = ownedFor(index, item)
-      return { ...item, in_romm: item.in_romm === 1, owned_game_id: owned, owned_cover: owned === null ? null : (index.covers.get(owned) ?? null) }
+      return {
+        ...item,
+        cover: cover_file ? `/covers/${cover_file}` : null,
+        in_romm: item.in_romm === 1,
+        owned_game_id: owned,
+        owned_cover: owned === null ? null : (index.covers.get(owned) ?? null),
+      }
     }),
   }
 }
@@ -137,10 +149,14 @@ export function saveSet(db: Db, list: SourceList, items: SourceItem[], source = 
   const platform = canonicalPlatform(list.platform)
   db.transaction(() => {
     const known = new Map(
-      (db.prepare("SELECT title, igdb_id, cover_url FROM set_items WHERE set_slug = ?").all(list.slug) as Array<{ title: string; igdb_id: number | null; cover_url: string | null }>).map((r) => [
-        normTitle(r.title),
-        r,
-      ]),
+      (
+        db.prepare("SELECT title, igdb_id, cover_url, cover_file FROM set_items WHERE set_slug = ?").all(list.slug) as Array<{
+          title: string
+          igdb_id: number | null
+          cover_url: string | null
+          cover_file: string | null
+        }>
+      ).map((r) => [normTitle(r.title), r]),
     )
     db.prepare("DELETE FROM set_items WHERE set_slug = ?").run(list.slug)
     db.prepare(
@@ -148,11 +164,24 @@ export function saveSet(db: Db, list: SourceList, items: SourceItem[], source = 
        ON CONFLICT(slug) DO UPDATE SET source = excluded.source, name = excluded.name, platform = excluded.platform, region = excluded.region, fetched_at = excluded.fetched_at`,
     ).run(list.slug, source, list.name, platform, list.region)
     const insert = db.prepare(
-      "INSERT INTO set_items (set_slug, position, title, norm_title, url, price_cents, igdb_id, cover_url) VALUES (@slug, @position, @title, @norm, @url, @price_cents, @igdb_id, @cover_url)",
+      `INSERT INTO set_items (set_slug, position, title, norm_title, url, price_cents, igdb_id, cover_url, cover_file, cover_pos)
+       VALUES (@slug, @position, @title, @norm, @url, @price_cents, @igdb_id, @cover_url, @cover_file, @cover_pos)`,
     )
     for (const item of items) {
       const before = known.get(normTitle(item.title))
-      insert.run({ slug: list.slug, ...item, norm: normTitle(item.title), igdb_id: before?.igdb_id ?? null, cover_url: before?.cover_url ?? null })
+      insert.run({
+        slug: list.slug,
+        position: item.position,
+        title: item.title,
+        norm: normTitle(item.title),
+        url: item.url,
+        price_cents: item.price_cents,
+        igdb_id: before?.igdb_id ?? null,
+        cover_url: before?.cover_url ?? null,
+        // La jaquette déjà téléchargée reste : une mise à jour de la liste ne la reprend pas.
+        cover_file: before?.cover_file ?? null,
+        cover_pos: item.cover_pos ?? null,
+      })
     }
   })()
   return summarize(db, setRow(db, list.slug)!)
@@ -197,6 +226,15 @@ export function missingCsv(db: Db, slug: string) {
     lines.push([item.position, item.title, price, item.url ?? ""].map(csvCell).join(";"))
   }
   return `﻿${lines.join("\r\n")}\r\n`
+}
+
+/**
+ * Modèle de fichier pour composer sa propre liste (bouton « Télécharger un modèle »). Même
+ * dialecte que les autres exports : point-virgule, BOM UTF-8, prix à la française. La cote est
+ * facultative — laissée vide, elle ne compte simplement pas dans le budget restant.
+ */
+export function setTemplateCsv() {
+  return `﻿${["numero;titre;cote", "1;Metroid Prime;24,90", "2;F-Zero GX;39,00", "3;Chibi-Robo!;"].join("\r\n")}\r\n`
 }
 
 export type SetMembership = {
@@ -319,4 +357,73 @@ export async function linkSetCovers(db: Db, slug: string, igdb: IgdbClient, limi
     .prepare("SELECT count(*) AS remaining, coalesce(sum(igdb_tried = 0), 0) AS untried FROM set_items WHERE set_slug = ? AND igdb_id IS NULL")
     .get(slug) as { remaining: number; untried: number }
   return { looked: todo.length, linked, ...counts, stopped, set: summarize(db, row) }
+}
+
+/** Fichier local d'une jaquette de liste : une par liste et par numéro, jamais mêlée aux jeux. */
+const setCoverFile = (slug: string, position: number) => `set-${slug}-${position}.jpg`
+
+/** Avancement des jaquettes d'une liste : ce qui est déjà chez toi, et ce qui reste à prendre. */
+export function coverStats(db: Db, slug: string) {
+  const row = db
+    .prepare(
+      `SELECT count(*) AS total,
+              coalesce(sum(cover_file IS NOT NULL), 0) AS ready,
+              coalesce(sum(cover_file IS NULL AND cover_tried = 0 AND cover_pos IS NOT NULL), 0) AS todo
+       FROM set_items WHERE set_slug = ?`,
+    )
+    .get(slug) as { total: number; ready: number; todo: number }
+  return row
+}
+
+const IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"])
+const MAX_SET_COVER_BYTES = 3 * 1024 * 1024
+
+/**
+ * Prend chez la source les jaquettes de la liste qui manquent. L'adresse se déduit du numéro du
+ * jeu : rien à chercher, une image par jeu. Le site refuse d'afficher ses images ailleurs (403
+ * sur le référent), d'où la copie locale, servie ensuite comme les jaquettes de la collection.
+ * Cadence volontairement basse : ces listes sont hébergées par un particulier, pas par un CDN.
+ * Un jeu sans image chez la source est marqué (`cover_tried`) pour ne pas être redemandé.
+ */
+export async function downloadSetCovers(db: Db, dataDir: string, slug: string, fetchImpl: typeof fetch = fetch, limit = 0) {
+  const row = setRow(db, slug)
+  if (!row) return null
+  const list = SOURCE_LISTS.find((l) => l.slug === slug)
+  // Une liste importée d'un fichier n'a pas d'images chez la source : il n'y a rien à prendre.
+  if (!list) return { downloaded: 0, failed: 0, ...coverStats(db, slug) }
+
+  const todo = db
+    .prepare(
+      `SELECT position, cover_pos FROM set_items
+       WHERE set_slug = ? AND cover_file IS NULL AND cover_tried = 0 AND cover_pos IS NOT NULL
+       ORDER BY position${limit ? " LIMIT ?" : ""}`,
+    )
+    .all(...(limit ? [slug, limit] : [slug])) as Array<{ position: number; cover_pos: number }>
+
+  const dir = path.join(dataDir, COVERS_DIR)
+  mkdirSync(dir, { recursive: true })
+  const tried = db.prepare("UPDATE set_items SET cover_tried = 1 WHERE set_slug = ? AND position = ?")
+  const save = db.prepare("UPDATE set_items SET cover_file = ?, cover_tried = 1 WHERE set_slug = ? AND position = ?")
+  let downloaded = 0
+  let failed = 0
+
+  for (const [i, item] of todo.entries()) {
+    if (i) await wait(200)
+    try {
+      const res = await fetchImpl(coverUrl(list, item.cover_pos), { headers: { "User-Agent": UA }, signal: AbortSignal.timeout(20_000) })
+      const type = (res.headers.get("content-type") ?? "").split(";")[0].trim().toLowerCase()
+      if (!res.ok || !IMAGE_TYPES.has(type)) throw new Error(`HTTP ${res.status}`)
+      const body = Buffer.from(await res.arrayBuffer())
+      if (!body.length || body.length > MAX_SET_COVER_BYTES) throw new Error("image inattendue")
+      const file = setCoverFile(slug, item.position)
+      writeFileSync(path.join(dir, file), body)
+      save.run(file, slug, item.position)
+      downloaded += 1
+    } catch {
+      // Pas d'image pour ce numéro : on le note et on passe, sans refaire la demande plus tard.
+      tried.run(slug, item.position)
+      failed += 1
+    }
+  }
+  return { downloaded, failed, ...coverStats(db, slug) }
 }

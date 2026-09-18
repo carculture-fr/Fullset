@@ -12,7 +12,7 @@ export class CatalogSourceError extends Error {}
 
 export const FULLSETNET = "full-set.net"
 export const FULLSETNET_URL = "https://full-set.net"
-const UA = "Fullset/1.0 (collection personnelle ; https://github.com/carculture-fr/Fullset)"
+export const UA = "Fullset/1.0 (collection personnelle ; https://github.com/carculture-fr/Fullset)"
 const MAX_BYTES = 8_000_000
 
 export type SourceList = {
@@ -23,6 +23,12 @@ export type SourceList = {
   /** Console du catalogue Fullset, pour rapprocher les jeux de la collection. */
   platform: string
   region: string | null
+  /**
+   * Liste dont cette liste emprunte les jaquettes. Les listes régionales (« PS1 (PAL) ») n'ont
+   * pas leurs propres images : elles pointent sur celles de la liste complète, qui les numérote
+   * autrement. Le rapprochement se fait sur l'adresse de la fiche, commune aux deux listes.
+   */
+  imagesFrom?: string
 }
 
 // Les 29 listes publiées par full-set.net, rattachées aux noms de consoles du catalogue.
@@ -43,13 +49,13 @@ export const SOURCE_LISTS: readonly SourceList[] = [
   { slug: "megacd", name: "Mega CD", platform: "Sega CD", region: null },
   { slug: "saturn", name: "Saturn", platform: "Sega Saturn", region: null },
   { slug: "psx", name: "PS1", platform: "PlayStation", region: null },
-  { slug: "psx_pal", name: "PS1 (PAL)", platform: "PlayStation", region: "PAL (Europe)" },
-  { slug: "psx_platinum", name: "PS1 Platinum", platform: "PlayStation", region: "PAL (Europe)" },
+  { slug: "psx_pal", name: "PS1 (PAL)", platform: "PlayStation", region: "PAL (Europe)", imagesFrom: "psx" },
+  { slug: "psx_platinum", name: "PS1 Platinum", platform: "PlayStation", region: "PAL (Europe)", imagesFrom: "psx" },
   { slug: "ps2_pal", name: "PS2 (PAL)", platform: "PlayStation 2", region: "PAL (Europe)" },
   { slug: "psp", name: "PSP", platform: "PlayStation Portable", region: null },
   { slug: "psvita_eu", name: "PS Vita (PAL)", platform: "PlayStation Vita", region: "PAL (Europe)" },
   { slug: "xbox", name: "XBox", platform: "Xbox", region: null },
-  { slug: "xbox_pal", name: "XBox (PAL)", platform: "Xbox", region: "PAL (Europe)" },
+  { slug: "xbox_pal", name: "XBox (PAL)", platform: "Xbox", region: "PAL (Europe)", imagesFrom: "xbox" },
   { slug: "xbox360_pal", name: "XBox 360 (PAL)", platform: "Xbox 360", region: "PAL (Europe)" },
   { slug: "atari2600", name: "Atari 2600", platform: "Atari 2600", region: null },
   { slug: "commodore64", name: "Commodore 64", platform: "Commodore 64", region: null },
@@ -63,7 +69,21 @@ export const sourceList = (slug: unknown) => SOURCE_LISTS.find((l) => l.slug ===
 /** Page d'où vient la liste : l'appli dit toujours à qui elle emprunte ses données. */
 export const sourceUrl = (slug: string) => `${FULLSETNET_URL}/collection/${slug}.html`
 
-export type SourceItem = { position: number; title: string; url: string | null; price_cents: number | null }
+export type SourceItem = {
+  position: number
+  title: string
+  url: string | null
+  price_cents: number | null
+  /** Numéro de la jaquette chez la source, quand elle en a une (voir `coverUrl`). */
+  cover_pos?: number | null
+}
+
+/**
+ * Adresse de la jaquette d'un jeu chez la source. Elle se déduit de la liste et du numéro du
+ * jeu : aucune recherche, aucune fiche à lire. Le site refuse d'afficher ses images sur un autre
+ * domaine (403 sur le référent), donc Fullset les télécharge et les sert lui-même.
+ */
+export const coverUrl = (list: SourceList, position: number) => `${FULLSETNET_URL}/covers/${list.imagesFrom ?? list.slug}/${position}.jpg`
 
 const ENTITIES: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " " }
 const decode = (s: string) =>
@@ -90,6 +110,8 @@ export function parseSourcePage(html: string): SourceItem[] {
     const href = /href=['"]([^'"]*\/item\/[^'"]*)['"]/.exec(row)?.[1] ?? null
     items.push({
       position,
+      // Par défaut, la jaquette porte le numéro du jeu dans sa propre liste.
+      cover_pos: position,
       title,
       url: href && href.startsWith(FULLSETNET_URL) ? href : href ? `${FULLSETNET_URL}${href.startsWith("/") ? "" : "/"}${href}` : null,
       price_cents: Number.isFinite(price) && price > 0 ? Math.round(price * 100) : null,
@@ -99,11 +121,10 @@ export function parseSourcePage(html: string): SourceItem[] {
   return items.sort((a, b) => a.position - b.position)
 }
 
-/** Va chercher une liste chez full-set.net. Le HTML n'est jamais rendu : seules les lignes sont lues. */
-export async function fetchSourceList(list: SourceList, fetchImpl: typeof fetch = fetch, baseUrl = FULLSETNET_URL): Promise<SourceItem[]> {
+async function fetchPage(slug: string, fetchImpl: typeof fetch, baseUrl: string) {
   let res: Response
   try {
-    res = await fetchImpl(`${baseUrl}/collection/${list.slug}.html`, { headers: { "User-Agent": UA, Accept: "text/html" }, signal: AbortSignal.timeout(20_000) })
+    res = await fetchImpl(`${baseUrl}/collection/${slug}.html`, { headers: { "User-Agent": UA, Accept: "text/html" }, signal: AbortSignal.timeout(20_000) })
   } catch (err) {
     throw new CatalogSourceError(msg("sets.unreachable", { error: (err as Error).message }))
   }
@@ -111,4 +132,15 @@ export async function fetchSourceList(list: SourceList, fetchImpl: typeof fetch 
   const html = await res.text()
   if (html.length > MAX_BYTES) throw new CatalogSourceError(msg("sets.tooBig"))
   return parseSourcePage(html)
+}
+
+/** Va chercher une liste chez full-set.net. Le HTML n'est jamais rendu : seules les lignes sont lues. */
+export async function fetchSourceList(list: SourceList, fetchImpl: typeof fetch = fetch, baseUrl = FULLSETNET_URL): Promise<SourceItem[]> {
+  const items = await fetchPage(list.slug, fetchImpl, baseUrl)
+  if (!list.imagesFrom) return items
+  // Liste régionale : ses jeux sont un sous-ensemble de la liste complète, qui porte les images
+  // sous sa propre numérotation. Les deux listes renvoient vers la même fiche : c'est la clé.
+  const parent = await fetchPage(list.imagesFrom, fetchImpl, baseUrl)
+  const byUrl = new Map(parent.flatMap((i) => (i.url ? [[i.url, i.position] as const] : [])))
+  return items.map((item) => ({ ...item, cover_pos: (item.url ? byUrl.get(item.url) : null) ?? null }))
 }

@@ -46,28 +46,63 @@ const looksLikeTitle = (s: string) => {
   return s.split(/\s+/).length <= 18
 }
 
-export type RomsetList = { titles: string[]; skipped: number }
+export type RomsetItem = { title: string; price_cents: number | null }
+export type RomsetList = { titles: string[]; items: RomsetItem[]; skipped: number }
 
-/** Lit un fichier de liste et rend les titres, sans doublon, dans l'ordre du fichier. */
+/** Prix écrit à la française ou à l'anglaise : « 12,50 », « 12.50 », « 12,50 € ». */
+function priceCents(raw: string) {
+  const s = raw.replace(/[€$\s]/g, "").replace(",", ".")
+  if (!/^\d+(\.\d{1,2})?$/.test(s)) return null
+  return Math.round(Number(s) * 100)
+}
+
+const CSV_HEADER = /^\s*("?)(num[eé]ro|no|n°|#|titre|title|jeu|game|nom|name)\1\s*[;,\t]/i
+
+/**
+ * Ligne d'un tableau : « 12;Metroid Prime;24,90 » ou « Metroid Prime;24,90 ». Le numéro de tête
+ * est facultatif (l'ordre du fichier fait foi), la cote aussi. Rend `null` si la ligne n'a pas la
+ * forme d'un tableau : elle repassera par la lecture ordinaire, un titre par ligne.
+ */
+function parseTableRow(raw: string): RomsetItem | null {
+  // Séparateur point-virgule ou tabulation seulement : la virgule sépare les décimales d'une cote
+  // (« 24,90 ») et les langues d'un tag de région (« (En,Fr,De) »).
+  const cells = raw.split(/[;\t]/).map((c) => c.trim().replace(/^"|"$/g, ""))
+  if (cells.length < 2) return null
+  if (/^\d{1,5}$/.test(cells[0]) && cells.length > 2) cells.shift()
+  const price = priceCents(cells[cells.length - 1])
+  const title = cleanTitle(cells[0])
+  if (!looksLikeTitle(title)) return null
+  return { title, price_cents: price }
+}
+
+/**
+ * Lit un fichier de liste et rend les jeux, sans doublon, dans l'ordre du fichier. Deux formes
+ * acceptées : un titre par ligne (les `.nfo` des packs de ROM), ou un tableau à la façon du
+ * modèle proposé dans l'appli (numéro, titre, cote) — la cote sert au budget restant.
+ */
 export function parseRomsetList(text: string): RomsetList {
   const seen = new Set<string>()
-  const titles: string[] = []
+  const items: RomsetItem[] = []
   let skipped = 0
   for (const line of text.split(/\n/)) {
     const raw = line.replace(/\r/g, "")
     if (!raw.trim()) continue
-    const title = cleanTitle(raw)
-    if (!looksLikeTitle(title)) {
+    if (CSV_HEADER.test(raw)) {
       skipped += 1
       continue
     }
-    const key = title.toLowerCase()
+    const item = parseTableRow(raw) ?? { title: cleanTitle(raw), price_cents: null }
+    if (!looksLikeTitle(item.title)) {
+      skipped += 1
+      continue
+    }
+    const key = item.title.toLowerCase()
     if (seen.has(key)) continue
     seen.add(key)
-    titles.push(title)
-    if (titles.length >= MAX_TITLES) break
+    items.push(item)
+    if (items.length >= MAX_TITLES) break
   }
-  return { titles, skipped }
+  return { titles: items.map((i) => i.title), items, skipped }
 }
 
 /** Identifiant de liste importée, tiré du nom donné : lettres, chiffres et tirets. */

@@ -418,6 +418,14 @@ const MIGRATIONS: string[] = [
 
   // Écran de choix Steam : un jeu écarté à la main ne revient plus à chaque synchronisation.
   `ALTER TABLE steam_library ADD COLUMN ignored INTEGER NOT NULL DEFAULT 0;`,
+
+  // Mode Fullset : la jaquette vient de la source, qui en a une pour chaque jeu de ses listes.
+  // `cover_pos` est le numéro de l'image chez elle — les listes régionales empruntent les images
+  // de la liste complète, qui les numérote autrement. `cover_file` est la copie locale : le site
+  // refuse d'afficher ses images sur un autre domaine, Fullset les télécharge et les sert.
+  `ALTER TABLE set_items ADD COLUMN cover_file TEXT;
+   ALTER TABLE set_items ADD COLUMN cover_pos INTEGER;
+   ALTER TABLE set_items ADD COLUMN cover_tried INTEGER NOT NULL DEFAULT 0;`,
 ]
 
 function sql(v: string | null) {

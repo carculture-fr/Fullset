@@ -7,7 +7,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
 import { createApp } from "../src/app.js"
 import { openDb, type Db } from "../src/db.js"
-import { parseSourcePage, sourceList, type SourceItem } from "../src/fullsetnet.js"
+import { coverUrl, fetchSourceList, parseSourcePage, sourceList, type SourceItem } from "../src/fullsetnet.js"
 import type { IgdbClient } from "../src/igdb.js"
 import { getSet, linkSetCovers, listSets, missingCsv, normTitle, saveSet, setsForGame, wishMissing } from "../src/sets.js"
 
@@ -51,6 +51,26 @@ describe("lecture d'une liste de la source", () => {
 
   it("refuse une page sans ligne de jeu plutôt que d'enregistrer une liste vide", () => {
     expect(() => parseSourcePage("<html><body><p>Maintenance</p></body></html>")).toThrow()
+  })
+
+  it("va chercher chez la liste complète le numéro de jaquette d'une liste régionale", async () => {
+    const ligne = (index: number, nom: string, fiche: string) =>
+      `<tr data-fs-index="${index}" data-fs-name="${nom}" data-fs-price="10.00"><td class="le_nom"><a href="/psx/item/${fiche}.html">${nom}</a></td></tr>`
+    const complete = `<table>${ligne(1, "Alpha", "alpha")}${ligne(2, "Bravo", "bravo")}${ligne(3, "Charlie", "charlie")}</table>`
+    const regionale = `<table>${ligne(1, "Charlie", "charlie")}${ligne(2, "Alpha", "alpha")}</table>`
+    const fetchImpl = (async (url: string) =>
+      new Response(String(url).includes("/collection/psx.html") ? complete : regionale, { headers: { "Content-Type": "text/html" } })) as unknown as typeof fetch
+
+    const pal = sourceList("psx_pal")!
+    const items = await fetchSourceList(pal, fetchImpl)
+    // Le 1er jeu de la liste PAL est le 3e de la liste complète, qui porte les images.
+    expect(items.map((i) => [i.position, i.cover_pos])).toEqual([
+      [1, 3],
+      [2, 1],
+    ])
+    expect(coverUrl(pal, items[0].cover_pos!)).toBe("https://full-set.net/covers/psx/3.jpg")
+    // Une liste qui a ses propres images garde sa numérotation.
+    expect(coverUrl(vita, 12)).toBe("https://full-set.net/covers/psvita_eu/12.jpg")
   })
 })
 
@@ -162,7 +182,21 @@ describe("API", () => {
     expect(detail.items).toHaveLength(4)
 
     expect((await send("POST", "/api/sets/inconnue/refresh")).status).toBe(404)
+    expect((await fetch(`${base}/api/sets/inconnue`)).status).toBe(404)
     expect((await send("DELETE", "/api/sets/psvita_eu")).status).toBe(200)
     expect((await fetch(`${base}/api/sets/psvita_eu`)).status).toBe(404)
+  })
+
+  it("sert le modèle de liste, sans le prendre pour une liste inconnue", async () => {
+    const res = await fetch(`${base}/api/sets/modele.csv`)
+    expect(res.status).toBe(200)
+    expect(res.headers.get("content-type")).toContain("text/csv")
+    // BOM UTF-8 en tête : Excel français ouvre le fichier avec les bons accents. Il se lit sur
+    // les octets — la lecture en texte le retire d'elle-même.
+    const octets = new Uint8Array(await res.arrayBuffer())
+    expect([...octets.slice(0, 3)]).toEqual([0xef, 0xbb, 0xbf])
+    const csv = new TextDecoder().decode(octets)
+    expect(csv.startsWith("numero;titre;cote")).toBe(true)
+    expect(csv).toContain("Metroid Prime;24,90")
   })
 })

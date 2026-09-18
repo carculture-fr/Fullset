@@ -40,11 +40,11 @@ import {
 } from "./hardware.js"
 import { addValuation, deleteValuation } from "./valuations.js"
 import { addEvent, addHardwareEvent, currentExits, deleteEvent, deleteHardwareEvent, journal } from "./events.js"
-import { canonicalPlatform, listPlatforms } from "./catalog.js"
+import { canonicalPlatform, listPlatforms, rememberPlatform } from "./catalog.js"
 import { COMMONS_UA, CommonsError, commonsFile, imageOptions, isCommonsMedia, pickAutomatic, type CommonsImage } from "./commons.js"
 import { addWish, deleteWish, listWishlist, updateWish } from "./wishlist.js"
 import { CatalogSourceError, fetchSourceList, sourceList } from "./fullsetnet.js"
-import { availableSets, deleteSet, getSet, linkSetCovers, markRomm, missingCsv, saveSet, setsForGame, wishMissing } from "./sets.js"
+import { availableSets, deleteSet, getSet, linkSetCovers, markRomm, missingCsv, saveSet, setTemplateCsv, setsForGame, wishMissing } from "./sets.js"
 import { fileSlug, parseRomsetList } from "./romset.js"
 import { refreshMissingCovers } from "./cover-refresh.js"
 import { buildBackup, restoreBackup } from "./backup.js"
@@ -162,6 +162,12 @@ export function createApp(db: Db, dataDir: string, deps: AppDeps = {}) {
 
   // --- Mode Fullset : listes de référence par console ---
   app.get("/api/sets", (_req, res) => res.json({ lists: availableSets(db) }))
+  // Modèle de fichier pour composer sa propre liste. Avant « /api/sets/:slug », qui l'avalerait.
+  app.get("/api/sets/modele.csv", (_req, res) => {
+    res.setHeader("Content-Type", "text/csv; charset=utf-8")
+    res.setHeader("Content-Disposition", 'attachment; filename="modele-liste.csv"')
+    res.send(setTemplateCsv())
+  })
   app.get("/api/sets/:slug", (req, res) => {
     const found = getSet(db, String(req.params.slug))
     if (!found) throw new NotFoundError(msg("sets.unknownList"))
@@ -200,10 +206,13 @@ export function createApp(db: Db, dataDir: string, deps: AppDeps = {}) {
     const platform = String(req.body?.platform ?? "").trim()
     if (!name) throw new ValidationError(msg("sets.needName"))
     if (!platform) throw new ValidationError(msg("sets.needPlatform"))
-    const { titles, skipped } = parseRomsetList(req.file.buffer.toString("utf8"))
-    if (!titles.length) throw new ValidationError(msg("sets.noTitles"))
-    const list = { slug: fileSlug(name), name, platform: canonicalPlatform(platform), region: null }
-    const items = titles.map((title, i) => ({ position: i + 1, title, url: null, price_cents: null }))
+    const { items: parsed, skipped } = parseRomsetList(req.file.buffer.toString("utf8"))
+    if (!parsed.length) throw new ValidationError(msg("sets.noTitles"))
+    // Console absente du catalogue : elle y entre, comme à la saisie d'un jeu ou d'un matériel.
+    const chosen = canonicalPlatform(platform)
+    rememberPlatform(db, chosen)
+    const list = { slug: fileSlug(name), name, platform: chosen, region: null }
+    const items = parsed.map((item, i) => ({ position: i + 1, title: item.title, url: null, price_cents: item.price_cents }))
     res.status(201).json({ set: saveSet(db, list, items, msg("sets.fileSource")), skipped })
   })
   // Tous les manquants d'un coup : dans les souhaits, ou dans un CSV à emporter en bourse.

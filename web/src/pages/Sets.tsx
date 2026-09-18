@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from "react"
 import { useTranslation } from "react-i18next"
 import { Link } from "react-router-dom"
 
-import { Chips, ErrorNote, Field, inputClass } from "@/components/fields"
+import { ErrorNote, Field, Menu, inputClass } from "@/components/fields"
 import { ICON } from "@/components/page-bits"
 import { api, errorMessage, send, uploadWith, type SetList, type SetSummary } from "@/lib/api"
 import { euros, formatDate } from "@/lib/format"
@@ -61,14 +61,34 @@ function ImportList({ onDone }: { onDone: () => void }) {
     <form onSubmit={submit} className="space-y-3 rounded-card bg-card p-4">
       <h2 className="text-[18px]">{t("sets.importTitle")}</h2>
       <p className="text-[12px] text-muted-foreground">{t("sets.importHint")}</p>
+      <a
+        href="/api/sets/modele.csv"
+        download
+        className="inline-flex min-h-9 items-center gap-2 rounded-full bg-background px-3.5 text-[13px] font-semibold transition-colors duration-150 hover:bg-foreground/7"
+      >
+        <Download size={15} {...ICON} aria-hidden="true" />
+        {t("sets.importTemplate")}
+      </a>
       <Field label={t("sets.importFile")}>
         <input ref={file} type="file" accept=".nfo,.txt,.csv,text/plain" required className={`${inputClass} py-2.5 file:mr-3 file:rounded-full file:border-0 file:bg-background file:px-3 file:py-1.5 file:text-[13px]`} />
       </Field>
       <Field label={t("sets.importName")}>
         <input value={name} onChange={(e) => setName(e.target.value)} className={inputClass} placeholder={t("sets.importName")} />
       </Field>
-      <Field label={t("sets.importPlatform")}>
-        <Chips options={platforms} value={platform} onChange={setPlatform} label={t("sets.importPlatform")} />
+      <Field label={t("sets.importPlatform")} hint={t("sets.importPlatformHint")}>
+        {/* Console absente du catalogue : on la tape, elle rejoint la liste et le catalogue à l'envoi. */}
+        <Menu
+          options={platforms}
+          selected={platform ? [platform] : []}
+          onPick={setPlatform}
+          onAdd={async (value) => {
+            setPlatforms((all) => (all.includes(value) ? all : [...all, value]))
+            setPlatform(value)
+          }}
+          addOnlyIfNone
+          label={t("sets.importPlatform")}
+          placeholder={t("sets.importPlatform")}
+        />
       </Field>
       {error && <ErrorNote message={error} />}
       {note && <p className="text-[12px] text-muted-foreground">{note}</p>}

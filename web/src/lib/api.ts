@@ -97,6 +97,8 @@ export type SetItem = {
   price_cents: number | null
   igdb_id: number | null
   cover_url: string | null
+  /** Jaquette de la liste, copiée chez toi depuis la source. */
+  cover: string | null
   owned_game_id: number | null
   owned_cover: string | null
   in_romm: boolean
