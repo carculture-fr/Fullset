@@ -33,6 +33,7 @@ export default function Settings() {
       <Security />
       <ListsManager />
       <SteamSection />
+      <CoversSection />
       <Section title={t("settings.barcodes.title")} note={t("settings.barcodes.note")}>
         <Link to="/codes-barres" className={ghostButton}>
           {t("settings.barcodes.manage")}
@@ -287,6 +288,44 @@ function SteamSection() {
           <Saved message={report} />
         </div>
       )}
+      <ErrorNote message={error} />
+    </Section>
+  )
+}
+
+/** Rattrapage des jaquettes : les jeux qui ont une fiche IGDB mais pas d'image. */
+function CoversSection() {
+  const { t } = useTranslation()
+  const library = useLibrary()
+  const [report, setReport] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  const missing = (library.games ?? []).filter((g) => !g.cover).length
+
+  const refresh = async () => {
+    setBusy(true)
+    setError(null)
+    setReport(null)
+    try {
+      const r = await send<{ downloaded: number; remaining: number; failed: string[] }>("POST", "/api/covers/refresh")
+      setReport(t("settings.covers.done", { downloaded: r.downloaded, remaining: r.remaining }))
+      await library.reload()
+    } catch (err) {
+      setError(errorMessage(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Section title={t("settings.covers.title")} note={t("settings.covers.note")}>
+      <p className="text-sm text-muted-foreground">{missing > 0 ? t("settings.covers.missing", { count: missing }) : t("settings.covers.none")}</p>
+      {missing > 0 && (
+        <button onClick={refresh} disabled={busy} className={`${primaryButton} mt-3.5`}>
+          {busy ? t("settings.covers.running") : t("settings.covers.action")}
+        </button>
+      )}
+      <Saved message={report} />
       <ErrorNote message={error} />
     </Section>
   )

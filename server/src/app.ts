@@ -46,6 +46,7 @@ import { addWish, deleteWish, listWishlist, updateWish } from "./wishlist.js"
 import { CatalogSourceError, fetchSourceList, sourceList } from "./fullsetnet.js"
 import { availableSets, deleteSet, getSet, linkSetCovers, markRomm, saveSet } from "./sets.js"
 import { fileSlug, parseRomsetList } from "./romset.js"
+import { refreshMissingCovers } from "./cover-refresh.js"
 import { getPreferences, setPreferences } from "./preferences.js"
 import { keepLanguage, languageMiddleware, msg } from "./i18n.js"
 
@@ -142,6 +143,13 @@ export function createApp(db: Db, dataDir: string, deps: AppDeps = {}) {
   app.get("/api/steam/candidates", (_req, res) => res.json({ items: steamCandidates(db) }))
   app.post("/api/steam/import", async (req, res) => {
     res.status(201).json(await importSteam(db, dataDir, services.igdb(), req.body?.appids, fetchImpl))
+  })
+
+  // Rattrapage des jaquettes : un jeu avec une fiche IGDB mais sans image la récupère ici.
+  app.post("/api/covers/refresh", async (_req, res) => {
+    const igdb = services.igdb()
+    if (!igdb) throw new IgdbError(msg("sets.igdbNotConfigured"))
+    res.json(await refreshMissingCovers(db, dataDir, igdb, fetchImpl))
   })
 
   // --- Mode Fullset : listes de référence par console ---

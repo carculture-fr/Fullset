@@ -830,6 +830,17 @@
       "unused": "unused",
       "inUse": "In use: rename or merge it instead",
       "deleteConfirm": "Delete “{{value}}” from the list?"
+    },
+    "covers": {
+      "title": "Covers",
+      "note": "A game can have its IGDB entry without a cover: import without an image, failed download, offline add. This button asks IGDB again for the missing ones, 40 at a time.",
+      "missing_one": "{{count}} game without a cover",
+      "missing_other": "{{count}} games without a cover",
+      "action": "Fetch the missing covers",
+      "running": "Looking up…",
+      "done": "{{downloaded}} covers fetched, {{remaining}} still missing.",
+      "none": "Every cover is there.",
+      "needIgdb": "Set IGDB up in Services to fetch covers."
     }
   },
   "brocante": {

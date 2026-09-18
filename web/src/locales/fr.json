@@ -830,6 +830,17 @@
       "unused": "inutilisée",
       "inUse": "Utilisée : renomme-la ou fusionne-la plutôt",
       "deleteConfirm": "Supprimer « {{value}} » de la liste ?"
+    },
+    "covers": {
+      "title": "Jaquettes",
+      "note": "Un jeu peut avoir sa fiche IGDB sans jaquette : import sans image, téléchargement raté, ajout hors ligne. Ce bouton redemande les images manquantes à IGDB, par paquets de 40.",
+      "missing_one": "{{count}} jeu sans jaquette",
+      "missing_other": "{{count}} jeux sans jaquette",
+      "action": "Récupérer les jaquettes manquantes",
+      "running": "Recherche…",
+      "done": "{{downloaded}} jaquettes récupérées, {{remaining}} encore sans.",
+      "none": "Toutes les jaquettes sont là.",
+      "needIgdb": "Configure IGDB dans Services pour aller chercher les jaquettes."
     }
   },
   "brocante": {
