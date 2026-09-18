@@ -24,6 +24,21 @@ const INFO: Record<ServiceName, Info> = {
     helpUrl: "https://scandex.gamery.app",
     fields: { token: { label: "servicesForm.scandex.token" } },
   },
+  screenscraper: {
+    title: "ScreenScraper",
+    helpUrl: "https://www.screenscraper.fr/membreinscription.php",
+    fields: {
+      dev_id: { label: "servicesForm.screenscraper.devId" },
+      dev_password: { label: "servicesForm.screenscraper.devPassword" },
+      user: { label: "servicesForm.screenscraper.user" },
+      password: { label: "servicesForm.screenscraper.password" },
+    },
+  },
+  steamgriddb: {
+    title: "SteamGridDB",
+    helpUrl: "https://www.steamgriddb.com/profile/preferences/api",
+    fields: { api_key: { label: "servicesForm.steamgriddb.apiKey" } },
+  },
   romm: {
     title: "RomM",
     helpUrl: "https://github.com/rommapp/romm",

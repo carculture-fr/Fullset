@@ -762,6 +762,19 @@
       "help": "RomM sur GitHub",
       "url": "Adresse de RomM",
       "apiToken": "Jeton d'API"
+    },
+    "screenscraper": {
+      "what": "Jaquettes et titres français, console par console. La seule base à connaître « Bob l'éponge : Bataille pour Bikini Bottom ». Deux identifiants : ceux du logiciel, et ceux de ton compte.",
+      "help": "Créer un compte ScreenScraper",
+      "devId": "Identifiant développeur",
+      "devPassword": "Mot de passe développeur",
+      "user": "Ton compte",
+      "password": "Ton mot de passe"
+    },
+    "steamgriddb": {
+      "what": "Jaquettes déposées par la communauté, utiles quand IGDB n'a rien. Clé gratuite, propre à ton compte.",
+      "help": "Obtenir une clé SteamGridDB",
+      "apiKey": "Clé API"
     }
   },
   "settings": {

@@ -7,8 +7,10 @@ const CSP = [
   // React pose des styles en ligne (largeur des barres, hauteur des colonnes).
   "style-src 'self' 'unsafe-inline'",
   // Jaquettes IGDB affichées directement (recherche, souhaits), vignettes Commons proposées pour
-  // l'image par défaut du matériel, photos réduites en blob: avant envoi.
-  "img-src 'self' data: blob: https://images.igdb.com https://upload.wikimedia.org https://thumb.wikimedia.org",
+  // l'image par défaut du matériel, propositions SteamGridDB servies par son CDN, photos réduites
+  // en blob: avant envoi. ScreenScraper n'est pas ici : ses adresses portent des mots de passe,
+  // le serveur va chercher ses images lui-même et les sert sous /api/.
+  "img-src 'self' data: blob: https://images.igdb.com https://upload.wikimedia.org https://thumb.wikimedia.org https://cdn2.steamgriddb.com https://cdn.steamgriddb.com",
   "connect-src 'self'",
   "worker-src 'self'",
   "manifest-src 'self'",

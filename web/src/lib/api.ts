@@ -56,7 +56,7 @@ export const errorMessage = (err: unknown) => (err instanceof Error ? err.messag
 export type Health = { ok: boolean; version: string; schema: number; igdb: boolean; time: string }
 export type Me = { setupRequired: boolean; authenticated: boolean }
 export type Account = { username: string; display_name: string | null; email: string | null }
-export type ServiceName = "igdb" | "steam" | "scandex" | "romm"
+export type ServiceName = "igdb" | "steam" | "scandex" | "screenscraper" | "steamgriddb" | "romm"
 export type ServiceField = { set: boolean; source: "env" | "app" | null; secret: boolean; preview: string | null }
 export type ServicesStatus = Record<ServiceName, { configured: boolean; fields: Record<string, ServiceField> }>
 export type KnownBarcode ={ ean: string; game_id: number; edition: string | null }

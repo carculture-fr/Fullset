@@ -111,7 +111,9 @@
       "steam_other": "Steam responds: {{count}} games on the account.",
       "scandex": "ScanDex responds, the token is accepted.",
       "romm_one": "RomM responds: {{count}} platform.",
-      "romm_other": "RomM responds: {{count}} platforms."
+      "romm_other": "RomM responds: {{count}} platforms.",
+      "screenscraper": "ScreenScraper answers: {{count}} games found for the test.",
+      "steamgriddb": "SteamGridDB answers: {{count}} games found for the test."
     }
   },
   "steam": {
@@ -200,5 +202,19 @@
     "needPlatform": "Pick a console.",
     "noTitles": "No title found in that file.",
     "fileSource": "imported file"
+  },
+  "screenscraper": {
+    "unreachable": "ScreenScraper unreachable: {{error}}",
+    "http": "ScreenScraper answered HTTP {{status}}.",
+    "refused": "ScreenScraper refused the call: {{reason}}",
+    "unreadable": "Unreadable answer from ScreenScraper.",
+    "badKey": "Invalid cover reference.",
+    "noMedia": "ScreenScraper does not have this image."
+  },
+  "steamgriddb": {
+    "unreachable": "SteamGridDB unreachable: {{error}}",
+    "http": "SteamGridDB answered HTTP {{status}}.",
+    "keyRefused": "SteamGridDB refused the key.",
+    "refused": "SteamGridDB refused the call: {{reason}}"
   }
 }

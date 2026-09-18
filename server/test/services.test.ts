@@ -45,7 +45,7 @@ const put = (name: string, body: unknown) => fetch(`${base}/api/services/${name}
 describe("services", () => {
   it("part sans rien de configuré", async () => {
     const s = await get()
-    expect(Object.keys(s)).toEqual(["igdb", "steam", "scandex", "romm"])
+    expect(Object.keys(s)).toEqual(["igdb", "steam", "scandex", "screenscraper", "steamgriddb", "romm"])
     expect(s.steam).toEqual({ configured: false, fields: { api_key: { set: false, source: null, secret: true, preview: null }, steam_id: { set: false, source: null, secret: false, preview: null } } })
   })
 

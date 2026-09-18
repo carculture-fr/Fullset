@@ -762,6 +762,19 @@
       "help": "RomM on GitHub",
       "url": "RomM address",
       "apiToken": "API token"
+    },
+    "screenscraper": {
+      "what": "Covers and localised titles, console by console. The only database that knows the French titles. Two credentials: the software's, and your own account's.",
+      "help": "Create a ScreenScraper account",
+      "devId": "Developer ID",
+      "devPassword": "Developer password",
+      "user": "Your account",
+      "password": "Your password"
+    },
+    "steamgriddb": {
+      "what": "Community-uploaded covers, handy when IGDB has none. Free key, tied to your own account.",
+      "help": "Get a SteamGridDB key",
+      "apiKey": "API key"
     }
   },
   "settings": {

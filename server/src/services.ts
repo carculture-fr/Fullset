@@ -3,6 +3,8 @@ import type { Db } from "./db.js"
 import { Igdb, type IgdbClient } from "./igdb.js"
 import { Romm, type RommClient } from "./romm.js"
 import { Scandex, type ScandexClient } from "./scandex.js"
+import { Screenscraper, type ScreenscraperClient } from "./screenscraper.js"
+import { SteamGrid, type SteamGridClient } from "./steamgriddb.js"
 import { Steam, type SteamClient } from "./steam.js"
 import { msg } from "./i18n.js"
 
@@ -23,6 +25,14 @@ export const SERVICES = {
     { key: "steam_id", env: "STEAM_ID", secret: false },
   ],
   scandex: [{ key: "token", env: "SCANDEX_TOKEN", secret: true }],
+  // Deux jeux d'identifiants chez ScreenScraper : ceux du logiciel, et ceux de ton compte.
+  screenscraper: [
+    { key: "dev_id", env: "SCREENSCRAPER_DEV_ID", secret: false },
+    { key: "dev_password", env: "SCREENSCRAPER_DEV_PASSWORD", secret: true },
+    { key: "user", env: "SCREENSCRAPER_USER", secret: false },
+    { key: "password", env: "SCREENSCRAPER_PASSWORD", secret: true },
+  ],
+  steamgriddb: [{ key: "api_key", env: "STEAMGRIDDB_API_KEY", secret: true }],
   romm: [
     { key: "url", env: "ROMM_URL", secret: false },
     { key: "api_token", env: "ROMM_API_TOKEN", secret: true },
@@ -96,7 +106,14 @@ export function saveService(db: Db, service: string, input: Record<string, unkno
   })()
 }
 
-type Overrides = { igdb?: IgdbClient | null; steam?: SteamClient | null; scandex?: ScandexClient | null; romm?: RommClient | null }
+type Overrides = {
+  igdb?: IgdbClient | null
+  steam?: SteamClient | null
+  scandex?: ScandexClient | null
+  romm?: RommClient | null
+  screenscraper?: ScreenscraperClient | null
+  steamgriddb?: SteamGridClient | null
+}
 
 /**
  * Les clients se construisent à la demande depuis la configuration du moment, et restent en
@@ -121,6 +138,8 @@ export function createServices(db: Db, overrides: Overrides, fetchImpl: typeof f
     steam: () => build<SteamClient>("steam", (v) => new Steam(v.api_key, v.steam_id, fetchImpl)),
     scandex: () => build<ScandexClient>("scandex", (v) => new Scandex(v.token, fetchImpl)),
     romm: () => build<RommClient>("romm", (v) => new Romm(v.url, v.api_token, fetchImpl)),
+    screenscraper: () => build<ScreenscraperClient>("screenscraper", (v) => new Screenscraper(v.dev_id, v.dev_password, v.user, v.password, fetchImpl)),
+    steamgriddb: () => build<SteamGridClient>("steamgriddb", (v) => new SteamGrid(v.api_key, fetchImpl)),
   }
 }
 
@@ -137,6 +156,12 @@ export async function testService(services: Services, name: string): Promise<{ o
     if (name === "scandex") {
       await (client as ScandexClient).lookup("5026555245920")
       return { ok: true, message: msg("services.test.scandex") }
+    }
+    if (name === "screenscraper") {
+      return { ok: true, message: msg("services.test.screenscraper", { count: (await (client as ScreenscraperClient).search("Tearaway")).length }) }
+    }
+    if (name === "steamgriddb") {
+      return { ok: true, message: msg("services.test.steamgriddb", { count: (await (client as SteamGridClient).search("Tearaway")).length }) }
     }
     const romm = client as RommClient & { check?: () => Promise<number> }
     return { ok: true, message: msg("services.test.romm", { count: romm.check ? await romm.check() : 0 }) }

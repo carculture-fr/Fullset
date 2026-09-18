@@ -111,7 +111,9 @@
       "steam_other": "Steam répond : {{count}} jeux sur le compte.",
       "scandex": "ScanDex répond, le jeton est accepté.",
       "romm_one": "RomM répond : {{count}} plateforme.",
-      "romm_other": "RomM répond : {{count}} plateformes."
+      "romm_other": "RomM répond : {{count}} plateformes.",
+      "screenscraper": "ScreenScraper répond : {{count}} jeux trouvés pour l'essai.",
+      "steamgriddb": "SteamGridDB répond : {{count}} jeux trouvés pour l'essai."
     }
   },
   "steam": {
@@ -200,5 +202,19 @@
     "needPlatform": "Choisis une console.",
     "noTitles": "Aucun titre lu dans ce fichier.",
     "fileSource": "fichier importé"
+  },
+  "screenscraper": {
+    "unreachable": "ScreenScraper injoignable : {{error}}",
+    "http": "ScreenScraper a répondu HTTP {{status}}.",
+    "refused": "ScreenScraper refuse l'appel : {{reason}}",
+    "unreadable": "Réponse illisible de ScreenScraper.",
+    "badKey": "Repère de jaquette invalide.",
+    "noMedia": "ScreenScraper n'a pas cette image."
+  },
+  "steamgriddb": {
+    "unreachable": "SteamGridDB injoignable : {{error}}",
+    "http": "SteamGridDB a répondu HTTP {{status}}.",
+    "keyRefused": "SteamGridDB refuse la clé.",
+    "refused": "SteamGridDB refuse l'appel : {{reason}}"
   }
 }
