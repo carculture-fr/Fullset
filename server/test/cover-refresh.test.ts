@@ -11,11 +11,22 @@ import { addPhoto, setCoverFromPhoto } from "../src/media.js"
 
 const JPEG = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 0x10])
 const COVER = "https://images.igdb.com/igdb/image/upload/t_cover_big_2x/bioshock.jpg"
+const THUMB = "https://images.igdb.com/igdb/image/upload/t_cover_small_2x/burnout.jpg"
 
-// IGDB simulé : la fiche 20 a une jaquette, la fiche 99 n'en a pas.
+/**
+ * IGDB simulé : la fiche 20 a une jaquette, la fiche 99 n'en a pas, et la recherche par titre
+ * ne connaît que « Burnout Revenge » sur PlayStation 2 (avec un homonyme sur une autre console,
+ * qui ne doit pas être retenu).
+ */
 const igdb = {
   game: async (igdbId: number) => ({ cover_url: igdbId === 20 ? COVER : null, covers: [], platforms: [] }),
-  search: async () => [],
+  search: async (q: string) =>
+    q === "Burnout Revenge"
+      ? [
+          { igdb_id: 7, name: "Burnout Revenge", original_name: null, year: 2005, platforms: ["Xbox"], cover: THUMB },
+          { igdb_id: 8, name: "Burnout Revenge", original_name: null, year: 2005, platforms: ["PlayStation 2"], cover: THUMB },
+        ]
+      : [],
 } as unknown as IgdbClient
 const fetchImpl = (async () => new Response(JPEG, { headers: { "content-type": "image/jpeg" } })) as unknown as typeof fetch
 
@@ -29,29 +40,37 @@ beforeAll(() => {
   insert.run("PC", "BioShock", 20)
   insert.run("PC", "Jeu sans jaquette chez IGDB", 99)
   insert.run("PC", "Jeu sans fiche IGDB", null)
+  insert.run("PlayStation 2", "Burnout Revenge", null)
 })
 afterAll(() => {
   db?.close()
   rmSync(dir, { recursive: true, force: true })
 })
 
-describe("rattrapage des jaquettes", () => {
-  it("va chercher chez IGDB la jaquette d'un jeu qui n'en a pas, et laisse les autres tranquilles", async () => {
-    const report = await refreshMissingCovers(db, dir, igdb, fetchImpl)
-    // Le jeu sans fiche IGDB n'est pas examiné : rien à demander pour lui.
-    expect(report).toMatchObject({ looked: 2, downloaded: 1, remaining: 1 })
-    expect(report.failed[0]).toContain("IGDB n'a pas de jaquette")
+const coverOf = (title: string) => (db.prepare("SELECT cover_file, cover_source, cover_url FROM games WHERE title = ?").get(title) as { cover_file: string | null; cover_source: string | null; cover_url: string | null })
 
-    const bioshock = db.prepare("SELECT cover_file, cover_source FROM games WHERE title = ?").get("BioShock") as { cover_file: string | null; cover_source: string | null }
+describe("rattrapage des jaquettes", () => {
+  it("va chercher chez IGDB la jaquette des jeux qui n'en ont pas", async () => {
+    const report = await refreshMissingCovers(db, dir, igdb, fetchImpl)
+    expect(report).toMatchObject({ looked: 4, downloaded: 2 })
+
+    const bioshock = coverOf("BioShock")
     expect(bioshock.cover_source).toBe("igdb")
     expect(existsSync(path.join(dir, "covers", bioshock.cover_file!))).toBe(true)
-
-    const sansFiche = db.prepare("SELECT cover_file FROM games WHERE title = ?").get("Jeu sans fiche IGDB") as { cover_file: string | null }
-    expect(sansFiche.cover_file).toBeNull()
   })
 
-  it("ne redemande pas une jaquette déjà posée", async () => {
-    expect(await refreshMissingCovers(db, dir, igdb, fetchImpl)).toMatchObject({ looked: 1, downloaded: 0 })
+  it("sans fiche IGDB, retient le titre identique sur la bonne console, en grande taille", () => {
+    const burnout = coverOf("Burnout Revenge")
+    expect(burnout.cover_file).not.toBeNull()
+    // La recherche rend une vignette : la jaquette enregistrée est la grande.
+    expect(burnout.cover_url).toContain("t_cover_big_2x")
+  })
+
+  it("laisse tranquille ce qu'IGDB ne reconnaît pas", async () => {
+    expect(coverOf("Jeu sans fiche IGDB").cover_file).toBeNull()
+    const report = await refreshMissingCovers(db, dir, igdb, fetchImpl)
+    expect(report).toMatchObject({ looked: 2, downloaded: 0, remaining: 2 })
+    expect(report.failed.some((f) => f.includes("aucune fiche IGDB au même titre"))).toBe(true)
   })
 })
 
@@ -63,9 +82,9 @@ describe("photo d'exemplaire en jaquette", () => {
 
     const { cover } = setCoverFromPhoto(db, dir, photo.id)
     expect(cover).toMatch(/^\/covers\//)
-    const game = db.prepare("SELECT cover_file, cover_source FROM games WHERE id = ?").get(gameId) as { cover_file: string; cover_source: string }
+    const game = coverOf("Jeu sans fiche IGDB")
     expect(game.cover_source).toBe("photo")
-    expect(existsSync(path.join(dir, "covers", game.cover_file))).toBe(true)
+    expect(existsSync(path.join(dir, "covers", game.cover_file!))).toBe(true)
     // La photo d'origine reste sur l'exemplaire.
     expect(existsSync(path.join(dir, "photos", photo.url.replace("/photos/", "")))).toBe(true)
     expect(db.prepare("SELECT count(*) AS n FROM copy_photos WHERE copy_id = ?").get(copyId)).toMatchObject({ n: 1 })
