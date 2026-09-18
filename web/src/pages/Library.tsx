@@ -1,5 +1,5 @@
 import { Search } from "lucide-react"
-import { useMemo, useState } from "react"
+import { useMemo, useState, type ReactNode } from "react"
 import { Trans, useTranslation } from "react-i18next"
 import { Link, useSearchParams } from "react-router-dom"
 
@@ -20,6 +20,7 @@ import {
   writeSession,
   type View,
 } from "@/components/library-tabs"
+import { errorMessage, send } from "@/lib/api"
 import { euros, formatDate } from "@/lib/format"
 import { valueLabel } from "@/lib/i18n"
 import {
@@ -62,6 +63,11 @@ export default function Library() {
   const { filters, q, sort } = useMemo(() => readParams(params, prefs.games_sort), [params, prefs.games_sort])
   const [panelOpen, setPanelOpen] = useState(false)
   const [viewChoice, setViewChoice] = useState<View | null>(() => readView(VIEW_KEY))
+  // Sélection multiple : cocher plusieurs jeux pour les supprimer d'un coup.
+  const [selecting, setSelecting] = useState(false)
+  const [picked, setPicked] = useState<Set<number>>(new Set())
+  const [busy, setBusy] = useState(false)
+  const [note, setNote] = useState<string | null>(null)
   const view = viewChoice ?? prefs.games_view
   const [open, setOpen] = useState<string[] | null>(readOpen)
 
@@ -124,21 +130,61 @@ export default function Library() {
     )
   }
 
+  /** Supprime les jeux cochés : chaque exemplaire part, et le jeu avec son dernier exemplaire. */
+  const deletePicked = async () => {
+    if (!window.confirm(t("library.deleteSelectedConfirm", { count: picked.size }))) return
+    setBusy(true)
+    try {
+      const copies = (games ?? []).filter((g) => picked.has(g.id)).flatMap((g) => g.copies.map((c) => c.id))
+      for (const id of copies) await send("DELETE", `/api/copies/${id}`)
+      setNote(t("library.deleted", { count: picked.size }))
+      setPicked(new Set())
+      setSelecting(false)
+      await reload()
+    } catch (err) {
+      setNote(errorMessage(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const toggleGame = (id: number) =>
+    setPicked((p) => {
+      const next = new Set(p)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+
+  /** En mode sélection, toute la vignette devient une case à cocher : on ne part pas sur la fiche. */
+  const selectable = (r: Result, content: ReactNode) =>
+    selecting ? (
+      <button type="button" onClick={() => toggleGame(r.game.id)} aria-pressed={picked.has(r.game.id)} className="relative block w-full text-left">
+        <span className={picked.has(r.game.id) ? "" : "opacity-60"}>{content}</span>
+        <span
+          aria-hidden="true"
+          className={`absolute top-1.5 left-1.5 grid size-6 place-items-center rounded-full border-[1.5px] text-[11px] shadow-sm ${
+            picked.has(r.game.id) ? "border-primary bg-primary text-primary-foreground" : "border-border-strong bg-background"
+          }`}
+        >
+          {picked.has(r.game.id) ? "✓" : ""}
+        </span>
+      </button>
+    ) : (
+      content
+    )
+
   const renderResults = (list: Result[], showPlatform: boolean) =>
     view === "grille" ? (
       <ul className={GRID_CLASS}>
         {list.map((r) => (
-          <li key={r.game.id}>
-            <GameCard result={r} showPlatform={showPlatform} />
-          </li>
+          <li key={r.game.id}>{selectable(r, <GameCard result={r} showPlatform={showPlatform} />)}</li>
         ))}
       </ul>
     ) : (
       <ul>
         {list.map((r) => (
-          <li key={r.game.id}>
-            <GameRow result={r} showPlatform={showPlatform} />
-          </li>
+          <li key={r.game.id}>{selectable(r, <GameRow result={r} showPlatform={showPlatform} />)}</li>
         ))}
       </ul>
     )
@@ -204,6 +250,35 @@ export default function Library() {
             </button>
           </div>
         )}
+      </div>
+
+      {/* Sélection multiple : choisir plusieurs jeux, puis les supprimer d'un coup. */}
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={() => {
+            setSelecting((s) => !s)
+            setPicked(new Set())
+            setNote(null)
+          }}
+          className="min-h-10 rounded-full bg-card px-4 text-[13px] font-semibold transition-colors duration-150 hover:bg-foreground/7"
+        >
+          {selecting ? t("library.selectDone") : t("library.select")}
+        </button>
+        {selecting && (
+          <>
+            <span className="num text-[13px] text-muted-foreground">{t("library.selected", { count: picked.size })}</span>
+            <button
+              type="button"
+              onClick={deletePicked}
+              disabled={busy || picked.size === 0}
+              className="min-h-10 rounded-full bg-destructive px-4 text-[13px] font-semibold text-background transition-opacity duration-150 disabled:opacity-40"
+            >
+              {t("library.deleteSelected")}
+            </button>
+          </>
+        )}
+        {note && <span className="text-[13px] text-muted-foreground">{note}</span>}
       </div>
 
       {/* Le tri reste hors de la zone collante : sur téléphone, elle mangerait l'écran. */}

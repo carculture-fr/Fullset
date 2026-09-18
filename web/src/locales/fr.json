@@ -228,7 +228,13 @@
     "addGame": "Ajouter un jeu",
     "shortComplete": "Complet",
     "sortedBy": "Trié par",
-    "emptyImport": "Importer une collection"
+    "emptyImport": "Importer une collection",
+    "select": "Sélectionner",
+    "selectDone": "Terminer",
+    "selected": "{{count}} sélectionnés",
+    "deleteSelected": "Supprimer",
+    "deleteSelectedConfirm": "Supprimer {{count}} jeux de la collection ? Leurs exemplaires, photos et estimations partent avec. Pour une vente ou un prêt, utilise plutôt « Sortie ou événement » sur la fiche.",
+    "deleted": "{{count}} jeux supprimés."
   },
   "filterPanel": {
     "title": "Filtres",
@@ -852,7 +858,16 @@
       "done": "{{downloaded}} jaquettes récupérées, {{remaining}} encore sans.",
       "none": "Toutes les jaquettes sont là.",
       "needIgdb": "Configure IGDB dans Services pour aller chercher les jaquettes."
-    }
+    },
+    "tabs": {
+      "profile": "Profil",
+      "display": "Affichage",
+      "services": "Services",
+      "data": "Données",
+      "security": "Sécurité",
+      "lists": "Listes"
+    },
+    "dataTitle": "Tes données"
   },
   "brocante": {
     "title": "Brocante",
@@ -915,7 +930,14 @@
     "onCopy": "sur l'exemplaire",
     "forget": "Oublier le code {{ean}}",
     "forgetConfirm": "Oublier le code {{ean}} ({{title}}) ?",
-    "forgetConfirmCopy": "Oublier le code {{ean}} ({{title}}) ? Il sera aussi retiré de l'exemplaire qui le porte."
+    "forgetConfirmCopy": "Oublier le code {{ean}} ({{title}}) ? Il sera aussi retiré de l'exemplaire qui le porte.",
+    "select": "Sélectionner",
+    "selectDone": "Terminer",
+    "selectAll": "Tout sélectionner",
+    "selectNone": "Tout désélectionner",
+    "forgetMany": "Oublier les {{count}} codes",
+    "forgetManyConfirm": "Oublier {{count}} codes-barres ? Les jeux ne sont pas touchés, seuls les codes sont effacés.",
+    "forgotten": "{{count}} codes oubliés."
   },
   "scanner": {
     "defaultTitle": "Scanner le code-barres",

@@ -4,6 +4,7 @@
 // répertoire de données, couvert par la sauvegarde de la nuit.
 
 import { CollectionNotEmptyError } from "./import-collection.js"
+import { getPreferences, setPreferences } from "./preferences.js"
 import { csvCell, uncsvCell } from "./csv.js"
 import type { Db } from "./db.js"
 import { isoDate, text, toCents } from "./domain.js"
@@ -141,13 +142,22 @@ function readAll(db: Db): ExportGame[] {
   return games.map((g) => ({ ...g, cover_source: g.cover_url ? g.cover_source : null, copies: byGame.get(g.id) ?? [] }))
 }
 
+/** L'affichage par défaut voyage avec les données : une restauration retrouve les réglages. */
 export function exportJson(db: Db) {
   const wishlist = db.prepare(`SELECT ${WISH_COLUMNS.join(", ")} FROM wishlist ORDER BY id`).all()
   const hwValuations = db.prepare("SELECT amount_cents, valued_on, source, note FROM hardware_valuations WHERE hardware_id = ? ORDER BY valued_on, id")
   const hardware = (db.prepare(`SELECT id, ${HW_FIELDS.join(", ")} FROM hardware ORDER BY id`).all() as Array<Record<string, unknown> & { id: number }>).map(
     ({ id, ...h }) => ({ ...h, valuations: hwValuations.all(id) }),
   )
-  return { format: EXPORT_FORMAT, version: EXPORT_VERSION, exported_at: new Date().toISOString(), games: readAll(db), wishlist, hardware }
+  return {
+    format: EXPORT_FORMAT,
+    version: EXPORT_VERSION,
+    exported_at: new Date().toISOString(),
+    preferences: getPreferences(db),
+    games: readAll(db),
+    wishlist,
+    hardware,
+  }
 }
 
 const euros = (cents: number | null | undefined) => (cents === null || cents === undefined ? "" : (cents / 100).toFixed(2).replace(".", ","))
@@ -300,6 +310,7 @@ type JsonExport = {
   >
   wishlist?: Array<Record<string, unknown>>
   hardware?: Array<Record<string, unknown> & { valuations?: Array<Record<string, unknown>> }>
+  preferences?: Record<string, unknown>
 }
 
 type HwRow = { row: Record<string, string | number | null>; valuations: ValuationRow[] }
@@ -397,7 +408,17 @@ export function importExport(db: Db, content: string): TransferReport {
       throw new ImportFormatError(msg("common.unreadableJson"))
     }
     const { items, wishlist, hardware } = itemsFromJson(data as JsonExport)
-    return insertAll(db, items, wishlist, hardware)
+    const report = insertAll(db, items, wishlist, hardware)
+    // L'affichage par défaut revient avec les données : une restauration retrouve les réglages.
+    const prefs = (data as JsonExport).preferences
+    if (prefs && typeof prefs === "object") {
+      try {
+        setPreferences(db, prefs)
+      } catch {
+        // Réglages d'une autre version : on garde ceux d'origine plutôt que d'échouer l'import.
+      }
+    }
+    return report
   }
   return insertAll(db, itemsFromCsv(content))
 }

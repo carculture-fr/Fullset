@@ -5,7 +5,7 @@ import { Link } from "react-router-dom"
 import { BarList, BreakdownTable, DataTable, SpendingColumns, SpendingTables, StackedBar, lastTwelveMonths, type SpendingView } from "@/components/charts"
 import { toneOf } from "@/components/condition"
 import { ErrorNote } from "@/components/fields"
-import { api, errorMessage, upload, uploadWith, type Breakdown, type Stats as StatsData } from "@/lib/api"
+import { api, errorMessage, type Breakdown, type Stats as StatsData } from "@/lib/api"
 import { euros } from "@/lib/format"
 import { valueLabel } from "@/lib/i18n"
 import { useLibrary } from "@/lib/library-data"
@@ -29,7 +29,6 @@ const toneIn = (map: Record<string, string>) => (label: string) => map[label] ??
 
 const kicker = "text-[11px] tracking-[0.08em] uppercase"
 const hero = "mt-2 font-heading text-[25px] leading-[1.05] lg:text-[32px]"
-const ghostPill = "inline-flex min-h-11 items-center rounded-full border border-border-strong bg-background px-4 text-sm font-semibold transition-colors duration-150 hover:bg-foreground/[.07]"
 
 export default function Stats() {
   const { t } = useTranslation()
@@ -196,7 +195,6 @@ export default function Stats() {
         </Card>
       </div>
 
-      <DataTransfer empty={s.copies === 0} onImported={load} />
     </main>
   )
 }
@@ -210,115 +208,5 @@ function Card({ title, note, className = "", children }: { title: string; note?:
       </div>
       <div className="mt-5 lg:flex-1">{children}</div>
     </section>
-  )
-}
-
-function DataTransfer({ empty, onImported }: { empty: boolean; onImported: () => void }) {
-  const { t } = useTranslation()
-  const { reload } = useLibrary()
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [done, setDone] = useState<string | null>(null)
-
-  return (
-    <Card title={t("stats.data.title")}>
-      <p className="-mt-3 mb-4 text-[13px] text-muted-foreground">{t("stats.data.note")}</p>
-      <div className="flex flex-wrap gap-2">
-        <a href="/api/export.csv" download className={ghostPill}>
-          {t("stats.data.exportCsv")}
-        </a>
-        <a href="/api/export.json" download className={ghostPill}>
-          {t("stats.data.exportJson")}
-        </a>
-        <a href="/api/export-materiel.csv" download className={ghostPill}>
-          {t("stats.data.exportHardware")}
-        </a>
-        <a href="/api/export.zip" download className={`${ghostPill} font-semibold text-primary-text`}>
-          {t("stats.data.exportZip")}
-        </a>
-      </div>
-      <p className="mt-3 text-xs text-subtle-foreground">{t("stats.data.photosNote")}</p>
-
-      <div className="mt-5 grid gap-5 border-t border-border pt-5 md:grid-cols-2">
-        <div>
-          <p className="text-[14px] font-semibold">{t("stats.data.legacyTitle")}</p>
-          <p className="mt-1 text-[13px] text-muted-foreground">{t("stats.data.legacyNote")}</p>
-          <Link to="/importer/ancienne-appli" className={`${ghostPill} mt-3 text-primary-text`}>
-            {t("stats.data.legacyLink")}
-          </Link>
-        </div>
-
-        <div>
-          <p className="text-[14px] font-semibold">{t("stats.data.restoreTitle")}</p>
-          {empty ? (
-            <>
-              <p className="mt-1 text-[13px] text-muted-foreground">{t("stats.data.restoreNote")}</p>
-              <label className={`${ghostPill} mt-3 cursor-pointer ${busy ? "opacity-45" : ""}`}>
-                {busy ? t("stats.data.importing") : t("stats.data.chooseFile")}
-                <input
-                  type="file"
-                  accept=".csv,.json,text/csv,application/json"
-                  className="hidden"
-                  disabled={busy}
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0]
-                    e.target.value = ""
-                    if (!file) return
-                    setBusy(true)
-                    setError(null)
-                    try {
-                      const r = await upload<{ games: number; copies: number; totalCents: number }>("/api/import", file, file.name)
-                      setDone(t("stats.data.imported", { games: t("stats.games", { count: r.games }), copies: t("stats.copies", { count: r.copies }), amount: euros(r.totalCents) }))
-                      await reload()
-                      onImported()
-                    } catch (err) {
-                      setError(errorMessage(err))
-                    } finally {
-                      setBusy(false)
-                    }
-                  }}
-                />
-              </label>
-            </>
-          ) : (
-            <p className="mt-1 text-[13px] text-muted-foreground">{t("stats.data.onlyEmpty")}</p>
-          )}
-          {/* Remise en place d'une sauvegarde complète : elle remplace tout, d'où la confirmation. */}
-          <p className="mt-5 text-[14px] font-semibold">{t("stats.data.restoreZipTitle")}</p>
-          <p className="mt-1 text-[13px] text-muted-foreground">{t("stats.data.restoreZipNote")}</p>
-          <label className={`${ghostPill} mt-3 cursor-pointer ${busy ? "opacity-45" : ""}`}>
-            {busy ? t("stats.data.importing") : t("stats.data.restoreZipAction")}
-            <input
-              type="file"
-              accept=".zip,application/zip"
-              className="hidden"
-              disabled={busy}
-              onChange={async (e) => {
-                const file = e.target.files?.[0]
-                e.target.value = ""
-                if (!file || !window.confirm(t("stats.data.restoreZipConfirm"))) return
-                setBusy(true)
-                setError(null)
-                try {
-                  const r = await uploadWith<{ games: number; copies: number; images: number }>("/api/restore", file, { confirm: "remplacer" })
-                  setDone(t("stats.data.restored", { games: t("stats.games", { count: r.games }), copies: t("stats.copies", { count: r.copies }), images: r.images }))
-                  await reload()
-                  onImported()
-                } catch (err) {
-                  setError(errorMessage(err))
-                } finally {
-                  setBusy(false)
-                }
-              }}
-            />
-          </label>
-
-          <div className="mt-3 space-y-2">
-            <ErrorNote message={error} />
-            {done && <p className="rounded-[16px] bg-primary-tint px-4 py-2.5 text-sm text-primary-tint-foreground">{done}</p>}
-          </div>
-        </div>
-      </div>
-    </Card>
   )
 }

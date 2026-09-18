@@ -8,6 +8,7 @@ import { createCopy } from "../src/copies.js"
 import { openDb, type Db } from "../src/db.js"
 import { addEvent } from "../src/events.js"
 import { createHardware } from "../src/hardware.js"
+import { getPreferences, setPreferences } from "../src/preferences.js"
 import { summary } from "../src/stats.js"
 import { unzipStore, zipStore } from "../src/zip.js"
 
@@ -65,6 +66,12 @@ describe("sauvegarde complète", () => {
     expect(targetDb.prepare("SELECT count(*) AS n FROM games").get()).toMatchObject({ n: 1 })
     // Le seul exemplaire est prêté, donc sorti : les totaux de la collection sont à zéro.
     expect(summary(targetDb)).toMatchObject({ games: 0, copies: 0 })
+  })
+
+  it("emporte l'affichage par défaut : une restauration retrouve les réglages", () => {
+    setPreferences(db, { games_sort: "plateforme", games_groups: "depliees" })
+    restoreBackup(targetDb, target, buildBackup(db, dir))
+    expect(getPreferences(targetDb)).toMatchObject({ games_sort: "plateforme", games_groups: "depliees" })
   })
 
   it("refuse une archive qui n'est pas une sauvegarde Fullset", () => {

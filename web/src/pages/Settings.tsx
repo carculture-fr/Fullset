@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent, type ReactNode } from "react"
 import { useTranslation } from "react-i18next"
 import { Link } from "react-router-dom"
 
+import { DataTransfer } from "@/components/data-transfer"
 import { ErrorNote, Field, KeyedChips, inputClass } from "@/components/fields"
 import { ServicesForm } from "@/components/services-form"
 import { api, errorMessage, send, type Account, type SteamStatus, type SteamSyncReport } from "@/lib/api"
@@ -20,25 +21,65 @@ const primaryButton =
 const ghostButton = "inline-flex min-h-11 items-center rounded-full border border-border-strong px-4 text-sm font-semibold transition-colors duration-150 hover:bg-foreground/[.07] disabled:opacity-45"
 const textButton = "inline-flex min-h-9 shrink-0 items-center rounded-full px-3 text-[13px] font-semibold text-muted-foreground transition-colors duration-150 hover:bg-foreground/[.07] hover:text-foreground disabled:opacity-30"
 
+// Les réglages sont rangés par sujet : on ne fait pas défiler dix cartes pour changer une langue.
+const TABS = ["profil", "affichage", "services", "donnees", "securite", "listes"] as const
+type Tab = (typeof TABS)[number]
+const TAB_LABEL = {
+  profil: "profile",
+  affichage: "display",
+  services: "services",
+  donnees: "data",
+  securite: "security",
+  listes: "lists",
+} as const
+
 export default function Settings() {
   const { t } = useTranslation()
+  const [tab, setTab] = useState<Tab>("profil")
+
   return (
     <div className="mx-auto max-w-2xl space-y-4 pb-4 lg:space-y-5">
       <h1 className="text-[29px]">{t("settings.title")}</h1>
-      <Profile />
-      <DisplaySection />
-      <Section title={t("settings.services.title")} note={t("settings.services.note")}>
-        <ServicesForm />
-      </Section>
-      <Security />
-      <ListsManager />
-      <SteamSection />
-      <CoversSection />
-      <Section title={t("settings.barcodes.title")} note={t("settings.barcodes.note")}>
-        <Link to="/codes-barres" className={ghostButton}>
-          {t("settings.barcodes.manage")}
-        </Link>
-      </Section>
+
+      <nav role="tablist" aria-label={t("settings.title")} className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 lg:mx-0 lg:flex-wrap lg:px-0">
+        {TABS.map((key) => (
+          <button
+            key={key}
+            role="tab"
+            aria-selected={tab === key}
+            onClick={() => setTab(key)}
+            className={`min-h-10 shrink-0 rounded-full px-4 text-[13px] whitespace-nowrap transition-colors duration-150 ${
+              tab === key ? "bg-primary font-heading text-primary-foreground" : "bg-card text-foreground hover:bg-foreground/7"
+            }`}
+          >
+            {t(`settings.tabs.${TAB_LABEL[key]}`)}
+          </button>
+        ))}
+      </nav>
+
+      {tab === "profil" && <Profile />}
+      {tab === "affichage" && <DisplaySection />}
+      {tab === "services" && (
+        <>
+          <Section title={t("settings.services.title")} note={t("settings.services.note")}>
+            <ServicesForm />
+          </Section>
+          <SteamSection />
+          <CoversSection />
+          <Section title={t("settings.barcodes.title")} note={t("settings.barcodes.note")}>
+            <Link to="/codes-barres" className={ghostButton}>
+              {t("settings.barcodes.manage")}
+            </Link>
+          </Section>
+        </>
+      )}
+      {tab === "donnees" && (
+        <Section title={t("settings.dataTitle")}>
+          <DataTransfer />
+        </Section>
+      )}
+      {tab === "securite" && <Security />}
+      {tab === "listes" && <ListsManager />}
     </div>
   )
 }

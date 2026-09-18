@@ -228,7 +228,13 @@
     "addGame": "Add a game",
     "shortComplete": "Complete",
     "sortedBy": "Sorted by",
-    "emptyImport": "Import a collection"
+    "emptyImport": "Import a collection",
+    "select": "Select",
+    "selectDone": "Done",
+    "selected": "{{count}} selected",
+    "deleteSelected": "Delete",
+    "deleteSelectedConfirm": "Delete {{count}} games from the collection? Their copies, photos and valuations go with them. For a sale or a loan, use “Exit or event” on the game page instead.",
+    "deleted": "{{count}} games deleted."
   },
   "filterPanel": {
     "title": "Filters",
@@ -852,7 +858,16 @@
       "done": "{{downloaded}} covers fetched, {{remaining}} still missing.",
       "none": "Every cover is there.",
       "needIgdb": "Set IGDB up in Services to fetch covers."
-    }
+    },
+    "tabs": {
+      "profile": "Profile",
+      "display": "Display",
+      "services": "Services",
+      "data": "Data",
+      "security": "Security",
+      "lists": "Lists"
+    },
+    "dataTitle": "Your data"
   },
   "brocante": {
     "title": "Flea market",
@@ -915,7 +930,14 @@
     "onCopy": "on the copy",
     "forget": "Forget code {{ean}}",
     "forgetConfirm": "Forget code {{ean}} ({{title}})?",
-    "forgetConfirmCopy": "Forget code {{ean}} ({{title}})? It will also be removed from the copy that carries it."
+    "forgetConfirmCopy": "Forget code {{ean}} ({{title}})? It will also be removed from the copy that carries it.",
+    "select": "Select",
+    "selectDone": "Done",
+    "selectAll": "Select all",
+    "selectNone": "Clear selection",
+    "forgetMany": "Forget the {{count}} codes",
+    "forgetManyConfirm": "Forget {{count}} barcodes? The games are untouched, only the codes are erased.",
+    "forgotten": "{{count}} codes forgotten."
   },
   "scanner": {
     "defaultTitle": "Scan the barcode",
