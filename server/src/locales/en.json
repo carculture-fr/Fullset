@@ -163,7 +163,9 @@
     "collectionNotEmpty_one": "The collection already holds {{count}} copy: import refused.",
     "collectionNotEmpty_other": "The collection already holds {{count}} copies: import refused.",
     "hardwareNotEmpty_one": "The hardware list already holds {{count}} item: import refused.",
-    "hardwareNotEmpty_other": "The hardware list already holds {{count}} items: import refused."
+    "hardwareNotEmpty_other": "The hardware list already holds {{count}} items: import refused.",
+    "restoreNeedsConfirm": "Restore not confirmed.",
+    "badArchive": "That archive holds no Fullset backup."
   },
   "legacy": {
     "notLegacyCsv": "This CSV does not look like an export from the old app (columns “Name” / “Nom” and “Platform” / “Plateforme” expected).",

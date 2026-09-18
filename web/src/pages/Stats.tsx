@@ -5,7 +5,7 @@ import { Link } from "react-router-dom"
 import { BarList, BreakdownTable, DataTable, SpendingColumns, SpendingTables, StackedBar, lastTwelveMonths, type SpendingView } from "@/components/charts"
 import { toneOf } from "@/components/condition"
 import { ErrorNote } from "@/components/fields"
-import { api, errorMessage, upload, type Breakdown, type Stats as StatsData } from "@/lib/api"
+import { api, errorMessage, upload, uploadWith, type Breakdown, type Stats as StatsData } from "@/lib/api"
 import { euros } from "@/lib/format"
 import { valueLabel } from "@/lib/i18n"
 import { useLibrary } from "@/lib/library-data"
@@ -233,6 +233,9 @@ function DataTransfer({ empty, onImported }: { empty: boolean; onImported: () =>
         <a href="/api/export-materiel.csv" download className={ghostPill}>
           {t("stats.data.exportHardware")}
         </a>
+        <a href="/api/export.zip" download className={`${ghostPill} font-semibold text-primary-text`}>
+          {t("stats.data.exportZip")}
+        </a>
       </div>
       <p className="mt-3 text-xs text-subtle-foreground">{t("stats.data.photosNote")}</p>
 
@@ -280,6 +283,36 @@ function DataTransfer({ empty, onImported }: { empty: boolean; onImported: () =>
           ) : (
             <p className="mt-1 text-[13px] text-muted-foreground">{t("stats.data.onlyEmpty")}</p>
           )}
+          {/* Remise en place d'une sauvegarde complète : elle remplace tout, d'où la confirmation. */}
+          <p className="mt-5 text-[14px] font-semibold">{t("stats.data.restoreZipTitle")}</p>
+          <p className="mt-1 text-[13px] text-muted-foreground">{t("stats.data.restoreZipNote")}</p>
+          <label className={`${ghostPill} mt-3 cursor-pointer ${busy ? "opacity-45" : ""}`}>
+            {busy ? t("stats.data.importing") : t("stats.data.restoreZipAction")}
+            <input
+              type="file"
+              accept=".zip,application/zip"
+              className="hidden"
+              disabled={busy}
+              onChange={async (e) => {
+                const file = e.target.files?.[0]
+                e.target.value = ""
+                if (!file || !window.confirm(t("stats.data.restoreZipConfirm"))) return
+                setBusy(true)
+                setError(null)
+                try {
+                  const r = await uploadWith<{ games: number; copies: number; images: number }>("/api/restore", file, { confirm: "remplacer" })
+                  setDone(t("stats.data.restored", { games: t("stats.games", { count: r.games }), copies: t("stats.copies", { count: r.copies }), images: r.images }))
+                  await reload()
+                  onImported()
+                } catch (err) {
+                  setError(errorMessage(err))
+                } finally {
+                  setBusy(false)
+                }
+              }}
+            />
+          </label>
+
           <div className="mt-3 space-y-2">
             <ErrorNote message={error} />
             {done && <p className="rounded-[16px] bg-primary-tint px-4 py-2.5 text-sm text-primary-tint-foreground">{done}</p>}

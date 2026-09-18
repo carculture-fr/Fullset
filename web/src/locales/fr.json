@@ -548,7 +548,13 @@
       "importing": "Import en cours…",
       "chooseFile": "Choisir un fichier",
       "imported": "{{games}}, {{copies}}, {{amount}} importés. Les jaquettes se téléchargent en arrière-plan.",
-      "onlyEmpty": "Possible seulement dans une collection vide : réimporter par-dessus doublerait tout, et rien ne permet de rapprocher les exemplaires de façon sûre."
+      "onlyEmpty": "Possible seulement dans une collection vide : réimporter par-dessus doublerait tout, et rien ne permet de rapprocher les exemplaires de façon sûre.",
+      "exportZip": "Sauvegarde complète (.zip)",
+      "restoreZipTitle": "Restaurer une sauvegarde",
+      "restoreZipNote": "L'archive .zip remet les données et les images en place. Elle remplace la collection actuelle.",
+      "restoreZipAction": "Choisir une sauvegarde…",
+      "restoreZipConfirm": "Restaurer cette sauvegarde ? La collection actuelle (jeux, matériel, souhaits, images) est remplacée.",
+      "restored": "Restauré : {{games}}, {{copies}}, {{images}} images."
     }
   },
   "charts": {

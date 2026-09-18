@@ -25,7 +25,11 @@ docker compose up -d
 
 Open `http://<your-server>:3110` and create your account: there is one account per installation, and sign-up closes once it exists.
 
+### Backup and restore
+
 All data (SQLite database, covers, photos) lives in the `fullset-data` volume, mounted on `/data`: back it up.
+
+From the app, *Statistiques → Données* also gives a **full backup** as a single `.zip` (the JSON export plus every cover and photo), and puts one back with **Restaurer une sauvegarde**. Restoring replaces the current collection — games, hardware, wishlist and images — so it is asked for confirmation first. The reference lists of the Fullset mode and your service keys are left untouched.
 
 ### Optional services
 
@@ -77,3 +81,5 @@ Les services (IGDB, Steam, ScanDex, RomM) se règlent à l'installation puis dan
 L'interface existe en français et en anglais : Réglages → Affichage par défaut → Langue (avant connexion, celle du navigateur). Les traductions sont dans `web/src/locales/` et `server/src/locales/` (le français fait référence).
 
 Toutes les données sont dans le volume `fullset-data` (`/data`) : pense à le sauvegarder.
+
+Depuis l'appli, **Statistiques → Données** propose aussi une **sauvegarde complète** en un seul `.zip` (l'export JSON, toutes les jaquettes et toutes les photos), et sait la remettre en place avec **Restaurer une sauvegarde**. La restauration remplace la collection en cours — jeux, matériel, souhaits et images — d'où la confirmation demandée ; les listes du mode Fullset et les clés des services ne sont pas touchées.

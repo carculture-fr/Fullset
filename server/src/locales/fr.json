@@ -163,7 +163,9 @@
     "collectionNotEmpty_one": "La collection contient déjà {{count}} exemplaire : import refusé.",
     "collectionNotEmpty_other": "La collection contient déjà {{count}} exemplaires : import refusé.",
     "hardwareNotEmpty_one": "Le matériel contient déjà {{count}} élément : import refusé.",
-    "hardwareNotEmpty_other": "Le matériel contient déjà {{count}} éléments : import refusé."
+    "hardwareNotEmpty_other": "Le matériel contient déjà {{count}} éléments : import refusé.",
+    "restoreNeedsConfirm": "Restauration non confirmée.",
+    "badArchive": "Cette archive ne contient pas de sauvegarde Fullset."
   },
   "legacy": {
     "notLegacyCsv": "Ce CSV ne ressemble pas à l'export de l'ancienne application (colonnes « Name » / « Nom » et « Platform » / « Plateforme » attendues).",

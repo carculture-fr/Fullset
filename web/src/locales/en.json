@@ -548,7 +548,13 @@
       "importing": "Importing…",
       "chooseFile": "Choose a file",
       "imported": "{{games}}, {{copies}}, {{amount}} imported. Covers are downloading in the background.",
-      "onlyEmpty": "Only possible in an empty collection: importing on top would duplicate everything, and there is no safe way to match copies."
+      "onlyEmpty": "Only possible in an empty collection: importing on top would duplicate everything, and there is no safe way to match copies.",
+      "exportZip": "Full backup (.zip)",
+      "restoreZipTitle": "Restore a backup",
+      "restoreZipNote": "The .zip archive puts the data and images back. It replaces the current collection.",
+      "restoreZipAction": "Choose a backup…",
+      "restoreZipConfirm": "Restore this backup? The current collection (games, hardware, wishlist, images) is replaced.",
+      "restored": "Restored: {{games}}, {{copies}}, {{images}} images."
     }
   },
   "charts": {

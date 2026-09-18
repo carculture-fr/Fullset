@@ -47,6 +47,7 @@ import { CatalogSourceError, fetchSourceList, sourceList } from "./fullsetnet.js
 import { availableSets, deleteSet, getSet, linkSetCovers, markRomm, saveSet, setsForGame } from "./sets.js"
 import { fileSlug, parseRomsetList } from "./romset.js"
 import { refreshMissingCovers } from "./cover-refresh.js"
+import { buildBackup, restoreBackup } from "./backup.js"
 import { getPreferences, setPreferences } from "./preferences.js"
 import { keepLanguage, languageMiddleware, msg } from "./i18n.js"
 
@@ -308,6 +309,19 @@ export function createApp(db: Db, dataDir: string, deps: AppDeps = {}) {
   app.get("/api/export.json", (_req, res) => {
     res.setHeader("Content-Disposition", `attachment; filename="fullset-${today()}.json"`)
     res.type("application/json").send(JSON.stringify(exportJson(db), null, 2))
+  })
+
+  // Sauvegarde complète : l'export JSON et les images dans une archive à ranger quelque part.
+  app.get("/api/export.zip", (_req, res) => {
+    res.setHeader("Content-Type", "application/zip")
+    res.setHeader("Content-Disposition", `attachment; filename="fullset-${today()}.zip"`)
+    res.send(buildBackup(db, dataDir))
+  })
+  // Restauration : remplace la collection actuelle, d'où la confirmation explicite.
+  app.post("/api/restore", upload.single("file"), (req, res) => {
+    if (!req.file) throw new ValidationError(msg("common.noFile"))
+    if (String(req.body?.confirm ?? "") !== "remplacer") throw new ValidationError(msg("transfer.restoreNeedsConfirm"))
+    res.json(restoreBackup(db, dataDir, req.file.buffer))
   })
 
   // Accepte un export Fullset (CSV ou JSON) ou le collection.json de départ (un tableau).
