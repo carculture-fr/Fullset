@@ -5,7 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
 import { createCopy } from "../src/copies.js"
 import { openDb, type Db } from "../src/db.js"
-import { addEvent, addHardwareEvent, deleteEvent, exitStats, journal } from "../src/events.js"
+import { addEvent, addHardwareEvent, currentExits, deleteEvent, exitStats, journal } from "../src/events.js"
 import { createHardware, getHardware, hardwareStats, listHardware } from "../src/hardware.js"
 import { getGame, listLibrary } from "../src/library.js"
 import { stats, summary } from "../src/stats.js"
@@ -83,6 +83,15 @@ describe("vie d'un exemplaire", () => {
 
     addHardwareEvent(db, hwId, { kind: "Retour", happened_on: "2026-06-20" })
     expect(listHardware(db)).toHaveLength(1)
+  })
+
+  it("liste ce qui est sorti et n'est pas revenu : les prêts rendus n'y sont plus", () => {
+    const copyId = createCopy(db, gameId, { support: "Physique", price: "5,00" })
+    addEvent(db, copyId, { kind: "Prêté", happened_on: "2026-07-01", person: "Alex" })
+    expect(currentExits(db).filter((e) => e.kind === "Prêté").map((e) => e.person)).toContain("Alex")
+
+    addEvent(db, copyId, { kind: "Retour", happened_on: "2026-07-20" })
+    expect(currentExits(db).some((e) => e.person === "Alex")).toBe(false)
   })
 
   it("refuse un motif inconnu et une date impossible", () => {

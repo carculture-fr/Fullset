@@ -3,19 +3,27 @@ import { useTranslation } from "react-i18next"
 import { Link } from "react-router-dom"
 
 import { Cover } from "@/components/cover"
+import { Segmented } from "@/components/page-bits"
 import { api, errorMessage, type JournalEntry } from "@/lib/api"
 import { euros, formatDate } from "@/lib/format"
 import { valueLabel } from "@/lib/i18n"
 
-// Le journal de la collection : ce qui est arrivé aux jeux, du plus récent au plus ancien.
+// Le journal de la collection : ce qui est arrivé aux jeux et au matériel, et ce qui est sorti
+// sans être revenu (prêts en cours, ventes, pannes).
+
+type Tab = "tout" | "prets" | "sortis"
+const TABS: readonly Tab[] = ["tout", "prets", "sortis"]
 
 export default function Journal() {
   const { t } = useTranslation()
   const [entries, setEntries] = useState<JournalEntry[] | null>(null)
+  const [exits, setExits] = useState<JournalEntry[]>([])
+  const [tab, setTab] = useState<Tab>("tout")
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     api<{ entries: JournalEntry[] }>("/api/journal").then((r) => setEntries(r.entries), (err) => setError(errorMessage(err)))
+    api<{ entries: JournalEntry[] }>("/api/exits").then((r) => setExits(r.entries), () => {})
   }, [])
 
   if (error) return <p className="py-16 text-center text-destructive">{error}</p>
@@ -24,6 +32,8 @@ export default function Journal() {
   const sold = entries.filter((e) => e.kind === "Vendu")
   const soldCents = sold.reduce((n, e) => n + (e.amount_cents ?? 0), 0)
   const costCents = sold.reduce((n, e) => n + (e.price_cents ?? 0), 0)
+  const lent = exits.filter((e) => e.kind === "Prêté")
+  const shown = tab === "tout" ? entries : tab === "prets" ? lent : exits
 
   return (
     <div className="space-y-4 pb-4">
@@ -32,18 +42,28 @@ export default function Journal() {
         <p className="mt-1 text-[13px] text-muted-foreground">{t("journal.subtitle")}</p>
       </div>
 
-      {sold.length > 0 && (
+      {(exits.length > 0 || entries.length > 0) && (
+        <Segmented
+          options={TABS}
+          value={tab}
+          onChange={setTab}
+          label={t("journal.title")}
+          display={(v) => (v === "tout" ? t("journal.tabAll") : v === "prets" ? t("journal.tabLent", { count: lent.length }) : t("journal.tabOut", { count: exits.length }))}
+        />
+      )}
+
+      {tab === "tout" && sold.length > 0 && (
         <p className="num rounded-card bg-card p-4 text-[13px]">
           <strong className="font-semibold">{t("journal.sold", { count: sold.length })}</strong> · {t("journal.soldTotal", { amount: euros(soldCents) })} ·{" "}
           <span className={soldCents >= costCents ? "text-primary-text" : "text-destructive"}>{t("journal.result", { amount: euros(soldCents - costCents) })}</span>
         </p>
       )}
 
-      {entries.length === 0 ? (
-        <p className="py-14 text-center text-muted-foreground">{t("journal.empty")}</p>
+      {shown.length === 0 ? (
+        <p className="py-14 text-center text-muted-foreground">{tab === "prets" ? t("journal.noLoan") : tab === "sortis" ? t("journal.noExit") : t("journal.empty")}</p>
       ) : (
         <ul className="space-y-2">
-          {entries.map((e) => (
+          {shown.map((e) => (
             <li key={`${e.game_id === null ? "m" : "j"}${e.id}`}>
               <Link
                 to={e.game_id === null ? `/consoles/${e.hardware_id}` : `/jeux/${e.game_id}`}

@@ -39,7 +39,7 @@ import {
   updateHardware,
 } from "./hardware.js"
 import { addValuation, deleteValuation } from "./valuations.js"
-import { addEvent, addHardwareEvent, deleteEvent, deleteHardwareEvent, journal } from "./events.js"
+import { addEvent, addHardwareEvent, currentExits, deleteEvent, deleteHardwareEvent, journal } from "./events.js"
 import { canonicalPlatform, listPlatforms } from "./catalog.js"
 import { COMMONS_UA, CommonsError, commonsFile, imageOptions, isCommonsMedia, pickAutomatic, type CommonsImage } from "./commons.js"
 import { addWish, deleteWish, listWishlist, updateWish } from "./wishlist.js"
@@ -436,6 +436,8 @@ export function createApp(db: Db, dataDir: string, deps: AppDeps = {}) {
   })
   app.delete("/api/hardware-events/:id", (req, res) => res.json(deleteHardwareEvent(db, id(req))))
   app.get("/api/journal", (req, res) => res.json({ entries: journal(db, Number(req.query.limit) || 200) }))
+  // Ce qui est sorti et n'est pas revenu : prêts en cours, ventes, pannes.
+  app.get("/api/exits", (_req, res) => res.json({ entries: currentExits(db) }))
 
   app.post("/api/copies/:id/photos", upload.single("file"), (req, res) => {
     if (!req.file) throw new ValidationError(msg("common.noImage"))

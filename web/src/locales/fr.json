@@ -994,6 +994,11 @@
     "sold": "{{count}} vendus",
     "soldTotal": "{{amount}} encaissés",
     "result": "Différence avec le prix d'achat : {{amount}}",
-    "open": "Voir le jeu"
+    "open": "Voir le jeu",
+    "tabAll": "Tout",
+    "tabLent": "Prêtés ({{count}})",
+    "tabOut": "Sortis ({{count}})",
+    "noLoan": "Aucun prêt en cours.",
+    "noExit": "Rien n'est sorti de la collection."
   }
 }

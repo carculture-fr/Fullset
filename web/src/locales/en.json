@@ -994,6 +994,11 @@
     "sold": "{{count}} sold",
     "soldTotal": "{{amount}} received",
     "result": "Difference with the purchase price: {{amount}}",
-    "open": "Open the game"
+    "open": "Open the game",
+    "tabAll": "All",
+    "tabLent": "Lent ({{count}})",
+    "tabOut": "Gone ({{count}})",
+    "noLoan": "No loan out right now.",
+    "noExit": "Nothing has left the collection."
   }
 }

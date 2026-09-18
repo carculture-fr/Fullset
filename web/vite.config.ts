@@ -21,6 +21,7 @@ const offlineApi = ({ url }: { url: URL }) =>
     "/api/preferences",
     "/api/sets",
     "/api/journal",
+    "/api/exits",
   ].includes(url.pathname) ||
   /^\/api\/(games|hardware)\/\d+$/.test(url.pathname) ||
   // Les listes du mode Fullset : c'est justement en brocante, sans réseau, qu'on veut savoir ce qui manque.
