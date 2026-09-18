@@ -360,7 +360,8 @@
       "conditionGame": "Game",
       "conditionBox": "Box",
       "conditionManual": "Manual"
-    }
+    },
+    "inSet": "No. {{position}} of {{set}}"
   },
   "editGame": {
     "loading": "Loading…",
@@ -888,7 +889,8 @@
       "buyNamed": "I'm buying it: add {{name}}",
       "buy": "I'm buying it: add it",
       "linkPlaceholder": "Title in your collection…",
-      "rejectSuggestion": "That's not it"
+      "rejectSuggestion": "That's not it",
+      "missingFromSet": "Missing from your {{set}}"
     }
   },
   "barcodes": {

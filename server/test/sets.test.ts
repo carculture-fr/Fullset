@@ -9,7 +9,7 @@ import { createApp } from "../src/app.js"
 import { openDb, type Db } from "../src/db.js"
 import { parseSourcePage, sourceList, type SourceItem } from "../src/fullsetnet.js"
 import type { IgdbClient } from "../src/igdb.js"
-import { getSet, linkSetCovers, listSets, normTitle, saveSet } from "../src/sets.js"
+import { getSet, linkSetCovers, listSets, normTitle, saveSet, setsForGame } from "../src/sets.js"
 
 const page = readFileSync(path.join(import.meta.dirname, "fixtures/fullsetnet-psvita.html"), "utf8")
 const vita = sourceList("psvita_eu")!
@@ -80,6 +80,25 @@ describe("rapprochement avec la collection", () => {
   it("normalise les titres pour la comparaison", () => {
     expect(normTitle("The Legend of Zelda: Skyward Sword")).toBe("legend of zelda skyward sword")
     expect(normTitle("Ratchet & Clank")).toBe("ratchet and clank")
+  })
+})
+
+describe("place d'un jeu dans les listes", () => {
+  const list = { slug: "test-membership", name: "Full set Vita (test)", platform: "PlayStation Vita", region: null }
+
+  it("dit dans quelle liste un jeu figure, et s'il te manque", () => {
+    saveSet(db, list, [{ position: 1, title: "Soul Sacrifice", url: null, price_cents: 3200 }])
+
+    // Absent de la collection : c'est un manquant, avec sa cote (réponse du scanner en brocante).
+    expect(setsForGame(db, { title: "Soul Sacrifice", platform: "PlayStation Vita" })).toEqual([
+      { slug: list.slug, name: list.name, platform: "PlayStation Vita", position: 1, price_cents: 3200, owned: false },
+    ])
+    // Le même titre sur une autre console ne concerne pas cette liste.
+    expect(setsForGame(db, { title: "Soul Sacrifice", platform: "PlayStation 2" })).toEqual([])
+
+    db.prepare("INSERT INTO games (platform, title) VALUES (?, ?)").run("PlayStation Vita", "Soul Sacrifice")
+    // La casse et la ponctuation ne comptent pas.
+    expect(setsForGame(db, { title: "soul sacrifice", platform: "PlayStation Vita" })[0]).toMatchObject({ owned: true })
   })
 })
 

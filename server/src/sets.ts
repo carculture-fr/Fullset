@@ -156,6 +156,39 @@ export function saveSet(db: Db, list: SourceList, items: SourceItem[], source = 
   return summarize(db, setRow(db, list.slug)!)
 }
 
+export type SetMembership = {
+  slug: string
+  name: string
+  platform: string
+  /** Numéro du jeu dans la liste, et sa cote moyenne. */
+  position: number
+  price_cents: number | null
+  /** Le jeu est déjà dans la collection : ce n'est pas un manquant. */
+  owned: boolean
+}
+
+/**
+ * Les listes de référence où ce jeu figure, avec « il te manque » ou non. Sert au scanner en
+ * brocante (« il te manque pour le full set PS Vita ») et à la fiche d'un jeu.
+ */
+export function setsForGame(db: Db, game: { igdb_id?: number | null; title?: string | null; platform?: string | null }): SetMembership[] {
+  const igdbId = game.igdb_id ?? null
+  const key = normTitle(game.title)
+  if (igdbId === null && !key) return []
+  const platform = game.platform ? canonicalPlatform(game.platform) : null
+  const rows = db
+    .prepare(
+      `SELECT s.slug, s.name, s.platform, i.position, i.price_cents, i.title
+       FROM set_items i JOIN sets s ON s.slug = i.set_slug
+       WHERE (i.igdb_id IS NOT NULL AND i.igdb_id = @igdb) OR (@key <> '' AND i.norm_title = @key)
+       ORDER BY s.name`,
+    )
+    .all({ igdb: igdbId, key }) as Array<{ slug: string; name: string; platform: string; position: number; price_cents: number | null; title: string }>
+  return rows
+    .filter((r) => !platform || r.platform === platform)
+    .map(({ title, ...r }) => ({ ...r, owned: ownedFor(ownedIndex(db, r.platform), { igdb_id: igdbId, title }) !== null }))
+}
+
 export function deleteSet(db: Db, slug: string) {
   return db.prepare("DELETE FROM sets WHERE slug = ?").run(slug).changes > 0
 }

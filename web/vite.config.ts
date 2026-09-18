@@ -8,8 +8,23 @@ import { VitePWA } from "vite-plugin-pwa"
 // Pages de l'API qu'on garde pour la consultation hors ligne (brocante sans réseau, cave, salon).
 // Les fonctions sont recopiées telles quelles dans le service worker : pas de variable extérieure.
 const offlineApi = ({ url }: { url: URL }) =>
-  ["/api/library", "/api/hardware", "/api/lists", "/api/barcodes", "/api/wishlist", "/api/stats", "/api/stats/summary", "/api/auth/me", "/api/health", "/api/preferences"].includes(url.pathname) ||
-  /^\/api\/(games|hardware)\/\d+$/.test(url.pathname)
+  [
+    "/api/library",
+    "/api/hardware",
+    "/api/lists",
+    "/api/barcodes",
+    "/api/wishlist",
+    "/api/stats",
+    "/api/stats/summary",
+    "/api/auth/me",
+    "/api/health",
+    "/api/preferences",
+    "/api/sets",
+    "/api/journal",
+  ].includes(url.pathname) ||
+  /^\/api\/(games|hardware)\/\d+$/.test(url.pathname) ||
+  // Les listes du mode Fullset : c'est justement en brocante, sans réseau, qu'on veut savoir ce qui manque.
+  /^\/api\/sets\/[a-z0-9_-]+$/.test(url.pathname)
 
 // Même version que le serveur : celle du tag, sinon celle du package.json racine.
 const version =

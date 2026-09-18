@@ -8,6 +8,7 @@ import { Cover } from "@/components/cover"
 import { ErrorNote, inputClass } from "@/components/fields"
 import { darkScreen, ManualEntry, ScannerHeader, Viewfinder } from "@/components/scanner"
 import { api, errorMessage, send, type BarcodeIdentify, type KnownBarcode } from "@/lib/api"
+import { euros } from "@/lib/format"
 import { valueLabel } from "@/lib/i18n"
 import { applyFilters, type LibraryGame } from "@/lib/library"
 import { useLibrary } from "@/lib/library-data"
@@ -254,6 +255,15 @@ export default function Brocante() {
                       <Trans i18nKey="brocante.unknown.suggestion" values={{ name: suggestion.name, platform: suggestion.platform }} components={{ strong: <strong /> }} />
                     )}
                   </p>
+                  {/* Ce que les listes de référence en disent : la vraie question en brocante. */}
+                  {(identified?.sets ?? [])
+                    .filter((s) => !s.owned)
+                    .map((s) => (
+                      <p key={s.slug} className="mt-2 text-[13px] font-semibold">
+                        {t("brocante.unknown.missingFromSet", { set: s.name })}
+                        {s.price_cents !== null && <span className="num"> · {euros(s.price_cents)}</span>}
+                      </p>
+                    ))}
                   <div className="mt-3 grid grid-cols-[44px_minmax(0,1fr)] items-center gap-2.5 rounded-[14px] bg-background p-2 text-foreground">
                     <Cover src={suggestedOwned?.cover ?? null} title={suggestedOwned?.title ?? suggestion.name} platform={suggestedOwned?.platform ?? suggestion.platform} size="thumb" />
                     <div className="min-w-0">

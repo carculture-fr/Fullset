@@ -106,6 +106,12 @@ export default function Game() {
                 {game.romm.platform ? t("game.rommLinkPlatform", { platform: game.romm.platform }) : t("game.rommLink")}
               </a>
             )}
+            {/* Place du jeu dans les listes de référence suivies. */}
+            {(game.sets ?? []).map((s) => (
+              <Link key={s.slug} to={`/fullset/${s.slug}`} className={tagClass.outline}>
+                {t("game.inSet", { position: s.position, set: s.name })}
+              </Link>
+            ))}
           </div>
         </div>
 

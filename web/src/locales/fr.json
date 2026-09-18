@@ -360,7 +360,8 @@
       "conditionGame": "Jeu",
       "conditionBox": "Boîte",
       "conditionManual": "Notice"
-    }
+    },
+    "inSet": "N° {{position}} du {{set}}"
   },
   "editGame": {
     "loading": "Chargement…",
@@ -888,7 +889,8 @@
       "buyNamed": "Je l'achète : ajouter {{name}}",
       "buy": "Je l'achète : l'ajouter",
       "linkPlaceholder": "Titre dans ta collection…",
-      "rejectSuggestion": "Ce n'est pas lui"
+      "rejectSuggestion": "Ce n'est pas lui",
+      "missingFromSet": "Il te manque pour le {{set}}"
     }
   },
   "barcodes": {

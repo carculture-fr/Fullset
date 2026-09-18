@@ -1,5 +1,6 @@
 import type { Db } from "./db.js"
 import { eventsByCopy, type CopyEvent } from "./events.js"
+import { setsForGame, type SetMembership } from "./sets.js"
 import { LATEST_VALUE_SQL } from "./valuations.js"
 
 export type LibraryCopy = {
@@ -58,6 +59,8 @@ export type CopyDetail = LibraryCopy & {
 }
 
 export type GameDetail = Omit<LibraryGame, "copies"> & {
+  /** Les listes de référence où ce jeu figure (« n° 42 du full set PS Vita »). */
+  sets: SetMembership[]
   summary: string | null
   genres: string | null
   game_modes: string | null
@@ -129,6 +132,8 @@ export function getGame(db: Db, id: number): GameDetail | null {
   return {
     ...rest,
     cover: coverPath(cover_file),
+    // Les full sets où ce jeu figure (« n° 42 du full set PS Vita »).
+    sets: setsForGame(db, { igdb_id: game.igdb_id, title: game.title, platform: game.platform }),
     copies: copies.map((c) => ({
       ...c,
       photos: (photos.all(c.id) as Array<{ id: number; file: string }>).map((p) => ({ id: p.id, url: `/photos/${p.file}` })),

@@ -44,7 +44,7 @@ import { canonicalPlatform, listPlatforms } from "./catalog.js"
 import { COMMONS_UA, CommonsError, commonsFile, imageOptions, isCommonsMedia, pickAutomatic, type CommonsImage } from "./commons.js"
 import { addWish, deleteWish, listWishlist, updateWish } from "./wishlist.js"
 import { CatalogSourceError, fetchSourceList, sourceList } from "./fullsetnet.js"
-import { availableSets, deleteSet, getSet, linkSetCovers, markRomm, saveSet } from "./sets.js"
+import { availableSets, deleteSet, getSet, linkSetCovers, markRomm, saveSet, setsForGame } from "./sets.js"
 import { fileSlug, parseRomsetList } from "./romset.js"
 import { refreshMissingCovers } from "./cover-refresh.js"
 import { getPreferences, setPreferences } from "./preferences.js"
@@ -227,7 +227,9 @@ export function createApp(db: Db, dataDir: string, deps: AppDeps = {}) {
     const owned = suggestion
       ? (db.prepare("SELECT id, platform FROM games WHERE igdb_id = ? ORDER BY platform = ? DESC, id").all(suggestion.igdb_id, suggestion.platform) as Array<{ id: number; platform: string }>)
       : []
-    res.json({ ean, configured: services.scandex() !== null, suggestion, owned })
+    // Ce que les listes de référence disent de ce jeu : « il te manque pour le full set… ».
+    const sets = suggestion ? setsForGame(db, { igdb_id: suggestion.igdb_id, title: suggestion.name, platform: suggestion.platform }) : []
+    res.json({ ean, configured: services.scandex() !== null, suggestion, owned, sets })
   })
   app.post("/api/barcodes", (req, res) => {
     res.json(linkBarcode(db, req.body?.ean, req.body?.game_id, req.body?.edition))

@@ -64,11 +64,15 @@ export type SteamCandidate = { appid: number; name: string; playtime_minutes: nu
 export type SteamStatus = { configured: boolean; synced_at: string | null; owned: number; linked: number; candidates: number }
 export type SteamSyncReport = { owned: number; recognised: number; linked: number; playtime: number; candidates: number }
 export type BarcodeRow = KnownBarcode & { title: string; platform: string; created_at: string | null; on_copy: boolean }
+/** Un jeu vu par les listes de référence : dans quel full set il figure, et s'il te manque. */
+export type SetMembership = { slug: string; name: string; platform: string; position: number; price_cents: number | null; owned: boolean }
+
 export type BarcodeIdentify = {
   ean: string
   configured: boolean
   suggestion: { igdb_id: number; name: string; platform: string } | null
   owned: Array<{ id: number; platform: string }>
+  sets: SetMembership[]
 }
 
 /** Mode Fullset : une liste de référence par console, et ce qu'il en reste à trouver. */
@@ -212,6 +216,8 @@ export type GameDetail = {
   igdb_id: number | null
   platform: string
   title: string
+  /** Les full sets où ce jeu figure. */
+  sets: SetMembership[]
   summary: string | null
   developer: string | null
   publisher: string | null
