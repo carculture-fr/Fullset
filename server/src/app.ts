@@ -39,7 +39,7 @@ import {
   updateHardware,
 } from "./hardware.js"
 import { addValuation, deleteValuation } from "./valuations.js"
-import { addEvent, deleteEvent, journal } from "./events.js"
+import { addEvent, addHardwareEvent, deleteEvent, deleteHardwareEvent, journal } from "./events.js"
 import { canonicalPlatform, listPlatforms } from "./catalog.js"
 import { COMMONS_UA, CommonsError, commonsFile, imageOptions, isCommonsMedia, pickAutomatic, type CommonsImage } from "./commons.js"
 import { addWish, deleteWish, listWishlist, updateWish } from "./wishlist.js"
@@ -431,6 +431,10 @@ export function createApp(db: Db, dataDir: string, deps: AppDeps = {}) {
     res.status(201).json({ event: addEvent(db, id(req), req.body ?? {}) })
   })
   app.delete("/api/events/:id", (req, res) => res.json(deleteEvent(db, id(req))))
+  app.post("/api/hardware/:id/events", (req, res) => {
+    res.status(201).json({ event: addHardwareEvent(db, id(req), req.body ?? {}) })
+  })
+  app.delete("/api/hardware-events/:id", (req, res) => res.json(deleteHardwareEvent(db, id(req))))
   app.get("/api/journal", (req, res) => res.json({ entries: journal(db, Number(req.query.limit) || 200) }))
 
   app.post("/api/copies/:id/photos", upload.single("file"), (req, res) => {

@@ -7,6 +7,7 @@ import { ConditionBlock, toneOf } from "@/components/condition"
 import { Cover } from "@/components/cover"
 import { HardwareImage } from "@/components/hardware-image"
 import { BackBar, ICON, tagClass } from "@/components/page-bits"
+import { ItemLife } from "@/components/life"
 import { PhotoStrip } from "@/components/photo-field"
 import { ValueBlock } from "@/components/value-block"
 import { api, errorMessage, type HardwareDetail as Detail } from "@/lib/api"
@@ -119,6 +120,7 @@ export default function HardwareDetail() {
           <ValueBlock valuations={item.valuations} priceCents={item.price_cents} postUrl={`/api/hardware/${item.id}/valuations`} deleteBase="/api/hardware-valuations" onChanged={load} />
           {item.comment && <p className="rounded-[16px] bg-muted px-3 py-2.5 text-[13px] whitespace-pre-line">{item.comment}</p>}
           <PhotoStrip photos={item.photos} addTo={edit} />
+          <ItemLife events={item.events ?? []} postUrl={`/api/hardware/${item.id}/events`} deleteBase="/api/hardware-events" onChanged={load} />
         </section>
       </div>
     </article>

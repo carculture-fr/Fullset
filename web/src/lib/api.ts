@@ -147,6 +147,11 @@ export type HardwareItem = {
   condition_box: string | null
   condition_manual: string | null
   working: string | null
+  /** Sortie de la collection (« Vendu », « Prêté »…) ; null tant que l'élément est là. */
+  status: string | null
+  left_on: string | null
+  /** Sa vie : vente, don, prêt, panne… (fiche seulement). */
+  events?: CopyEvent[]
   price_cents: number | null
   purchase_date: string | null
   purchase_place: string | null
@@ -209,7 +214,15 @@ export type CopyEvent = {
   created_at: string
 }
 
-export type JournalEntry = CopyEvent & { game_id: number; title: string; platform: string; cover: string | null; price_cents: number | null }
+/** Une ligne du journal : un jeu (game_id) ou un élément de matériel (hardware_id). */
+export type JournalEntry = Omit<CopyEvent, "copy_id"> & {
+  game_id: number | null
+  hardware_id: number | null
+  title: string
+  platform: string
+  cover: string | null
+  price_cents: number | null
+}
 
 export type GameDetail = {
   id: number

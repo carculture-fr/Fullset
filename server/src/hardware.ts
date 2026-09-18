@@ -10,6 +10,7 @@ import { COVERS_DIR } from "./covers.js"
 import { csvCell } from "./csv.js"
 import type { Db } from "./db.js"
 import { CONDITIONS, HW_CONTENTS, HW_KINDS, HW_WORKING, MANUAL_CONDITIONS, REGIONS, isoDate, text, toCents } from "./domain.js"
+import { hardwareEvents } from "./events.js"
 import { extensionOf } from "./media.js"
 import { parseValuation } from "./valuations.js"
 import { msg } from "./i18n.js"
@@ -37,6 +38,9 @@ type HwData = Record<(typeof HW_FIELDS)[number], string | number | null>
 
 export type HardwareItem = HwData & {
   id: number
+  /** Sortie de la collection (« Vendu », « Prêté »…) ; null tant que l'élément est là. */
+  status: string | null
+  left_on: string | null
   value_cents: number | null
   valued_on: string | null
   photo: string | null
@@ -93,9 +97,13 @@ const LATEST = `
   (SELECT file FROM hardware_photos p WHERE p.hardware_id = hardware.id ORDER BY p.id LIMIT 1) AS photo_file,
   (SELECT count(*) FROM hardware_photos p WHERE p.hardware_id = hardware.id) AS photo_count`
 
-export function listHardware(db: Db): HardwareItem[] {
+/** `all` : y compris ce qui est sorti de la collection (fiche d'un élément vendu, journal). */
+export function listHardware(db: Db, all = false): HardwareItem[] {
   const rows = db
-    .prepare(`SELECT id, ${HW_FIELDS.join(", ")}, image_file, image_credit, image_page, ${LATEST} FROM hardware ORDER BY platform, kind, id`)
+    .prepare(
+      `SELECT id, ${HW_FIELDS.join(", ")}, status, left_on, image_file, image_credit, image_page, ${LATEST}
+       FROM hardware ${all ? "" : "WHERE status IS NULL"} ORDER BY platform, kind, id`,
+    )
     .all() as Array<Omit<HardwareItem, "photo" | "image"> & { photo_file: string | null; image_file: string | null }>
   return rows.map(({ photo_file, image_file, ...r }) => ({
     ...r,
@@ -105,7 +113,8 @@ export function listHardware(db: Db): HardwareItem[] {
 }
 
 export function getHardware(db: Db, id: number) {
-  const item = listHardware(db).find((h) => h.id === id)
+  // `true` : la fiche d'un élément sorti (vendu, donné…) reste consultable.
+  const item = listHardware(db, true).find((h) => h.id === id)
   if (!item) throw new NotFoundError(msg("hardware.notFound"))
   const photos = (db.prepare("SELECT id, file FROM hardware_photos WHERE hardware_id = ? ORDER BY id").all(id) as Array<{ id: number; file: string }>).map((p) => ({
     id: p.id,
@@ -114,7 +123,7 @@ export function getHardware(db: Db, id: number) {
   const valuations = db
     .prepare("SELECT id, amount_cents, valued_on, source, note FROM hardware_valuations WHERE hardware_id = ? ORDER BY valued_on DESC, id DESC")
     .all(id)
-  return { ...item, photos, valuations }
+  return { ...item, photos, valuations, events: hardwareEvents(db, id) }
 }
 
 export function createHardware(db: Db, input: Record<string, unknown>) {
@@ -201,13 +210,17 @@ export type HardwareStats = {
 }
 
 export function hardwareStats(db: Db): HardwareStats {
-  const totals = db.prepare("SELECT count(*) AS count, coalesce(sum(price_cents), 0) AS spentCents FROM hardware").get() as { count: number; spentCents: number }
+  // Ce qui est sorti (vendu, donné…) ne compte plus dans le matériel possédé.
+  const totals = db.prepare("SELECT count(*) AS count, coalesce(sum(price_cents), 0) AS spentCents FROM hardware WHERE status IS NULL").get() as { count: number; spentCents: number }
   const group = (col: string) =>
-    db.prepare(`SELECT ${col} AS label, count(*) AS count, coalesce(sum(price_cents), 0) AS spentCents FROM hardware GROUP BY ${col} ORDER BY count DESC, label`).all() as HardwareStats["byKind"]
+    db
+      .prepare(`SELECT ${col} AS label, count(*) AS count, coalesce(sum(price_cents), 0) AS spentCents FROM hardware WHERE status IS NULL GROUP BY ${col} ORDER BY count DESC, label`)
+      .all() as HardwareStats["byKind"]
   const value = db
     .prepare(
       `SELECT count(*) AS estimatedItems, coalesce(sum(v.amount_cents), 0) AS estimatedCents FROM hardware h
-       JOIN hardware_valuations v ON v.id = (SELECT id FROM hardware_valuations WHERE hardware_id = h.id ORDER BY valued_on DESC, id DESC LIMIT 1)`,
+       JOIN hardware_valuations v ON v.id = (SELECT id FROM hardware_valuations WHERE hardware_id = h.id ORDER BY valued_on DESC, id DESC LIMIT 1)
+       WHERE h.status IS NULL`,
     )
     .get() as HardwareStats["value"]
   return { ...totals, byKind: group("kind"), byPlatform: group("platform"), value }

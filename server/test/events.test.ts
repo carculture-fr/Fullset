@@ -5,7 +5,8 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
 import { createCopy } from "../src/copies.js"
 import { openDb, type Db } from "../src/db.js"
-import { addEvent, deleteEvent, exitStats, journal } from "../src/events.js"
+import { addEvent, addHardwareEvent, deleteEvent, exitStats, journal } from "../src/events.js"
+import { createHardware, getHardware, hardwareStats, listHardware } from "../src/hardware.js"
 import { getGame, listLibrary } from "../src/library.js"
 import { stats, summary } from "../src/stats.js"
 
@@ -66,6 +67,22 @@ describe("vie d'un exemplaire", () => {
     deleteEvent(db, sold.events[0].id)
     expect(getGame(db, gameId)!.copies.find((c) => c.id === sold.id)).toMatchObject({ status: null })
     expect(exitStats(db).count).toBe(0)
+  })
+
+  it("vaut aussi pour le matériel : une console vendue quitte la liste et les totaux", () => {
+    const hwId = createHardware(db, { kind: "Console", platform: "PlayStation 2", price: "45,00" })
+    expect(listHardware(db)).toHaveLength(1)
+    expect(hardwareStats(db)).toMatchObject({ count: 1, spentCents: 4500 })
+
+    addHardwareEvent(db, hwId, { kind: "Vendu", happened_on: "2026-06-01", amount: "60,00", person: "Chris" })
+    expect(listHardware(db)).toHaveLength(0)
+    expect(hardwareStats(db)).toMatchObject({ count: 0, spentCents: 0 })
+    // La fiche reste, avec son histoire.
+    expect(getHardware(db, hwId)).toMatchObject({ status: "Vendu", left_on: "2026-06-01" })
+    expect(journal(db).some((e) => e.hardware_id === hwId && e.kind === "Vendu")).toBe(true)
+
+    addHardwareEvent(db, hwId, { kind: "Retour", happened_on: "2026-06-20" })
+    expect(listHardware(db)).toHaveLength(1)
   })
 
   it("refuse un motif inconnu et une date impossible", () => {

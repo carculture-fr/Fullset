@@ -398,6 +398,23 @@ const MIGRATIONS: string[] = [
   // Mode Fullset : jeu déjà cherché chez IGDB (trouvé ou non). Sans cette marque, la recherche
   // par paquets repasse indéfiniment sur les mêmes titres introuvables et n'avance plus.
   `ALTER TABLE set_items ADD COLUMN igdb_tried INTEGER NOT NULL DEFAULT 0;`,
+
+  // La vie d'un élément de matériel, comme celle d'un exemplaire : vendu, donné, prêté, en panne.
+  `ALTER TABLE hardware ADD COLUMN status TEXT;
+   ALTER TABLE hardware ADD COLUMN left_on TEXT;
+
+   CREATE TABLE hardware_events (
+     id INTEGER PRIMARY KEY,
+     hardware_id INTEGER NOT NULL REFERENCES hardware(id) ON DELETE CASCADE,
+     kind TEXT NOT NULL,
+     happened_on TEXT NOT NULL,
+     amount_cents INTEGER,
+     person TEXT,
+     comment TEXT,
+     created_at TEXT NOT NULL DEFAULT (datetime('now'))
+   );
+
+   CREATE INDEX hardware_events_item ON hardware_events(hardware_id);`,
 ]
 
 function sql(v: string | null) {

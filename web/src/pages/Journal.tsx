@@ -44,8 +44,11 @@ export default function Journal() {
       ) : (
         <ul className="space-y-2">
           {entries.map((e) => (
-            <li key={e.id}>
-              <Link to={`/jeux/${e.game_id}`} className="flex items-center gap-3 rounded-[20px] bg-card p-2.5 transition-colors duration-150 hover:bg-foreground/[.04]">
+            <li key={`${e.game_id === null ? "m" : "j"}${e.id}`}>
+              <Link
+                to={e.game_id === null ? `/consoles/${e.hardware_id}` : `/jeux/${e.game_id}`}
+                className="flex items-center gap-3 rounded-[20px] bg-card p-2.5 transition-colors duration-150 hover:bg-foreground/[.04]"
+              >
                 <div className="w-[38px] shrink-0">
                   <Cover src={e.cover} title={e.title} platform={e.platform} size="thumb" className="w-full" />
                 </div>
