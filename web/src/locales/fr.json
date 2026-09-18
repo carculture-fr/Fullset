@@ -489,7 +489,8 @@
   "photoField": {
     "delete": "Supprimer la photo",
     "remove": "Retirer la photo",
-    "add": "Ajouter une photo"
+    "add": "Ajouter une photo",
+    "useAsCover": "En faire la jaquette du jeu"
   },
   "igdbSearch": {
     "placeholder": "Titre du jeu (titre PAL accepté)",

@@ -252,7 +252,14 @@ function CopyCard({ copy: c, gameTitle, gameId, onChanged }: { copy: CopyDetail;
       {c.comment && <p className="rounded-[16px] bg-muted px-3 py-2.5 text-[13px] whitespace-pre-line">{c.comment}</p>}
       {details.length > 0 && <p className="text-[12px] break-words text-muted-foreground">{details.join(" · ")}</p>}
 
-      <PhotoStrip photos={c.photos} addTo={`/jeux/${gameId}/exemplaires/${c.id}`} />
+      <PhotoStrip
+        photos={c.photos}
+        addTo={`/jeux/${gameId}/exemplaires/${c.id}`}
+        onUseAsCover={async (photo) => {
+          await send("POST", `/api/photos/${photo.id}/cover`)
+          await onChanged()
+        }}
+      />
 
       <CopyLife copy={c} onChanged={onChanged} />
     </section>

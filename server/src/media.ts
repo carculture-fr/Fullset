@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto"
-import { mkdirSync, writeFileSync } from "node:fs"
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import path from "node:path"
 
 import { NotFoundError, PHOTOS_DIR, ValidationError, removeFile } from "./copies.js"
@@ -52,6 +52,22 @@ export function setCover(db: Db, dataDir: string, gameId: number, bytes: Buffer,
   )
   if (game.cover_file) removeFile(path.join(dir, game.cover_file))
   return `/covers/${file}`
+}
+
+/**
+ * Prend une photo d'exemplaire comme jaquette du jeu : c'est le geste attendu quand on
+ * photographie sa boîte. La photo reste dans les photos de l'exemplaire, la jaquette en est
+ * une copie (une jaquette remplacée plus tard n'efface donc pas la photo).
+ */
+export function setCoverFromPhoto(db: Db, dataDir: string, photoId: number) {
+  const row = db.prepare("SELECT p.file, c.game_id FROM copy_photos p JOIN copies c ON c.id = p.copy_id WHERE p.id = ?").get(photoId) as
+    | { file: string; game_id: number }
+    | undefined
+  if (!row) throw new NotFoundError(msg("common.photoNotFound"))
+  const mime = Object.entries(EXTENSIONS).find(([, ext]) => row.file.toLowerCase().endsWith(ext))?.[0]
+  if (!mime) throw new ValidationError(msg("media.badFormat"))
+  const bytes = readFileSync(path.join(dataDir, PHOTOS_DIR, row.file))
+  return { gameId: row.game_id, cover: setCover(db, dataDir, row.game_id, bytes, mime, "photo") }
 }
 
 /** Télécharge une image distante (jaquette IGDB) puis la pose comme jaquette. */

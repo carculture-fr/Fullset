@@ -489,7 +489,8 @@
   "photoField": {
     "delete": "Delete photo",
     "remove": "Remove photo",
-    "add": "Add a photo"
+    "add": "Add a photo",
+    "useAsCover": "Use as the game cover"
   },
   "igdbSearch": {
     "placeholder": "Game title (PAL title accepted)",

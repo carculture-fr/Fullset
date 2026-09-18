@@ -17,7 +17,7 @@ import { schemaVersion, type Db } from "./db.js"
 import { createGame, findGame, relinkGame, updateGame } from "./games.js"
 import { IgdbError, type IgdbClient } from "./igdb.js"
 import { getGame, listLibrary } from "./library.js"
-import { MAX_IMAGE_BYTES, addPhoto, deletePhoto, setCover, setCoverFromUrl } from "./media.js"
+import { MAX_IMAGE_BYTES, addPhoto, deletePhoto, setCover, setCoverFromPhoto, setCoverFromUrl } from "./media.js"
 import { downloadMissingCovers } from "./covers.js"
 import { CollectionNotEmptyError, importCollection } from "./import-collection.js"
 import { stats, summary } from "./stats.js"
@@ -144,6 +144,9 @@ export function createApp(db: Db, dataDir: string, deps: AppDeps = {}) {
   app.post("/api/steam/import", async (req, res) => {
     res.status(201).json(await importSteam(db, dataDir, services.igdb(), req.body?.appids, fetchImpl))
   })
+
+  // Une photo d'exemplaire devient la jaquette du jeu (photo de sa propre boîte).
+  app.post("/api/photos/:id/cover", (req, res) => res.json(setCoverFromPhoto(db, dataDir, id(req))))
 
   // Rattrapage des jaquettes : un jeu avec une fiche IGDB mais sans image la récupère ici.
   app.post("/api/covers/refresh", async (_req, res) => {

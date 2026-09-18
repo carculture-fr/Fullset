@@ -1,4 +1,4 @@
-import { Plus, X } from "lucide-react"
+import { ImageUp, Plus, X } from "lucide-react"
 import { useEffect, useMemo } from "react"
 import { useTranslation } from "react-i18next"
 import { Link } from "react-router-dom"
@@ -63,15 +63,31 @@ export function PhotoField({
   )
 }
 
-/** Vignettes 56 px d'une fiche (exemplaire, matériel), avec la case « + » qui mène au formulaire. */
-export function PhotoStrip({ photos, addTo }: { photos: Photo[]; addTo: string }) {
+/**
+ * Vignettes 56 px d'une fiche (exemplaire, matériel), avec la case « + » qui mène au formulaire.
+ * `onUseAsCover` ajoute sur chaque photo le raccourci « en faire la jaquette ».
+ */
+export function PhotoStrip({ photos, addTo, onUseAsCover }: { photos: Photo[]; addTo: string; onUseAsCover?: (photo: Photo) => void }) {
   const { t } = useTranslation()
   return (
     <div className="flex flex-wrap gap-2">
       {photos.map((p) => (
-        <a key={p.id} href={p.url} target="_blank" rel="noreferrer" className="block">
-          <img src={p.url} alt="" loading="lazy" className="size-14 rounded-[10px] object-cover" />
-        </a>
+        <div key={p.id} className="relative">
+          <a href={p.url} target="_blank" rel="noreferrer" className="block">
+            <img src={p.url} alt="" loading="lazy" className="size-14 rounded-[10px] object-cover" />
+          </a>
+          {onUseAsCover && (
+            <button
+              type="button"
+              onClick={() => onUseAsCover(p)}
+              aria-label={t("photoField.useAsCover")}
+              title={t("photoField.useAsCover")}
+              className="absolute -top-1.5 -right-1.5 grid size-6 place-items-center rounded-full bg-background text-foreground shadow-sm transition-colors duration-150 hover:bg-card"
+            >
+              <ImageUp size={12} {...ICON} aria-hidden="true" />
+            </button>
+          )}
+        </div>
       ))}
       <Link
         to={addTo}

@@ -3,9 +3,11 @@ import { tmpdir } from "node:os"
 import path from "node:path"
 import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
+import { createCopy } from "../src/copies.js"
 import { refreshMissingCovers } from "../src/cover-refresh.js"
 import { openDb, type Db } from "../src/db.js"
 import type { IgdbClient } from "../src/igdb.js"
+import { addPhoto, setCoverFromPhoto } from "../src/media.js"
 
 const JPEG = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 0x10])
 const COVER = "https://images.igdb.com/igdb/image/upload/t_cover_big_2x/bioshock.jpg"
@@ -50,5 +52,26 @@ describe("rattrapage des jaquettes", () => {
 
   it("ne redemande pas une jaquette déjà posée", async () => {
     expect(await refreshMissingCovers(db, dir, igdb, fetchImpl)).toMatchObject({ looked: 1, downloaded: 0 })
+  })
+})
+
+describe("photo d'exemplaire en jaquette", () => {
+  it("copie la photo choisie comme jaquette, sans la retirer des photos", () => {
+    const gameId = (db.prepare("SELECT id FROM games WHERE title = ?").get("Jeu sans fiche IGDB") as { id: number }).id
+    const copyId = createCopy(db, gameId, { support: "Physique" })
+    const photo = addPhoto(db, dir, copyId, Buffer.from(JPEG), "image/jpeg")
+
+    const { cover } = setCoverFromPhoto(db, dir, photo.id)
+    expect(cover).toMatch(/^\/covers\//)
+    const game = db.prepare("SELECT cover_file, cover_source FROM games WHERE id = ?").get(gameId) as { cover_file: string; cover_source: string }
+    expect(game.cover_source).toBe("photo")
+    expect(existsSync(path.join(dir, "covers", game.cover_file))).toBe(true)
+    // La photo d'origine reste sur l'exemplaire.
+    expect(existsSync(path.join(dir, "photos", photo.url.replace("/photos/", "")))).toBe(true)
+    expect(db.prepare("SELECT count(*) AS n FROM copy_photos WHERE copy_id = ?").get(copyId)).toMatchObject({ n: 1 })
+  })
+
+  it("refuse une photo inconnue", () => {
+    expect(() => setCoverFromPhoto(db, dir, 9999)).toThrow()
   })
 })
