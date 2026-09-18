@@ -1,40 +1,56 @@
+import { gameCoverOptions, type CoverOption } from "./cover-sources.js"
 import type { Db } from "./db.js"
-import type { IgdbClient } from "./igdb.js"
-import { setCoverFromUrl } from "./media.js"
-import { normTitle } from "./sets.js"
+import { msg } from "./i18n.js"
+import { setCover, setCoverFromUrl } from "./media.js"
+import type { ScreenscraperClient } from "./screenscraper.js"
 
 /**
- * Rattrapage des jaquettes : un jeu peut avoir une fiche IGDB sans jaquette (import d'une liste
- * sans adresse d'image, téléchargement échoué à l'époque, jeu créé hors ligne). Ici on redemande
- * la fiche à IGDB et on pose l'image. IGDB n'accepte que quatre appels par seconde : on souffle
- * entre deux, et on travaille par paquets pour ne pas faire attendre l'écran.
+ * Le scan des jaquettes : les jeux de la collection qui n'ont pas d'image la reçoivent, prise
+ * chez la première source branchée qui en propose une (IGDB, ScreenScraper, SteamGridDB). Il se
+ * lance au bouton (Réglages → Jaquettes) et tout seul à l'ajout d'un jeu, jamais la nuit : c'est
+ * le choix de Tom, l'appli ne part rien chercher sans qu'on le lui demande.
+ *
+ * Les sources limitent leur débit (IGDB : quatre appels par seconde) : on souffle entre deux
+ * jeux, et on travaille par paquets pour ne pas faire attendre l'écran.
  */
 
 export type CoverRefreshReport = {
   /** Jeux examinés dans ce paquet. */
   looked: number
   downloaded: number
-  /** Jeux encore sans jaquette après ce paquet (fiche IGDB connue). */
+  /** Jeux encore sans jaquette après ce paquet. */
   remaining: number
   failed: string[]
 }
 
+type Sources = Parameters<typeof gameCoverOptions>[0] & { screenscraper(): ScreenscraperClient | null }
+
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
-/**
- * Jeu sans fiche IGDB (ajouté à la main, importé d'un vieil export) : on cherche par son titre
- * et on n'accepte qu'un résultat au **titre identique sur la bonne console**. Seule la jaquette
- * est posée : le résumé, l'éditeur et les dates ne changent pas sans un rattachement voulu.
- */
-async function coverByTitle(igdb: IgdbClient, game: { title: string; platform: string }) {
-  const candidates = await igdb.search(game.title)
-  const match = candidates.find((c) => c.platforms.includes(game.platform) && normTitle(c.name) === normTitle(game.title))
-  // La recherche rend une vignette ; la fiche mérite la grande taille.
-  return match?.cover?.replace("t_cover_small_2x", "t_cover_big_2x") ?? null
+/** Pose l'image choisie : une adresse se télécharge, un repère passe par sa source. */
+async function applyOption(db: Db, dataDir: string, gameId: number, option: CoverOption, sources: Sources, fetchImpl: typeof fetch) {
+  if (option.url) return setCoverFromUrl(db, dataDir, gameId, option.url, option.source, fetchImpl)
+  const client = sources.screenscraper()
+  if (!client || !option.key) throw new Error(msg("screenscraper.notConfigured"))
+  const { bytes, mime } = await client.media(option.key, 800)
+  return setCover(db, dataDir, gameId, bytes, mime, option.source)
 }
 
-export async function refreshMissingCovers(db: Db, dataDir: string, igdb: IgdbClient, fetchImpl: typeof fetch = fetch, limit = 40): Promise<CoverRefreshReport> {
-  // Les jeux qui ont déjà leur fiche passent d'abord : leur jaquette est sûre.
+/** Cherche et pose la jaquette d'un jeu, s'il en manque une. Rend l'adresse posée, ou null. */
+export async function coverOneGame(
+  db: Db,
+  dataDir: string,
+  sources: Sources,
+  game: { id: number; igdb_id: number | null; platform: string; title: string },
+  fetchImpl: typeof fetch = fetch,
+) {
+  const [choix] = await gameCoverOptions(sources, game)
+  if (!choix) return null
+  return applyOption(db, dataDir, game.id, choix, sources, fetchImpl)
+}
+
+export async function refreshMissingCovers(db: Db, dataDir: string, sources: Sources, fetchImpl: typeof fetch = fetch, limit = 40): Promise<CoverRefreshReport> {
+  // Les jeux qui ont déjà leur fiche passent d'abord : leur jaquette est la plus sûre.
   const todo = db
     .prepare("SELECT id, igdb_id, platform, title FROM games WHERE cover_file IS NULL ORDER BY igdb_id IS NULL, id LIMIT ?")
     .all(limit) as Array<{ id: number; igdb_id: number | null; platform: string; title: string }>
@@ -43,16 +59,9 @@ export async function refreshMissingCovers(db: Db, dataDir: string, igdb: IgdbCl
   for (const [i, game] of todo.entries()) {
     if (i) await wait(300)
     try {
-      const url =
-        game.igdb_id !== null
-          ? ((await igdb.game(game.igdb_id, game.platform)).cover_url ?? null)
-          : await coverByTitle(igdb, game)
-      if (!url) {
-        report.failed.push(`${game.title} : ${game.igdb_id === null ? "aucune fiche IGDB au même titre sur cette console" : "IGDB n'a pas de jaquette pour cette fiche"}`)
-        continue
-      }
-      await setCoverFromUrl(db, dataDir, game.id, url, "igdb", fetchImpl)
-      report.downloaded += 1
+      const posee = await coverOneGame(db, dataDir, sources, game, fetchImpl)
+      if (posee) report.downloaded += 1
+      else report.failed.push(`${game.title} : ${msg("covers.noneFound")}`)
     } catch (err) {
       report.failed.push(`${game.title} : ${(err as Error).message}`)
     }

@@ -219,5 +219,9 @@
     "http": "SteamGridDB answered HTTP {{status}}.",
     "keyRefused": "SteamGridDB refused the key.",
     "refused": "SteamGridDB refused the call: {{reason}}"
+  },
+  "covers": {
+    "noneFound": "no connected source has a cover for this game",
+    "noSource": "No cover source is set up."
   }
 }

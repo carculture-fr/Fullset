@@ -47,7 +47,7 @@ import { addWish, deleteWish, listWishlist, updateWish } from "./wishlist.js"
 import { CatalogSourceError, fetchSourceList, sourceList } from "./fullsetnet.js"
 import { availableSets, deleteSet, getSet, linkSetCovers, markRomm, missingCsv, saveSet, setTemplateCsv, setsForGame, wishMissing } from "./sets.js"
 import { fileSlug, parseRomsetList } from "./romset.js"
-import { refreshMissingCovers } from "./cover-refresh.js"
+import { coverOneGame, refreshMissingCovers } from "./cover-refresh.js"
 import { buildBackup, restoreBackup } from "./backup.js"
 import { getPreferences, setPreferences } from "./preferences.js"
 import { keepLanguage, languageMiddleware, msg } from "./i18n.js"
@@ -156,11 +156,10 @@ export function createApp(db: Db, dataDir: string, deps: AppDeps = {}) {
   // Une photo d'exemplaire devient la jaquette du jeu (photo de sa propre boîte).
   app.post("/api/photos/:id/cover", (req, res) => res.json(setCoverFromPhoto(db, dataDir, id(req))))
 
-  // Rattrapage des jaquettes : un jeu avec une fiche IGDB mais sans image la récupère ici.
+  // Scan des jaquettes, au bouton : chaque jeu sans image la cherche chez les sources branchées.
   app.post("/api/covers/refresh", async (_req, res) => {
-    const igdb = services.igdb()
-    if (!igdb) throw new IgdbError(msg("sets.igdbNotConfigured"))
-    res.json(await refreshMissingCovers(db, dataDir, igdb, fetchImpl))
+    if (!services.igdb() && !services.screenscraper() && !services.steamgriddb()) throw new IgdbError(msg("covers.noSource"))
+    res.json(await refreshMissingCovers(db, dataDir, services, fetchImpl))
   })
 
   // --- Mode Fullset : listes de référence par console ---
@@ -418,6 +417,17 @@ export function createApp(db: Db, dataDir: string, deps: AppDeps = {}) {
     const copyId = createCopy(db, gameId, copy ?? {})
     learnFromCopy(db, copyId)
     res.status(201).json({ gameId, copyId, existed })
+
+    // Scan à l'ajout : un jeu arrivé sans jaquette (pas de fiche IGDB, ou IGDB n'en a pas) la
+    // cherche aussitôt chez les autres sources, sans faire attendre la réponse.
+    const jeu = db.prepare("SELECT id, igdb_id, platform, title FROM games WHERE id = ? AND cover_file IS NULL").get(gameId) as
+      | { id: number; igdb_id: number | null; platform: string; title: string }
+      | undefined
+    if (jeu) {
+      coverOneGame(db, dataDir, services, jeu, fetchImpl).catch((err) =>
+        console.warn(`Jaquette non trouvée pour « ${jeu.title} » : ${(err as Error).message}`),
+      )
+    }
   })
 
   app.put("/api/games/:id", (req, res) => {
@@ -559,9 +569,15 @@ export function createApp(db: Db, dataDir: string, deps: AppDeps = {}) {
     // Sans photo, une image par défaut est cherchée aussitôt, sans faire attendre la réponse.
     const item = getHardware(db, hwId)
     imageOptions(item, fetchImpl)
-      .then(({ options }) => {
+      .then(async ({ options }) => {
         const pick = pickAutomatic(item, options)
-        return pick ? applyImage(hwId, pick) : undefined
+        if (pick) return applyImage(hwId, pick)
+        // Commons n'a rien de cette console : les autres sources prennent le relais.
+        const [autre] = await hardwareCoverOptions(services, String(item.platform ?? ""))
+        const client = services.screenscraper()
+        if (!autre?.key || !client) return undefined
+        const { bytes, mime } = await client.media(autre.key, 800)
+        return setHardwareImage(db, dataDir, hwId, bytes, mime, "ScreenScraper", null)
       })
       .catch((err) => console.warn(`Image par défaut non trouvée pour le matériel ${hwId} : ${(err as Error).message}`))
   })

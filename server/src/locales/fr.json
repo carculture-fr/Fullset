@@ -219,5 +219,9 @@
     "http": "SteamGridDB a répondu HTTP {{status}}.",
     "keyRefused": "SteamGridDB refuse la clé.",
     "refused": "SteamGridDB refuse l'appel : {{reason}}"
+  },
+  "covers": {
+    "noneFound": "aucune source branchée n'a de jaquette pour ce jeu",
+    "noSource": "Aucune source de jaquettes n'est configurée."
   }
 }
