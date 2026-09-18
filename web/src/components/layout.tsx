@@ -14,11 +14,19 @@ import { CLIENT_VERSION, reloadIfOutdated } from "@/lib/pwa"
 
 const ICON = { strokeWidth: 2.75 } as const
 
+/** Le logo : trois boîtiers rangés sur une étagère, comme l'icône de l'application. */
 export function Logo({ size = 30 }: { size?: number }) {
   return (
-    <span className="grid shrink-0 place-items-center rounded-[10px] bg-primary" style={{ width: size, height: size }} aria-hidden="true">
-      <span className="rounded-full bg-background" style={{ width: size * 0.4, height: size * 0.4 }} />
-    </span>
+    <svg viewBox="0 0 512 512" width={size} height={size} className="shrink-0" role="img" aria-hidden="true">
+      <rect width="512" height="512" rx="112" fill="#201e1d" />
+      <rect x="96" y="138" width="86" height="212" rx="16" fill="#e8e2d4" />
+      <path d="M112 138h16v212h-16a16 16 0 0 1-16-16V154a16 16 0 0 1 16-16z" fill="#7f9161" />
+      <rect x="198" y="104" width="86" height="246" rx="16" fill="#f7f3ea" />
+      <path d="M214 104h16v246h-16a16 16 0 0 1-16-16V120a16 16 0 0 1 16-16z" fill="#a9bd86" />
+      <rect x="300" y="152" width="86" height="198" rx="16" fill="#e8e2d4" />
+      <path d="M316 152h16v198h-16a16 16 0 0 1-16-16V168a16 16 0 0 1 16-16z" fill="#c96f3f" />
+      <rect x="80" y="366" width="352" height="26" rx="13" fill="#f7f3ea" />
+    </svg>
   )
 }
 

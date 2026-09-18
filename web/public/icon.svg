@@ -1,4 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="14" fill="#7a8a5e"/>
-  <circle cx="32" cy="32" r="13" fill="#f7f3ea"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Fullset">
+  <!-- Trois boîtiers rangés sur une étagère : une collection complète, le sujet de l'appli. -->
+  <rect width="512" height="512" rx="112" fill="#201e1d" />
+  <g>
+    <rect x="96" y="138" width="86" height="212" rx="16" fill="#e8e2d4" />
+    <path d="M112 138h16v212h-16a16 16 0 0 1-16-16V154a16 16 0 0 1 16-16z" fill="#7f9161" />
+    <rect x="198" y="104" width="86" height="246" rx="16" fill="#f7f3ea" />
+    <path d="M214 104h16v246h-16a16 16 0 0 1-16-16V120a16 16 0 0 1 16-16z" fill="#a9bd86" />
+    <rect x="300" y="152" width="86" height="198" rx="16" fill="#e8e2d4" />
+    <path d="M316 152h16v198h-16a16 16 0 0 1-16-16V168a16 16 0 0 1 16-16z" fill="#c96f3f" />
+  </g>
+  <rect x="80" y="366" width="352" height="26" rx="13" fill="#f7f3ea" />
 </svg>

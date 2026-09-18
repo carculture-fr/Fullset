@@ -671,7 +671,10 @@
     "adding": "Ajout en cours…",
     "addGames_one": "Ajouter {{count}} jeu",
     "addGames_other": "Ajouter {{count}} jeux",
-    "failed": "Non ajoutés : {{list}}"
+    "failed": "Non ajoutés : {{list}}",
+    "ignore": "Ignorer",
+    "ignoreDone": "{{count}} jeux écartés : ils ne reviendront plus.",
+    "ignoreHint": "Un jeu écarté (bêta, application compagne, doublon) ne revient pas à la prochaine synchronisation."
   },
   "app": {
     "unreachable": "Fullset est injoignable, et rien n'est encore gardé sur cet appareil pour le hors-ligne.",

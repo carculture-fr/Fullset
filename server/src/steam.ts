@@ -62,11 +62,26 @@ export function steamCandidates(db: Db): SteamCandidate[] {
   return db
     .prepare(
       `SELECT s.appid, s.name, s.playtime_minutes, s.last_played, s.igdb_id FROM steam_library s
-       WHERE NOT EXISTS (SELECT 1 FROM games g WHERE g.steam_appid = s.appid)
+       WHERE s.ignored = 0
+         AND NOT EXISTS (SELECT 1 FROM games g WHERE g.steam_appid = s.appid)
          AND NOT EXISTS (SELECT 1 FROM games g WHERE g.platform = 'PC' AND s.igdb_id IS NOT NULL AND g.igdb_id = s.igdb_id)
        ORDER BY s.playtime_minutes DESC, s.name`,
     )
     .all() as SteamCandidate[]
+}
+
+/**
+ * Écarte des jeux de l'écran de choix : bêtas, applications compagnes, jeux déjà là sous un
+ * autre nom. Ils ne reviendront pas à la prochaine synchronisation (`ignored: false` annule).
+ */
+export function ignoreSteamGames(db: Db, appids: unknown, ignored = true) {
+  const list = (Array.isArray(appids) ? appids : [appids]).map(Number).filter((n) => Number.isInteger(n) && n > 0)
+  if (!list.length) throw new SteamError(msg("steam.noneChosen"))
+  const mark = db.prepare("UPDATE steam_library SET ignored = ? WHERE appid = ?")
+  db.transaction(() => {
+    for (const appid of list) mark.run(ignored ? 1 : 0, appid)
+  })()
+  return { ignored: list.length, candidates: steamCandidates(db).length }
 }
 
 export function steamStatus(db: Db, configured: boolean) {

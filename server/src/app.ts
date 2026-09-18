@@ -8,7 +8,7 @@ import { createAuth, routePath } from "./auth.js"
 import { barcodeRows, deleteBarcode, exportBarcodesCsv, learnFromCopy, linkBarcode, listBarcodes, lookupBarcode, normalizeEan } from "./barcodes.js"
 import { ScandexError, identifyBarcode, type ScandexClient } from "./scandex.js"
 import { createServices, saveService, servicesStatus, testService } from "./services.js"
-import { SteamError, importSteam, steamCandidates, steamStatus, syncSteam, type SteamClient } from "./steam.js"
+import { SteamError, ignoreSteamGames, importSteam, steamCandidates, steamStatus, syncSteam, type SteamClient } from "./steam.js"
 import { ConflictError, addValue, deleteValue, isListKey, listValues, renameValue } from "./lists.js"
 import { allowedOriginsFromEnv, originCheck, securityHeaders } from "./security.js"
 import { NotFoundError, PHOTOS_DIR, ValidationError, createCopy, deleteCopy, updateCopy, validateCopy } from "./copies.js"
@@ -142,6 +142,10 @@ export function createApp(db: Db, dataDir: string, deps: AppDeps = {}) {
     res.json(await syncSteam(db, steam, services.igdb()))
   })
   app.get("/api/steam/candidates", (_req, res) => res.json({ items: steamCandidates(db) }))
+  // Écarter des jeux de l'écran de choix : ils ne reviendront pas à la prochaine synchronisation.
+  app.post("/api/steam/ignore", (req, res) => {
+    res.json(ignoreSteamGames(db, req.body?.appids, req.body?.ignored !== false))
+  })
   app.post("/api/steam/import", async (req, res) => {
     res.status(201).json(await importSteam(db, dataDir, services.igdb(), req.body?.appids, fetchImpl))
   })

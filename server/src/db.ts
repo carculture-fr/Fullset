@@ -415,6 +415,9 @@ const MIGRATIONS: string[] = [
    );
 
    CREATE INDEX hardware_events_item ON hardware_events(hardware_id);`,
+
+  // Écran de choix Steam : un jeu écarté à la main ne revient plus à chaque synchronisation.
+  `ALTER TABLE steam_library ADD COLUMN ignored INTEGER NOT NULL DEFAULT 0;`,
 ]
 
 function sql(v: string | null) {

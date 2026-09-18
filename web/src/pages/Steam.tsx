@@ -25,6 +25,7 @@ export default function Steam() {
   const [q, setQ] = useState("")
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [note, setNote] = useState<string | null>(null)
 
   useEffect(() => {
     api<{ items: SteamCandidate[] }>("/api/steam/candidates").then((r) => setItems(r.items), (err) => setError(errorMessage(err)))
@@ -43,6 +44,22 @@ export default function Steam() {
       else next.add(appid)
       return next
     })
+
+  // Écarter : le jeu quitte l'écran de choix et ne revient pas à la prochaine synchronisation.
+  const ignore = async () => {
+    setBusy(true)
+    setError(null)
+    try {
+      const r = await send<{ ignored: number }>("POST", "/api/steam/ignore", { appids: [...picked] })
+      setItems((list) => (list ?? []).filter((i) => !picked.has(i.appid)))
+      setPicked(new Set())
+      setNote(t("steam.ignoreDone", { count: r.ignored }))
+    } catch (err) {
+      setError(errorMessage(err))
+    } finally {
+      setBusy(false)
+    }
+  }
 
   const add = async () => {
     setBusy(true)
@@ -76,6 +93,8 @@ export default function Steam() {
         </p>
       </div>
       <ErrorNote message={error} />
+      {note && <p className="text-[13px] text-muted-foreground">{note}</p>}
+      {items && items.length > 0 && <p className="text-xs text-subtle-foreground">{t("steam.ignoreHint")}</p>}
       {items && items.length > 0 && (
         <div className="flex gap-2">
           <div className="relative min-w-0 flex-1">
@@ -126,13 +145,20 @@ export default function Steam() {
 
       {picked.size > 0 && (
         <div className="fixed inset-x-0 bottom-[calc(78px+env(safe-area-inset-bottom))] z-20 bg-gradient-to-t from-background from-70% to-transparent px-4 pt-8 pb-3 lg:bottom-0 lg:left-[280px] lg:px-8 lg:pb-6">
-          <div className="mx-auto max-w-2xl">
+          <div className="mx-auto flex max-w-2xl gap-2">
             <button
               onClick={add}
               disabled={busy}
-              className="min-h-[48px] w-full rounded-full bg-primary px-5 font-heading text-[16px] text-primary-foreground shadow-md transition-transform duration-150 active:scale-[.98] disabled:opacity-45"
+              className="min-h-[48px] min-w-0 flex-1 rounded-full bg-primary px-5 font-heading text-[16px] text-primary-foreground shadow-md transition-transform duration-150 active:scale-[.98] disabled:opacity-45"
             >
               {busy ? t("steam.adding") : t("steam.addGames", { count: picked.size })}
+            </button>
+            <button
+              onClick={ignore}
+              disabled={busy}
+              className="min-h-[48px] shrink-0 rounded-full bg-card px-5 font-heading text-[15px] shadow-md transition-transform duration-150 active:scale-[.98] disabled:opacity-45"
+            >
+              {t("steam.ignore")}
             </button>
           </div>
         </div>

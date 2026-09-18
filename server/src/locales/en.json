@@ -119,7 +119,8 @@
     "keyRefused": "Steam refuses the API key.",
     "http": "Steam responded HTTP {{status}}.",
     "unreadable": "Unreadable Steam library: check the SteamID and that the profile's “Game details” are public.",
-    "unnamed": "Steam game {{appid}}"
+    "unnamed": "Steam game {{appid}}",
+    "noneChosen": "No game chosen."
   },
   "igdb": {
     "authRefused": "Twitch authentication refused (HTTP {{status}}).",

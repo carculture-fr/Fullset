@@ -671,7 +671,10 @@
     "adding": "Adding…",
     "addGames_one": "Add {{count}} game",
     "addGames_other": "Add {{count}} games",
-    "failed": "Not added: {{list}}"
+    "failed": "Not added: {{list}}",
+    "ignore": "Ignore",
+    "ignoreDone": "{{count}} games set aside: they will not come back.",
+    "ignoreHint": "An ignored game (beta, companion app, duplicate) does not come back on the next sync."
   },
   "app": {
     "unreachable": "Fullset can't be reached, and nothing has been kept on this device for offline use yet.",
