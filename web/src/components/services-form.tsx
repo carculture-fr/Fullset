@@ -127,6 +127,18 @@ function ServiceCard({ name, status, onSaved }: { name: ServiceName; status: Ser
 
       {open && (
         <div className="mt-4 space-y-3.5">
+          {/* Où trouver la clé : les étapes, puis le lien qui mène droit à la bonne page. */}
+          <div className="rounded-[14px] border border-border-strong bg-card p-3">
+            <p className="text-[13px] leading-[1.45] text-muted-foreground">{t(`servicesForm.${name}.where`)}</p>
+            <a
+              href={info.helpUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-2 inline-flex min-h-9 items-center text-[13px] font-semibold text-primary-text underline underline-offset-2"
+            >
+              {t(`servicesForm.${name}.help`)} ↗
+            </a>
+          </div>
           {Object.entries(info.fields).map(([key, f]) => {
             const s = status.fields[key]
             const byEnv = s?.source === "env"
@@ -146,9 +158,6 @@ function ServiceCard({ name, status, onSaved }: { name: ServiceName; status: Ser
               </label>
             )
           })}
-          <a href={info.helpUrl} target="_blank" rel="noreferrer" className="inline-block text-[13px] font-semibold text-primary-text underline underline-offset-2">
-            {t(`servicesForm.${name}.help`)} ↗
-          </a>
           <div className="flex flex-wrap gap-2">
             <button type="button" onClick={save} disabled={busy || !Object.values(draft).some((v) => v.trim())} className={primaryButton}>
               {t("servicesForm.saveAndTest")}

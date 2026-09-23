@@ -744,29 +744,34 @@
     "remove": "Remove",
     "igdb": {
       "what": "Game search, details and covers. Without it, games are added by hand.",
+      "where": "Sign in to the Twitch developer console, create an application (any name, redirect “http://localhost”), then copy its Client ID and generate a Client secret.",
       "help": "Create a free Twitch developer account",
       "clientId": "Client ID",
       "clientSecret": "Client secret"
     },
     "steam": {
       "what": "Links your PC games to your Steam library and brings back their play time. The profile must show its “Game details”.",
+      "where": "Request your key on the “Steam Web API Key” page: any domain name will do. Your SteamID64 is the 17-digit number shown on your profile.",
       "help": "Get a Steam API key",
       "apiKey": "API key",
       "steamId": "SteamID64 (17 digits)"
     },
     "scandex": {
       "what": "Suggests the game behind a barcode you don't know yet, for you to confirm.",
+      "where": "Ask for a token on the ScanDex site; it is free during their launch.",
       "help": "Get a ScanDex token",
       "token": "Token"
     },
     "romm": {
       "what": "Adds a link from a game's page to its ROM in your RomM instance.",
+      "where": "In your RomM: Settings → API, create a token. The address is your instance's, exactly as you open it in the browser.",
       "help": "RomM on GitHub",
       "url": "RomM address",
       "apiToken": "API token"
     },
     "screenscraper": {
       "what": "Covers and localised titles, console by console. The only database that knows the French titles. Two credentials: the software's, and your own account's.",
+      "where": "Two things to get: a free ScreenScraper account (it carries your quotas), then developer credentials, requested on their forum by introducing the application. They only grant them to free applications — Fullset is one.",
       "help": "Create a ScreenScraper account",
       "devId": "Developer ID",
       "devPassword": "Developer password",
@@ -775,6 +780,7 @@
     },
     "steamgriddb": {
       "what": "Community-uploaded covers, handy when IGDB has none. Free key, tied to your own account.",
+      "where": "Sign in to SteamGridDB, open your profile → Preferences → API, and generate your key.",
       "help": "Get a SteamGridDB key",
       "apiKey": "API key"
     }
