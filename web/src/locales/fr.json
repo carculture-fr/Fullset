@@ -236,7 +236,8 @@
     "deleteSelectedConfirm": "Supprimer {{count}} jeux de la collection ? Leurs exemplaires, photos et estimations partent avec. Pour une vente ou un prêt, utilise plutôt « Sortie ou événement » sur la fiche.",
     "deleted": "{{count}} jeux supprimés.",
     "selectAll": "Tout sélectionner",
-    "selectNone": "Tout désélectionner"
+    "selectNone": "Tout désélectionner",
+    "emptyHelp": "Ajoute ton premier jeu : cherche-le par son titre, ou scanne le code-barres de la boîte — la console et la jaquette arrivent toutes seules. Tu possèdes le même jeu deux fois ? Ce seront deux exemplaires, chacun avec son état et son prix."
   },
   "filterPanel": {
     "title": "Filtres",
@@ -258,7 +259,8 @@
     "items_other": "{{count}} éléments",
     "empty": "Aucune console ni accessoire pour l'instant.",
     "addConsole": "Ajouter une console",
-    "addHardware": "Ajouter du matériel"
+    "addHardware": "Ajouter du matériel",
+    "emptyHelp": "Ajoute tes consoles, manettes et accessoires : mêmes états que les jeux, et une photo de référence est cherchée toute seule quand tu n'en as pas encore prise."
   },
   "hardwareDetail": {
     "back": "← Consoles et matériel",
@@ -613,7 +615,8 @@
     "fieldTargetPrice": "Prix cible (€)",
     "fieldNote": "Note",
     "fieldNotePlaceholder": "PAL, complet…",
-    "addToList": "Ajouter à la liste"
+    "addToList": "Ajouter à la liste",
+    "emptyHelp": "Note ici les jeux que tu cherches, avec le prix que tu ne veux pas dépasser. En brocante, le scanner te dira si un jeu est dans tes souhaits — et « Je l'ai acheté » le fait passer dans ta collection."
   },
   "importLegacy": {
     "sections": {
@@ -1023,7 +1026,9 @@
     "wishAll": "Tout aux souhaits",
     "wishAllDone": "{{count}} jeux ajoutés à tes souhaits.",
     "wishAllNone": "Tes souhaits contiennent déjà ces jeux.",
-    "exportMissing": "Exporter les manquants"
+    "exportMissing": "Exporter les manquants",
+    "whatTitle": "À quoi sert un full set ?",
+    "whatHelp": "Un full set, c'est la liste complète des jeux sortis sur une console. Charge celle qui t'intéresse et Fullset la compare à ta collection : tu vois d'un coup d'œil ce que tu as, ce qu'il te manque et ce qu'il resterait à dépenser. Les manquants partent dans tes souhaits d'un geste, ou dans un fichier à emporter en brocante."
   },
   "events": {
     "title": "Vie de l'exemplaire",

@@ -14,7 +14,11 @@ Self-hosted inventory for your video game collection: physical and digital copie
 
 **Covers, from several sources.** IGDB, ScreenScraper (localised titles) and SteamGridDB can all be connected; you pick the cover you want from what they propose. A game can also use a photo of your own box.
 
+![A game page](docs/images/game.webp)
+
 **Know what is missing: the Fullset mode.** Load the reference list of everything released on a console, and see your collection against it — like a pokédex. What you own, what is missing, and roughly what it would cost. Missing games can go to your wishlist in one click, or leave as a CSV for a flea market.
+
+![The Fullset mode home](docs/images/fullset-home.webp)
 
 ![Reference list for the GameCube](docs/images/fullset-gamecube.webp)
 
@@ -131,6 +135,8 @@ Please report vulnerabilities privately: see [SECURITY.md](SECURITY.md).
 
 Inventaire auto-hébergé de ta collection de jeux vidéo : exemplaires physiques et dématérialisés, état du jeu, de la boîte et de la notice, prix payé, valeur estimée, plus tes consoles et accessoires. Pensé pour les collectionneurs, d'abord sur téléphone.
 
+![La bibliothèque, groupée par console](docs/images/library.webp)
+
 ## Ce que ça fait
 
 **Ta collection, exemplaire par exemplaire.** Un jeu est une chose, l'exemplaire que tu possèdes en est une autre : Fullset suit chaque exemplaire avec son support, sa région, son édition, son contenu, ses trois états distincts (jeu, boîte, notice), son prix d'achat, sa date, son lieu, tes notes et tes photos. Deux exemplaires du même jeu restent deux exemplaires.
@@ -145,11 +151,17 @@ Inventaire auto-hébergé de ta collection de jeux vidéo : exemplaires physique
 
 ![L'accueil du mode Fullset](docs/images/fullset-home.webp)
 
+![La liste de référence GameCube, avec l'avancement](docs/images/fullset-gamecube.webp)
+
 **La vie d'un exemplaire.** Vendu, donné, échangé, prêté à quelqu'un, perdu, hors service : un exemplaire sort de la collection avec un motif et une date, sans être effacé. Son journal reste sur la fiche du jeu, les prêts en cours sont listés, et les statistiques disent ce que tu as récupéré par rapport à ce que tu avais payé.
 
 **Les consoles et accessoires** sont suivis aussi, avec leurs états et une image de référence de Wikimedia Commons tant que tu n'as pas de photo.
 
+![Les consoles et accessoires](docs/images/hardware.webp)
+
 **Des statistiques** sur ce que tu as dépensé, par console, par lieu, par mois ou par année, l'état de ta collection, et la valeur estimée que tu saisis toi-même, avec son historique.
+
+![Les statistiques](docs/images/stats.webp)
 
 **Fait pour le terrain.** L'appli s'installe sur le téléphone (PWA) et continue de s'afficher sans réseau — utile en brocante, avec le lecteur de codes-barres et la question « est-ce que je l'ai déjà ? ».
 
@@ -202,6 +214,8 @@ Tout fonctionne sans eux — un jeu s'ajoute toujours à la main. Ils se règlen
 | **Steam** | relie tes jeux PC et reprend leur temps de jeu | clé API Steam + SteamID64 |
 | **ScanDex** | propose le jeu derrière un code-barres inconnu | jeton sur leur site |
 | **RomM** | un lien d'un jeu vers sa ROM dans ton [RomM](https://github.com/rommapp/romm) | l'adresse de ton instance et un jeton d'API |
+
+![Les réglages des services](docs/images/services.webp)
 
 ### Derrière un proxy inverse
 

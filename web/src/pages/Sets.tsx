@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next"
 import { Link } from "react-router-dom"
 
 import { ErrorNote, Field, Menu, inputClass } from "@/components/fields"
+import { HelpNote } from "@/components/help"
 import { ICON } from "@/components/page-bits"
 import { api, errorMessage, send, uploadWith, type SetList, type SetSummary } from "@/lib/api"
 import { euros, formatDate } from "@/lib/format"
@@ -168,6 +169,9 @@ export default function Sets() {
         <h1 className="text-[29px]">{t("sets.title")}</h1>
         <p className="mt-1 text-[13px] text-muted-foreground">{t("sets.subtitle")}</p>
       </div>
+      {/* « Full set » ne dit rien tant qu'on n'en a pas chargé un : l'explication reste le temps
+          de la découverte, puis s'efface dès qu'une liste est là. */}
+      {saved.length === 0 && <HelpNote title={t("sets.whatTitle")}>{t("sets.whatHelp")}</HelpNote>}
       {error && <ErrorNote message={error} />}
 
       {saved.length > 0 && (

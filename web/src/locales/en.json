@@ -236,7 +236,8 @@
     "deleteSelectedConfirm": "Delete {{count}} games from the collection? Their copies, photos and valuations go with them. For a sale or a loan, use “Exit or event” on the game page instead.",
     "deleted": "{{count}} games deleted.",
     "selectAll": "Select all",
-    "selectNone": "Clear selection"
+    "selectNone": "Clear selection",
+    "emptyHelp": "Add your first game: search it by title, or scan the barcode on the box — console and cover come along. Own the same game twice? That makes two copies, each with its own condition and price."
   },
   "filterPanel": {
     "title": "Filters",
@@ -258,7 +259,8 @@
     "items_other": "{{count}} items",
     "empty": "No consoles or accessories yet.",
     "addConsole": "Add a console",
-    "addHardware": "Add hardware"
+    "addHardware": "Add hardware",
+    "emptyHelp": "Add your consoles, controllers and accessories: same conditions as games, and a reference picture is looked up on its own until you take a photo."
   },
   "hardwareDetail": {
     "back": "← Consoles and hardware",
@@ -613,7 +615,8 @@
     "fieldTargetPrice": "Target price (€)",
     "fieldNote": "Note",
     "fieldNotePlaceholder": "PAL, complete…",
-    "addToList": "Add to the list"
+    "addToList": "Add to the list",
+    "emptyHelp": "Keep here the games you are after, with the price you do not want to exceed. At a flea market, the scanner tells you when a game is on your wishlist — and “I bought it” moves it into your collection."
   },
   "importLegacy": {
     "sections": {
@@ -1023,7 +1026,9 @@
     "wishAll": "All to wishlist",
     "wishAllDone": "{{count}} games added to your wishlist.",
     "wishAllNone": "Your wishlist already holds these games.",
-    "exportMissing": "Export the missing ones"
+    "exportMissing": "Export the missing ones",
+    "whatTitle": "What is a full set for?",
+    "whatHelp": "A full set is the complete list of games released on a console. Load the one you care about and Fullset compares it to your collection: you see at a glance what you own, what is missing and what it would cost. Missing games go to your wishlist in one click, or into a file to take to a flea market."
   },
   "events": {
     "title": "Copy history",

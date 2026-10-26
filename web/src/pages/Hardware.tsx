@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next"
 import { Link, useSearchParams } from "react-router-dom"
 
 import { ConditionDot } from "@/components/condition"
+import { HelpNote } from "@/components/help"
 import { Cover } from "@/components/cover"
 import { CARD_FRAME, COMPACT_FIELD, GRID_CLASS, GroupSummary, LibraryTabs, ROW_CLASS, SortMenu, ViewToggle, readView, writeSession, type View } from "@/components/library-tabs"
 import { api, errorMessage, type HardwareItem } from "@/lib/api"
@@ -132,6 +133,7 @@ export default function Hardware() {
       {items.length === 0 ? (
         <div className="py-12 text-center text-muted-foreground">
           <p>{t("hardware.empty")}</p>
+          <HelpNote className="mx-auto mt-4 max-w-md">{t("hardware.emptyHelp")}</HelpNote>
           <Link to="/consoles/ajouter" className="mt-5 inline-flex h-11 items-center rounded-full bg-primary px-6 font-heading text-[15px] text-primary-foreground">
             {t("hardware.addConsole")}
           </Link>

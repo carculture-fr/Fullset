@@ -6,6 +6,7 @@ import { Link, useSearchParams } from "react-router-dom"
 import { ConditionDot } from "@/components/condition"
 import { Cover } from "@/components/cover"
 import { FilterPanel, PageFilters, facetValueLabel, useDesktop } from "@/components/filter-panel"
+import { HelpNote } from "@/components/help"
 import {
   CARD_FRAME,
   COMPACT_FIELD,
@@ -119,6 +120,8 @@ export default function Library() {
         <div className="flex flex-col items-center py-14 text-center">
           <EmptyBox />
           <p className="mt-4 text-muted-foreground">{t("library.empty")}</p>
+          {/* Première visite : dire comment ajouter, pas seulement que c'est vide. */}
+          <HelpNote className="mt-4 max-w-md">{t("library.emptyHelp")}</HelpNote>
           <Link to="/ajouter" className="mt-5 flex h-11 items-center rounded-full bg-primary px-6 font-heading text-[15px] text-primary-foreground">
             {t("library.addGame")}
           </Link>

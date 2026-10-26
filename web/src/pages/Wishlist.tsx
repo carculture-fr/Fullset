@@ -5,6 +5,7 @@ import { Link } from "react-router-dom"
 
 import { Cover } from "@/components/cover"
 import { Chips, ErrorNote, Field, inputClass } from "@/components/fields"
+import { HelpNote } from "@/components/help"
 import { IgdbSearch } from "@/components/igdb-search"
 import { api, errorMessage, send, type IgdbCandidate, type WishItem } from "@/lib/api"
 import { euros } from "@/lib/format"
@@ -68,7 +69,10 @@ export default function Wishlist() {
       )}
 
       {items.length === 0 && !adding ? (
-        <p className="py-10 text-center text-muted-foreground">{t("wishlist.empty")}</p>
+        <div className="py-10 text-center">
+          <p className="text-muted-foreground">{t("wishlist.empty")}</p>
+          <HelpNote className="mx-auto mt-4 max-w-md">{t("wishlist.emptyHelp")}</HelpNote>
+        </div>
       ) : (
         <ul className="space-y-3">
           {items.map((w) => (
