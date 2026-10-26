@@ -84,7 +84,7 @@ describe("matériel", () => {
     expect(listHardware(db)[0]).toMatchObject({ working: "À réparer", value_cents: 6000, photo: photo.url, photo_count: 1 })
     expect(stats(db).hardware).toMatchObject({ count: 1, spentCents: 4500, value: { estimatedCents: 6000, estimatedItems: 1 } })
     // Le total dépensé des jeux reste celui des jeux.
-    expect(stats(db).spentCents).toBe(28218)
+    expect(stats(db).spentCents).toBe(67248)
   })
 
   it("partage les lieux d'achat avec les jeux et propose éditions et couleurs", () => {

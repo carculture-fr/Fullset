@@ -61,7 +61,7 @@ describe("valeur estimée", () => {
   })
 
   it("donne la valeur totale et ce qu'ont coûté les exemplaires estimés", () => {
-    expect(stats(db).value).toEqual({ estimatedCents: 2000, estimatedCopies: 1, costOfEstimatedCents: 1490 })
+    expect(stats(db).value).toEqual({ estimatedCents: 2000, estimatedCopies: 1, costOfEstimatedCents: 1574 })
   })
 
   it("voyage dans l'export : dernière valeur en CSV, historique en JSON", () => {

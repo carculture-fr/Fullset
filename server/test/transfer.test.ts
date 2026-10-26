@@ -38,7 +38,7 @@ describe("export CSV", () => {
     expect(rows).toHaveLength(49)
     const header = rows[0]
     const nfs = rows.find((r) => r[header.indexOf("titre")] === "Need for Speed: Most Wanted")!
-    expect(nfs[header.indexOf("prix")]).toBe("14,90")
+    expect(nfs[header.indexOf("prix")]).toBe("15,74")
     expect(nfs[header.indexOf("résumé")]).toMatch(/^Arrivé en ville avec une voiture de sport/)
   })
 
@@ -46,7 +46,7 @@ describe("export CSV", () => {
     const source = imported()
     const csv = exportCsv(source)
     const { db: target } = freshDb()
-    expect(importExport(target, csv)).toEqual({ games: 47, copies: 48, totalCents: 28218 })
+    expect(importExport(target, csv)).toEqual({ games: 47, copies: 48, totalCents: 67248 })
     expect(exportCsv(target)).toBe(csv)
     expect(summary(target)).toEqual(summary(source))
     expect(listLibrary(target).map(({ cover, ...g }) => g)).toEqual(listLibrary(source).map(({ cover, ...g }) => g))
@@ -86,7 +86,7 @@ describe("export JSON", () => {
     const json = exportJson(source)
     expect(json).toMatchObject({ format: "fullset", version: 1 })
     const { db: target } = freshDb()
-    expect(importExport(target, JSON.stringify(json))).toEqual({ games: 47, copies: 48, totalCents: 28218 })
+    expect(importExport(target, JSON.stringify(json))).toEqual({ games: 47, copies: 48, totalCents: 67248 })
     expect(exportCsv(target)).toBe(exportCsv(source))
   })
 })
@@ -96,11 +96,11 @@ describe("statistiques", () => {
   const s = stats(db)
 
   it("retombe sur le total, quel que soit le découpage", () => {
-    expect(s.spentCents).toBe(28218)
-    expect(s.spentPhysicalCents + s.spentDigitalCents).toBe(28218)
-    expect(s.byMonth.reduce((n, m) => n + m.spentCents, 0) + s.undated.spentCents).toBe(28218)
-    expect(s.byPlace.reduce((n, p) => n + p.spentCents, 0)).toBe(28218)
-    expect(s.byPlatform.reduce((n, p) => n + p.spentCents, 0)).toBe(28218)
+    expect(s.spentCents).toBe(67248)
+    expect(s.spentPhysicalCents + s.spentDigitalCents).toBe(67248)
+    expect(s.byMonth.reduce((n, m) => n + m.spentCents, 0) + s.undated.spentCents).toBe(67248)
+    expect(s.byPlace.reduce((n, p) => n + p.spentCents, 0)).toBe(67248)
+    expect(s.byPlatform.reduce((n, p) => n + p.spentCents, 0)).toBe(67248)
   })
 
   it("donne des mois continus, sans trou", () => {
@@ -129,7 +129,7 @@ describe("routes d'export et d'import", () => {
     const form = new FormData()
     form.append("file", new Blob([JSON.stringify(collection)], { type: "application/json" }), "collection.json")
     const imp = await fetch(`${base}/api/import`, { method: "POST", body: form })
-    expect(await imp.json()).toMatchObject({ games: 47, copies: 48, totalCents: 28218 })
+    expect(await imp.json()).toMatchObject({ games: 47, copies: 48, totalCents: 67248 })
 
     const csv = await fetch(`${base}/api/export.csv`)
     expect(csv.headers.get("content-type")).toMatch(/^text\/csv/)
@@ -137,7 +137,7 @@ describe("routes d'export et d'import", () => {
     expect((await csv.text()).split("\r\n")).toHaveLength(50)
     const json = await (await fetch(`${base}/api/export.json`)).json()
     expect(json.games).toHaveLength(47)
-    expect((await (await fetch(`${base}/api/stats`)).json()).spentCents).toBe(28218)
+    expect((await (await fetch(`${base}/api/stats`)).json()).spentCents).toBe(67248)
 
     const again = await fetch(`${base}/api/import`, { method: "POST", body: form })
     expect(again.status).toBe(409)

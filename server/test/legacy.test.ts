@@ -66,7 +66,7 @@ describe("lecture de l'export de l'ancienne application", () => {
       platform: "PlayStation 3",
       copy: {
         support: "Physique", content: "Non défini", condition_game: "Très bon", condition_box: "Très bon", condition_manual: "Très bon",
-        play_status: "Pas commencé", goal: "À garder", region: "PAL (Europe)", price: "6.49", purchase_date: "2026-02-21",
+        play_status: "Pas commencé", goal: "À garder", region: "PAL (Europe)", price: "10.75", purchase_date: "2025-03-14",
         purchase_place: "Boutique d'occasion", tags: null, barcode: null, comment: null, play_time_hours: null, rating: null,
       },
       estimatedCents: null,

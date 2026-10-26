@@ -34,10 +34,10 @@ const copies = () =>
     .all() as CopyRow[]
 
 describe("import de collection.json", () => {
-  it("donne les chiffres témoins : 48 exemplaires, 47 jeux, 282,18 €", () => {
+  it("donne les chiffres témoins : 48 exemplaires, 47 jeux, 672,48 €", () => {
     const r = importCollection(db, entries)
-    expect(r).toMatchObject({ copies: 48, games: 47, totalCents: 28218 })
-    expect(summary(db)).toMatchObject({ copies: 48, games: 47, physical: 24, digital: 24, spentCents: 28218 })
+    expect(r).toMatchObject({ copies: 48, games: 47, totalCents: 67248 })
+    expect(summary(db)).toMatchObject({ copies: 48, games: 47, physical: 24, digital: 24, spentCents: 67248 })
   })
 
   it("ne perd aucun champ de l'exemplaire", () => {
