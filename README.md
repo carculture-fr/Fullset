@@ -121,6 +121,12 @@ Node 22. `npm install`, then:
 
 The interface is in English and French (`web/src/locales/`, `server/src/locales/`; French is the reference). Values are stored in French and translated on screen.
 
+## Support the project
+
+Fullset is free and open source, written on evenings and weekends. If it is useful to you, you can [support its development](https://github.com/sponsors/carculture-fr). It buys hours, not a place in the queue: the roadmap stays driven by what the app needs.
+
+**Would you rather not host it yourself?** A hosted version is under consideration — kept up to date and backed up, for a monthly subscription. If that would interest you, say so at contact@carculture.fr. The idea only moves forward if enough people ask for it.
+
 ## Security
 
 Please report vulnerabilities privately: see [SECURITY.md](SECURITY.md).
@@ -251,6 +257,12 @@ Node 22. `npm install`, puis :
 | `npm run build` | `server/dist` et `web/dist` |
 
 L'interface existe en français et en anglais (`web/src/locales/`, `server/src/locales/` ; le français fait référence). Les valeurs sont stockées en français et traduites à l'affichage.
+
+## Soutenir le projet
+
+Fullset est gratuit et à code ouvert, écrit sur des soirées et des week-ends. S'il t'est utile, tu peux [soutenir son développement](https://github.com/sponsors/carculture-fr). Ça paie des heures, pas une place dans la file : ce qui est fait ensuite reste décidé par les besoins de l'appli.
+
+**Pas envie de l'héberger toi-même ?** Une version hébergée est à l'étude — tenue à jour et sauvegardée, contre un abonnement mensuel. Si ça t'intéresse, dis-le à contact@carculture.fr. L'idée n'ira plus loin que si assez de personnes la demandent.
 
 ## Sécurité
 
