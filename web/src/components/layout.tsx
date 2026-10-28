@@ -126,7 +126,7 @@ export function Layout() {
 
       {/* Dock d'actions (≤ 1023 px, bibliothèque seulement), au-dessus de la barre d'onglets */}
       {showDock && (
-        <div className="pointer-events-none fixed inset-x-0 bottom-[calc(62px+env(safe-area-inset-bottom))] z-30 flex justify-end gap-2.5 bg-gradient-to-t from-background from-70% to-transparent px-4 pt-8 pb-2.5 lg:hidden">
+        <div className="pointer-events-none fixed inset-x-0 bottom-[calc(62px+env(safe-area-inset-bottom))] z-30 flex justify-end gap-2.5 px-4 pb-2.5 lg:hidden">
           <Link
             to="/brocante"
             className="pointer-events-auto flex h-[46px] items-center gap-2.5 rounded-full bg-ink px-5 font-heading text-[15px] text-ink-foreground shadow-md transition-transform duration-150 active:scale-[.98]"
