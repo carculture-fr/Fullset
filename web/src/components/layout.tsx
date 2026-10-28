@@ -89,7 +89,7 @@ export function Layout() {
             {t("library.addGame")}
           </Link>
           <div className="flex items-center justify-between pt-2">
-            <LanguageSwitcher onChoose={(language) => save({ language }).catch(() => {})} />
+            <LanguageSwitcher up onChoose={(language) => save({ language }).catch(() => {})} />
             <ThemeToggle />
           </div>
         </div>

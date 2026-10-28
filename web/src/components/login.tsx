@@ -33,8 +33,13 @@ export function AuthFrame({ title, children }: { title: string; children: ReactN
   )
 }
 
-/** Avant connexion : langue du navigateur, ou celle choisie ici (retenue sur l'appareil). */
-export function LanguageSwitcher({ onChoose }: { onChoose?: (lang: (typeof LANGUAGES)[number]) => void } = {}) {
+/**
+ * Avant connexion : langue du navigateur, ou celle choisie ici (retenue sur l'appareil).
+ * `up` ouvre la liste vers le haut et l'aligne à gauche : dans le tiroir, le bouton est en bas
+ * d'une colonne étroite qui défile, et une liste posée vers le bas ou vers la gauche en sort
+ * (elle est alors coupée par le défilement du tiroir, et pousse la mise en page).
+ */
+export function LanguageSwitcher({ onChoose, up = false }: { onChoose?: (lang: (typeof LANGUAGES)[number]) => void; up?: boolean } = {}) {
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const box = useRef<HTMLDivElement>(null)
@@ -63,7 +68,11 @@ export function LanguageSwitcher({ onChoose }: { onChoose?: (lang: (typeof LANGU
         {current}
       </button>
       {open && (
-        <ul className="absolute top-full right-0 z-40 mt-2 min-w-36 overflow-hidden rounded-[20px] border border-border bg-background py-1 text-sm shadow-md">
+        <ul
+          className={`absolute z-40 w-36 max-w-[calc(100vw-2rem)] overflow-hidden rounded-[20px] border border-border bg-background py-1 text-sm shadow-md ${
+            up ? "bottom-full left-0 mb-2" : "top-full right-0 mt-2"
+          }`}
+        >
           {LANGUAGES.map((lang) => (
             <li key={lang}>
               <button

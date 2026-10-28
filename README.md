@@ -4,6 +4,8 @@ Self-hosted inventory for your video game collection: physical and digital copie
 
 > The interface is available in **English and French**. [Version française plus bas.](#français)
 
+**Try it: [fullset.carculture.fr](https://fullset.carculture.fr)** — an example collection, read-only, nothing to install.
+
 ![The library, grouped by console](docs/images/library.webp)
 
 ## What it does
@@ -140,6 +142,8 @@ Please report vulnerabilities privately: see [SECURITY.md](SECURITY.md).
 ## Français
 
 Inventaire auto-hébergé de ta collection de jeux vidéo : exemplaires physiques et dématérialisés, état du jeu, de la boîte et de la notice, prix payé, valeur estimée, plus tes consoles et accessoires. Pensé pour les collectionneurs, d'abord sur téléphone.
+
+**À essayer : [fullset.carculture.fr](https://fullset.carculture.fr)** — une collection d'exemple, en lecture seule, rien à installer.
 
 ![La bibliothèque, groupée par console](docs/images/library.webp)
 
