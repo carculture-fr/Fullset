@@ -111,7 +111,7 @@ export function FilterPanel({ open, onClose, resultCount, ...props }: Props & { 
         ))}
       </div>
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-background from-70% to-transparent px-4 pt-8 pb-[max(16px,env(safe-area-inset-bottom))]">
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 px-4 pb-[max(16px,env(safe-area-inset-bottom))]">
         <button
           type="button"
           onClick={onClose}

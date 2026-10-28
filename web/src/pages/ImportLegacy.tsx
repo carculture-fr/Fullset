@@ -156,7 +156,7 @@ export default function ImportLegacy() {
           })}
 
           {/* Au-dessus de la barre d'onglets (≤ 1023 px) ; à droite du tiroir au-delà. */}
-          <div className="fixed inset-x-0 bottom-[calc(78px+env(safe-area-inset-bottom))] z-20 bg-gradient-to-t from-background from-70% to-transparent px-4 pt-8 pb-3 lg:bottom-0 lg:left-[280px] lg:px-8 lg:pb-[max(1rem,env(safe-area-inset-bottom))]">
+          <div className="fixed inset-x-0 bottom-[calc(78px+env(safe-area-inset-bottom))] z-20 px-4 pb-3 lg:bottom-0 lg:left-[280px] lg:px-8 lg:pb-[max(1rem,env(safe-area-inset-bottom))]">
             <div className="mx-auto flex max-w-2xl gap-2.5">
               <button onClick={() => setRows(null)} className={`${ghostButton} min-h-[48px]`}>
                 {t("common.cancel")}
